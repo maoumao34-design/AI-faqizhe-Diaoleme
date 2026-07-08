@@ -1,0 +1,86 @@
+{
+  "success_normal": {
+    "success": true,
+    "analysis_id": "demo_20260708_001",
+    "image_type": "hairline",
+    "image_quality": {
+      "score": 86,
+      "level": "good",
+      "issues": []
+    },
+    "entertainment_result": {
+      "score": 82,
+      "level": "stable",
+      "title": "发量守护小队长",
+      "summary": "今天的头发状态整体挺稳，适合继续打卡。",
+      "roast": "头发今天还算配合，建议你也配合一下早点睡。",
+      "encouragement": "保持这个记录节奏，几天后就能看到自己的守护趋势啦。"
+    },
+    "tags": ["稳中带皮", "状态不错", "继续观察"],
+    "daily_task": {
+      "name": "23:30 前放下手机",
+      "description": "给头发一点休息时间，也给自己一点休息时间。",
+      "exp_reward": 20
+    },
+    "trend_hint": "连续记录 3 天后，可以生成一条发量守护趋势。",
+    "fallback_code": null,
+    "can_save_record": true,
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。"
+  },
+  "success_low_quality_saveable": {
+    "success": true,
+    "analysis_id": "demo_20260708_002",
+    "image_type": "top",
+    "image_quality": {
+      "score": 48,
+      "level": "poor",
+      "issues": ["光线偏暗", "画面轻微模糊", "头顶角度不完整"]
+    },
+    "entertainment_result": {
+      "score": 61,
+      "level": "sleep_needed",
+      "title": "今天先别焦虑型",
+      "summary": "照片信息有点有限，本次更适合当作打卡记录。",
+      "roast": "不是头发不营业，是光线今天有点摸鱼。",
+      "encouragement": "换个亮一点的地方再拍，会更容易看到稳定趋势。"
+    },
+    "tags": ["娱乐参考", "光线偏暗", "可继续记"],
+    "daily_task": {
+      "name": "补拍一张明亮角度",
+      "description": "找自然光或明亮室内光，镜头对准头顶再记录一次。",
+      "exp_reward": 15
+    },
+    "trend_hint": "本次照片质量一般，后续对比时建议优先参考光线更稳定的记录。",
+    "fallback_code": "LOW_IMAGE_QUALITY",
+    "can_save_record": true,
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。"
+  },
+  "failed_fallback": {
+    "success": false,
+    "analysis_id": "demo_20260708_003",
+    "image_type": "other",
+    "image_quality": {
+      "score": 12,
+      "level": "unusable",
+      "issues": ["未检测到头发相关内容", "不适合生成头发状态观察"]
+    },
+    "entertainment_result": {
+      "score": 0,
+      "level": "image_retry",
+      "title": "这张照片有点跑题",
+      "summary": "AI 没找到头发相关内容，本次先不硬猜。",
+      "roast": "发量守护小队看了看图：这题超纲了。",
+      "encouragement": "重新拍一张头顶、发际线或掉发记录照就能继续分析。"
+    },
+    "tags": ["建议重拍", "未识别", "别焦虑"],
+    "daily_task": {
+      "name": "重新拍一张头发照",
+      "description": "选择头顶、发际线、梳子或枕头掉发场景，保持画面清晰。",
+      "exp_reward": 0
+    },
+    "trend_hint": "本次不计入趋势，避免影响历史对比。",
+    "fallback_code": "NO_HAIR_CONTENT",
+    "can_save_record": false,
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。"
+  }
+}

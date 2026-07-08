@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diaoleme.demo/schemas/hair-analysis-response.schema.json",
+  "title": "HairAnalysisResponse",
+  "description": "Response schema for POST /api/hair-analysis. Entertainment-only; not a medical diagnosis.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "success",
+    "analysis_id",
+    "image_type",
+    "image_quality",
+    "entertainment_result",
+    "tags",
+    "daily_task",
+    "trend_hint",
+    "fallback_code",
+    "can_save_record",
+    "disclaimer"
+  ],
+  "properties": {
+    "success": { "type": "boolean" },
+    "analysis_id": { "type": "string", "minLength": 1 },
+    "image_type": {
+      "type": "string",
+      "enum": ["hairline", "top", "shedding", "other"]
+    },
+    "image_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "level", "issues"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "level": {
+          "type": "string",
+          "enum": ["good", "usable", "poor", "unusable"]
+        },
+        "issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "entertainment_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "level", "title", "summary", "roast", "encouragement"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "level": {
+          "type": "string",
+          "enum": ["legend", "stable", "sleep_needed", "dont_panic", "image_retry"]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "roast": { "type": "string", "minLength": 1 },
+        "encouragement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 3,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "daily_task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "exp_reward"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "exp_reward": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "trend_hint": { "type": "string" },
+    "fallback_code": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "LOW_IMAGE_QUALITY",
+        "IMAGE_TOO_BLURRY",
+        "IMAGE_TOO_DARK",
+        "NO_HAIR_CONTENT",
+        "MODEL_TIMEOUT",
+        "MODEL_NON_JSON",
+        "API_QUOTA_EXCEEDED",
+        "CONTENT_BLOCKED",
+        "UNKNOWN_ERROR"
+      ]
+    },
+    "can_save_record": { "type": "boolean" },
+    "disclaimer": {
+      "type": "string",
+      "const": "本结果仅用于娱乐和习惯记录，不构成医疗建议。"
+    }
+  }
+}
