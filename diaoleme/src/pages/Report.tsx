@@ -17,6 +17,7 @@ export default function Report() {
     tags,
     dailyTask,
     disclaimer,
+    sourceLabel,
     count,
     thickness,
     suggestions,
@@ -30,6 +31,7 @@ export default function Report() {
       tags: s.tags,
       dailyTask: s.dailyTask,
       disclaimer: s.disclaimer,
+      sourceLabel: s.sourceLabel,
       count: s.count,
       thickness: s.thickness,
       suggestions: s.suggestions,
@@ -56,6 +58,9 @@ export default function Report() {
       </motion.div>
 
       <StickerCard accent="pink">
+        <div className="mb-3 inline-flex rounded-full bg-white/65 px-3 py-1 text-[11px] font-medium text-coffee/60">
+          {sourceLabel}
+        </div>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-coffee/50 mb-1">娱乐状态分</p>

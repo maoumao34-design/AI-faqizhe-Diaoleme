@@ -1,13 +1,13 @@
 import axios from 'axios'
-import type { AnalysisResult } from '../types'
+import type { AnalysisResult, AnalysisSource } from '../types'
 import { MODEL_API_CONFIG } from './config'
 
 export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
 
-const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不构成医学诊断或治疗建议。'
+const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
 
 /**
- * 调用分析接口生成娱乐化反馈。未配置接口时自动使用可替换 mock，保证 demo 闭环可演示。
+ * 调用分析接口生成娱乐化反馈。未配置接口时自动使用可替换 demo 兜底结果，保证演示闭环可跑通。
  */
 export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMode()): Promise<AnalysisResult> {
   validateImageFile(file)
@@ -18,14 +18,14 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
   }
 
   if (mode === 'mock-success') {
-    return mockResult(file)
+    return mockResult(file, 'mock')
   }
 
   const { url, apiKey, model, systemPrompt, timeout, useBase64 } = MODEL_API_CONFIG
 
   if (!url || !apiKey || url.includes('your-api-endpoint') || apiKey.includes('your-api-key')) {
-    console.warn('[model] API 未配置，使用本地 mock 数据。请在 src/services/config.ts 填入 url 和 apiKey。')
-    return mockResult(file)
+    console.warn('[model] API 未配置，使用 demo 兜底结果。请在 src/services/config.ts 填入 url 和 apiKey。')
+    return mockResult(file, 'fallback')
   }
 
   try {
@@ -41,7 +41,7 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
             {
               role: 'user',
               content: [
-                { type: 'text', text: '请分析这张掉发或头发状态照片，输出约定 JSON。' },
+                { type: 'text', text: '请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。' },
                 { type: 'image_url', image_url: { url: base64 } },
               ],
             },
@@ -63,7 +63,7 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
       })
     }
 
-    return normalize(parseResponse(resp.data))
+    return normalize(parseResponse(resp.data), 'api')
   } catch (err) {
     console.error('[model] 分析接口请求失败：', err)
     throw err
@@ -84,7 +84,7 @@ export function validateImageFile(file: File) {
   if (file.size <= 0) throw new Error('empty_file')
 }
 
-/** 从大模型响应里提取 JSON（兼容 choices[0].message.content 直接输出和工具调用） */
+/** 从接口响应里提取 JSON（兼容 choices[0].message.content 直接输出和工具调用） */
 function parseResponse(data: any): Partial<AnalysisResult> {
   try {
     let text = ''
@@ -109,11 +109,11 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
-function normalize(data: Partial<AnalysisResult>): AnalysisResult {
+function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.source || 'api'): AnalysisResult {
   const score = typeof data.score === 'number' ? Math.max(0, Math.min(100, Math.round(data.score))) : 66
   const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0
     ? data.suggestions.slice(0, 5).map(String)
-    : [data.daily_task || '今晚给头皮放个假，早点睡 30 分钟']
+    : [data.daily_task || '今晚给自己留 30 分钟放松时间']
   const tags = Array.isArray(data.tags) && data.tags.length > 0
     ? data.tags.slice(0, 4).map(String)
     : buildTags(score)
@@ -127,6 +127,8 @@ function normalize(data: Partial<AnalysisResult>): AnalysisResult {
     tags,
     daily_task: safeText(data.daily_task, suggestions[0]),
     disclaimer: safeText(data.disclaimer, DEFAULT_DISCLAIMER),
+    source,
+    source_label: sourceLabel(source),
     count: data.count === '少量' || data.count === '偏多' ? data.count : '中等',
     thickness: data.thickness === '粗硬' || data.thickness === '细软' ? data.thickness : '正常',
     suggestions,
@@ -143,7 +145,13 @@ function buildTags(score: number) {
   return ['需要抱抱', '从容记录', '温柔养成']
 }
 
-function mockResult(file?: File): Promise<AnalysisResult> {
+function sourceLabel(source: AnalysisSource) {
+  if (source === 'api') return 'AI 分析结果'
+  if (source === 'fallback') return 'Demo 兜底结果'
+  return 'Demo mock 结果'
+}
+
+function mockResult(file?: File, source: AnalysisSource = 'mock'): Promise<AnalysisResult> {
   const fileHint = file?.name ? `已读取「${file.name.slice(0, 18)}」` : '已读取今天的照片'
   return new Promise((resolve) =>
     setTimeout(() => {
@@ -154,14 +162,16 @@ function mockResult(file?: File): Promise<AnalysisResult> {
         roast: '头发们像下班高峰的小电驴，数量有点存在感，但还没堵成一条街。',
         encouragement: '不用和每根头发较劲，能记录下来已经赢过昨天的自己啦。',
         tags: ['今日好梳', '轻松观察', '早睡加分'],
-        daily_task: '今晚睡前做 2 分钟头皮轻按摩，再给手机设一个早睡提醒。',
+        daily_task: '今晚睡前做 2 分钟放松呼吸，再给手机设一个早睡提醒。',
         disclaimer: DEFAULT_DISCLAIMER,
+        source,
+        source_label: sourceLabel(source),
         count: '中等',
         thickness: '正常',
         suggestions: [
-          '今晚提前 30 分钟睡觉',
+          '今晚提前 30 分钟进入休息模式',
           '洗头时水温尽量温和',
-          '睡前做 2 分钟头皮轻按摩',
+          '睡前做 2 分钟放松呼吸',
         ],
       })
     }, 1200),

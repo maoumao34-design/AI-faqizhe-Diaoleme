@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { AnalysisResult, HairStyle } from '../types'
+import type { AnalysisResult, AnalysisSource, HairStyle } from '../types'
 
 export interface ReportRecord {
   id: string          // 时间戳唯一键，取代日期去重
@@ -13,6 +13,8 @@ export interface ReportRecord {
   tags: string[]
   daily_task: string
   disclaimer: string
+  source: AnalysisSource
+  source_label: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -27,6 +29,8 @@ interface UserState {
   tags: string[]
   dailyTask: string
   disclaimer: string
+  source: AnalysisSource
+  sourceLabel: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -45,7 +49,7 @@ interface UserState {
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
-const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不构成医学诊断或治疗建议。'
+const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
 
 export const useUserStore = create<UserState>()(
   persist(
@@ -58,6 +62,8 @@ export const useUserStore = create<UserState>()(
       tags: [],
       dailyTask: '完成一次今日记录',
       disclaimer: DEFAULT_DISCLAIMER,
+      source: 'mock',
+      sourceLabel: '等待分析',
       count: '中等',
       thickness: '正常',
       suggestions: [],
@@ -76,6 +82,8 @@ export const useUserStore = create<UserState>()(
           tags: r.tags,
           dailyTask: r.daily_task,
           disclaimer: r.disclaimer,
+          source: r.source,
+          sourceLabel: r.source_label,
           count: r.count,
           thickness: r.thickness,
           suggestions: r.suggestions,
@@ -93,6 +101,8 @@ export const useUserStore = create<UserState>()(
             tags: rec.tags,
             dailyTask: rec.daily_task,
             disclaimer: rec.disclaimer,
+            source: rec.source,
+            sourceLabel: rec.source_label,
             count: rec.count,
             thickness: rec.thickness,
             suggestions: rec.suggestions,
@@ -114,6 +124,8 @@ export const useUserStore = create<UserState>()(
           tags: latest.tags,
           dailyTask: latest.daily_task,
           disclaimer: latest.disclaimer,
+          source: latest.source,
+          sourceLabel: latest.source_label,
           count: latest.count,
           thickness: latest.thickness,
           suggestions: latest.suggestions,
@@ -155,6 +167,8 @@ export const useUserStore = create<UserState>()(
           tags: [],
           dailyTask: '完成一次今日记录',
           disclaimer: DEFAULT_DISCLAIMER,
+          source: 'mock',
+          sourceLabel: '等待分析',
           count: '中等',
           thickness: '正常',
           suggestions: [],

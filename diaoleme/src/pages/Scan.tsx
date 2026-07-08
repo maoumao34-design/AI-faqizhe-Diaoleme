@@ -69,6 +69,8 @@ export default function Scan() {
         tags: result.tags,
         daily_task: result.daily_task,
         disclaimer: result.disclaimer,
+        source: result.source,
+        source_label: result.source_label,
         count: result.count,
         thickness: result.thickness,
         suggestions: result.suggestions,
@@ -189,7 +191,7 @@ export default function Scan() {
         <div className="mt-6 mb-8">
           <StickerCard accent="cream">
             <p className="text-xs leading-relaxed text-center text-coffee/60">
-              小贴士：光线充足、画面别太糊，反馈会更适合展示。结果只做娱乐化记录，不做医学判断。
+              小贴士：未配置接口时使用本地/demo 兜底演示；接入分析接口时，图片仅用于本次分析请求。结果只做娱乐化记录，不做医学判断。
             </p>
           </StickerCard>
         </div>
