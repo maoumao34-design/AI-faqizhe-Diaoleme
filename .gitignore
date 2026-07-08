@@ -26,3 +26,6 @@ Thumbs.db
 !.vscode/settings.json
 .idea/
 .claude/
+
+# Local demo uploads
+backend/uploads/
