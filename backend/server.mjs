@@ -7,90 +7,111 @@ import { fileURLToPath } from 'node:url'
 const MAX_BODY_BYTES = 8 * 1024 * 1024
 const UPLOAD_DIR = fileURLToPath(new URL('./uploads/', import.meta.url))
 const PORT = Number(process.env.PORT || 8787)
+const PRIMARY_ANALYSIS_PATH = '/api/hair-analysis'
 
 const SCENARIOS = {
   success: {
     httpStatus: 200,
-    analysis_status: 'completed',
-    fallback_code: null,
+    success: true,
+    fallbackCode: null,
+    record_status: 'demo_mock_completed',
     score: 86,
     title: '今日发量守护者',
     summary: '这张记录看起来清爽有精神，今天的头发小伙伴状态在线。',
     roast: '发丝们开会很守秩序，没有上演离家出走大戏。',
     encouragement: '继续轻松记录就好，保持这个节奏很适合 demo 展示。',
+    image_quality: 'clear',
     tags: ['清爽', '稳定', '元气在线'],
-    daily_task: {
+    task: {
       name: '今晚早点睡',
       description: '给头发小伙伴一点安静休息时间。',
       exp_reward: 12,
     },
+    growthDelta: {
+      exp_added: 12,
+      current_level: 1,
+      streak_days: 1,
+    },
   },
   low_quality: {
     httpStatus: 200,
-    analysis_status: 'completed_with_notes',
-    fallback_code: 'LOW_QUALITY_IMAGE',
+    success: true,
+    fallbackCode: 'LOW_QUALITY_IMAGE',
+    record_status: 'demo_mock_saved_with_notes',
     score: 58,
     title: '模糊也努力奖',
     summary: '图片有点暗或不够清楚，但这次记录已经成功保存。',
     roast: '镜头像刚睡醒，头发小伙伴也有点害羞。',
     encouragement: '下次试试靠近一点、光线亮一点，结果页会更好看。',
+    image_quality: 'low_light_or_blurry',
     tags: ['已记录', '光线偏暗', '下次更清楚'],
-    daily_task: {
+    task: {
       name: '拍照补光挑战',
       description: '下次记录时找一盏温柔的灯帮忙。',
       exp_reward: 8,
     },
+    growthDelta: {
+      exp_added: 8,
+      current_level: 1,
+      streak_days: 1,
+    },
   },
   analysis_failed: {
     httpStatus: 200,
-    analysis_status: 'fallback',
-    fallback_code: 'MOCK_ANALYSIS_FALLBACK',
+    success: false,
+    fallbackCode: 'MOCK_ANALYSIS_FALLBACK',
+    record_status: 'demo_mock_fallback',
     score: 50,
     title: '发丝临时休息站',
-    summary: '这次分析暂时开小差了，但记录没有丢，先给你一个轻量反馈。',
+    summary: '这次 demo mock 分析暂时开小差了，但记录没有丢，先给你一个轻量反馈。',
     roast: '分析小机器人去倒水了，回来继续营业。',
     encouragement: '不用担心，demo 场景会稳定返回可展示结果。',
+    image_quality: 'unknown',
     tags: ['已保存', '临时反馈', '稍后可重试'],
-    daily_task: {
+    task: {
       name: '喝水打卡',
       description: '先喝一杯水，给今天加一点轻松感。',
       exp_reward: 5,
+    },
+    growthDelta: {
+      exp_added: 5,
+      current_level: 1,
+      streak_days: 1,
     },
   },
 }
 
 function jsonResponse(res, statusCode, payload) {
-  const body = JSON.stringify(payload, null, 2)
   res.writeHead(statusCode, {
     'content-type': 'application/json; charset=utf-8',
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET,POST,OPTIONS',
     'access-control-allow-headers': 'content-type',
   })
-  res.end(body)
+  res.end(JSON.stringify(payload, null, 2))
 }
 
-function buildAnalysisResult(scenario, requestMeta = {}) {
+function buildAnalysisResponse(scenario, requestMeta = {}) {
   const data = SCENARIOS[scenario] || SCENARIOS.success
+  const imageUrl = requestMeta.image_url || requestMeta.uploaded_file?.url || null
   return {
-    request_id: `ana_${randomUUID()}`,
-    created_at: new Date().toISOString(),
-    analysis_status: data.analysis_status,
-    input: {
-      image_url: requestMeta.image_url || null,
-      uploaded_file: requestMeta.uploaded_file || null,
-      note: requestMeta.note || '',
-    },
+    success: data.success,
+    fallbackCode: data.fallbackCode,
+    record_id: `rec_${randomUUID()}`,
+    analysisId: `ana_${randomUUID()}`,
+    record_status: data.record_status,
+    image_url: imageUrl,
     result: {
       score: data.score,
       title: data.title,
       summary: data.summary,
+      task: data.task,
+      growthDelta: data.growthDelta,
+      tags: data.tags,
+      disclaimer: '当前为 demo mock 结果，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
       roast: data.roast,
       encouragement: data.encouragement,
-      tags: data.tags,
-      daily_task: data.daily_task,
-      disclaimer: '本结果仅用于娱乐记录和习惯养成展示，不代表医学判断。',
-      fallback_code: data.fallback_code,
+      image_quality: data.image_quality,
     },
   }
 }
@@ -163,8 +184,7 @@ async function saveUploadedFile(file) {
   await mkdir(UPLOAD_DIR, { recursive: true })
   const safeExt = extname(file.filename).slice(0, 12) || '.bin'
   const storedName = `${Date.now()}-${randomUUID()}${safeExt}`
-  const storagePath = join(UPLOAD_DIR, storedName)
-  await writeFile(storagePath, file.buffer)
+  await writeFile(join(UPLOAD_DIR, storedName), file.buffer)
   return {
     field: file.field,
     original_name: file.filename,
@@ -175,31 +195,39 @@ async function saveUploadedFile(file) {
   }
 }
 
-function buildFallbackError(fallbackCode, message) {
+function buildFallbackResponse(fallbackCode, message, imageUrl = null) {
   return {
-    request_id: `ana_${randomUUID()}`,
-    created_at: new Date().toISOString(),
-    analysis_status: 'fallback',
+    success: false,
+    fallbackCode,
+    record_id: `rec_${randomUUID()}`,
+    analysisId: `ana_${randomUUID()}`,
+    record_status: 'demo_mock_fallback',
+    image_url: imageUrl,
     error: { code: fallbackCode, message },
     result: {
       score: 50,
       title: '记录先收下',
       summary: message,
-      roast: '图片入口有点迷路，不过结果页不会空手而归。',
-      encouragement: '换个图片或传入 image_url 再试一次就好。',
-      tags: ['待补图', '可重试'],
-      daily_task: {
+      task: {
         name: '重新记录一下',
         description: '选择一张更清楚的照片再来一次。',
         exp_reward: 0,
       },
-      disclaimer: '本结果仅用于娱乐记录和习惯养成展示，不代表医学判断。',
-      fallback_code: fallbackCode,
+      growthDelta: {
+        exp_added: 0,
+        current_level: 1,
+        streak_days: 0,
+      },
+      tags: ['待补图', '可重试'],
+      disclaimer: '当前为 demo mock fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
+      roast: '图片入口有点迷路，不过结果页不会空手而归。',
+      encouragement: '换个图片或传入 image_url 再试一次就好。',
+      image_quality: 'missing_or_unreadable',
     },
   }
 }
 
-async function handleAnalyze(req, res) {
+async function handleHairAnalysis(req, res) {
   try {
     const contentType = req.headers['content-type'] || ''
     const body = await readBody(req)
@@ -214,11 +242,10 @@ async function handleAnalyze(req, res) {
     } else if (contentType.includes('application/json') || !contentType) {
       payload = parseJsonBody(body)
     } else {
-      return jsonResponse(res, 415, buildFallbackError('UNSUPPORTED_CONTENT_TYPE', '当前仅支持 JSON 或 multipart/form-data。'))
+      return jsonResponse(res, 415, buildFallbackResponse('UNSUPPORTED_CONTENT_TYPE', '当前仅支持 JSON 或 multipart/form-data。'))
     }
 
     const imageUrl = typeof payload.image_url === 'string' ? payload.image_url.trim() : ''
-    const note = typeof payload.note === 'string' ? payload.note : ''
     const scenario = typeof payload.mock_scenario === 'string'
       ? payload.mock_scenario
       : typeof payload.scenario === 'string'
@@ -226,22 +253,21 @@ async function handleAnalyze(req, res) {
         : 'success'
 
     if (!imageUrl && !uploadedFile) {
-      return jsonResponse(res, 400, buildFallbackError('MISSING_IMAGE', '请上传 image 文件，或在请求体中提供 image_url。'))
+      return jsonResponse(res, 400, buildFallbackResponse('MISSING_IMAGE', '请上传 image 文件，或在请求体中提供 image_url。'))
     }
 
-    const result = buildAnalysisResult(scenario, {
-      image_url: imageUrl || uploadedFile?.url,
+    const response = buildAnalysisResponse(scenario, {
+      image_url: imageUrl,
       uploaded_file: uploadedFile,
-      note,
     })
-    return jsonResponse(res, SCENARIOS[scenario]?.httpStatus || 200, result)
+    return jsonResponse(res, SCENARIOS[scenario]?.httpStatus || 200, response)
   } catch (error) {
     const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'
     const status = code === 'BODY_TOO_LARGE' ? 413 : 400
     const message = code === 'BODY_TOO_LARGE'
       ? '图片太大了，demo 接口当前最多接收 8MB。'
       : '请求内容解析失败，请检查 JSON 或表单字段。'
-    return jsonResponse(res, status, buildFallbackError(code, message))
+    return jsonResponse(res, status, buildFallbackResponse(code, message))
   }
 }
 
@@ -263,12 +289,14 @@ export function createApp() {
       return jsonResponse(res, 200, { ok: true, service: 'diaoleme-mock-api' })
     }
 
-    if (req.method === 'POST' && (url.pathname === '/api/analyze' || url.pathname === '/api/analysis')) {
-      return handleAnalyze(req, res)
+    if (req.method === 'POST' && url.pathname === PRIMARY_ANALYSIS_PATH) {
+      return handleHairAnalysis(req, res)
     }
 
     return jsonResponse(res, 404, {
-      error: { code: 'NOT_FOUND', message: '接口不存在，请使用 POST /api/analyze。' },
+      success: false,
+      fallbackCode: 'NOT_FOUND',
+      error: { code: 'NOT_FOUND', message: `接口不存在，请使用 POST ${PRIMARY_ANALYSIS_PATH}。` },
     })
   })
 }
@@ -276,5 +304,6 @@ export function createApp() {
 if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, '/')}`) {
   createApp().listen(PORT, () => {
     console.log(`Diaoleme mock API listening on http://localhost:${PORT}`)
+    console.log(`Primary analysis endpoint: POST ${PRIMARY_ANALYSIS_PATH}`)
   })
 }
