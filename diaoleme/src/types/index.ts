@@ -2,8 +2,19 @@ export type Mood = 'great' | 'good' | 'neutral' | 'sad'
 
 export type HairStyle = 'none' | 'short' | 'medium' | 'long' | 'curly' | 'bun'
 
+export type AnalysisSource = 'api' | 'mock' | 'fallback'
+
 export interface AnalysisResult {
   score: number
+  title: string
+  summary: string
+  roast: string
+  encouragement: string
+  tags: string[]
+  daily_task: string
+  disclaimer: string
+  source: AnalysisSource
+  source_label: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]

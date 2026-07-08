@@ -1,11 +1,20 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { AnalysisResult, HairStyle } from '../types'
+import type { AnalysisResult, AnalysisSource, HairStyle } from '../types'
 
 export interface ReportRecord {
   id: string          // 时间戳唯一键，取代日期去重
   date: string        // YYYY-MM-DD，仅用于显示
   score: number
+  title: string
+  summary: string
+  roast: string
+  encouragement: string
+  tags: string[]
+  daily_task: string
+  disclaimer: string
+  source: AnalysisSource
+  source_label: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -13,6 +22,15 @@ export interface ReportRecord {
 
 interface UserState {
   dropScore: number | null
+  title: string
+  summary: string
+  roast: string
+  encouragement: string
+  tags: string[]
+  dailyTask: string
+  disclaimer: string
+  source: AnalysisSource
+  sourceLabel: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -31,11 +49,21 @@ interface UserState {
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
+const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
 
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
       dropScore: null,
+      title: '等待今日称号',
+      summary: '上传一张照片，黏土小人会给你一份轻松反馈。',
+      roast: '今天还没有吐槽素材，小人正在搓手等待。',
+      encouragement: '先记录一下，就已经是养成的第一步。',
+      tags: [],
+      dailyTask: '完成一次今日记录',
+      disclaimer: DEFAULT_DISCLAIMER,
+      source: 'mock',
+      sourceLabel: '等待分析',
       count: '中等',
       thickness: '正常',
       suggestions: [],
@@ -47,6 +75,15 @@ export const useUserStore = create<UserState>()(
       setAnalysis: (r) =>
         set({
           dropScore: r.score,
+          title: r.title,
+          summary: r.summary,
+          roast: r.roast,
+          encouragement: r.encouragement,
+          tags: r.tags,
+          dailyTask: r.daily_task,
+          disclaimer: r.disclaimer,
+          source: r.source,
+          sourceLabel: r.source_label,
           count: r.count,
           thickness: r.thickness,
           suggestions: r.suggestions,
@@ -57,6 +94,15 @@ export const useUserStore = create<UserState>()(
         if (rec) {
           set({
             dropScore: rec.score,
+            title: rec.title,
+            summary: rec.summary,
+            roast: rec.roast,
+            encouragement: rec.encouragement,
+            tags: rec.tags,
+            dailyTask: rec.daily_task,
+            disclaimer: rec.disclaimer,
+            source: rec.source,
+            sourceLabel: rec.source_label,
             count: rec.count,
             thickness: rec.thickness,
             suggestions: rec.suggestions,
@@ -71,6 +117,15 @@ export const useUserStore = create<UserState>()(
         const avg = Math.round(recs.reduce((s, r) => s + r.score, 0) / recs.length)
         set({
           dropScore: avg,
+          title: latest.title,
+          summary: latest.summary,
+          roast: latest.roast,
+          encouragement: latest.encouragement,
+          tags: latest.tags,
+          dailyTask: latest.daily_task,
+          disclaimer: latest.disclaimer,
+          source: latest.source,
+          sourceLabel: latest.source_label,
           count: latest.count,
           thickness: latest.thickness,
           suggestions: latest.suggestions,
@@ -105,6 +160,15 @@ export const useUserStore = create<UserState>()(
       resetAll: () => {
         set({
           dropScore: null,
+          title: '等待今日称号',
+          summary: '上传一张照片，黏土小人会给你一份轻松反馈。',
+          roast: '今天还没有吐槽素材，小人正在搓手等待。',
+          encouragement: '先记录一下，就已经是养成的第一步。',
+          tags: [],
+          dailyTask: '完成一次今日记录',
+          disclaimer: DEFAULT_DISCLAIMER,
+          source: 'mock',
+          sourceLabel: '等待分析',
           count: '中等',
           thickness: '正常',
           suggestions: [],
