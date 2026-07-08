@@ -181,7 +181,7 @@ function EmptyState() {
 
       <p className="mt-8 text-sm text-coffee/70 text-center leading-relaxed">
         先去「拍摄」拍第一张掉发记录<br />
-        黏土小人会每天帮你做健康档案 🌱
+        黏土小人会每天帮你存一枚小勋章 🌱
       </p>
 
       <div className="h-32" />
@@ -369,9 +369,9 @@ function DetailCard({ record }: { record: ReportRecord }) {
         {score}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-xs" style={{ color: 'rgba(58,47,40,0.8)' }}>{record.count}掉落 · {record.thickness}</p>
+        <p className="text-xs" style={{ color: 'rgba(58,47,40,0.8)' }}>{record.title || `${record.count}掉落 · ${record.thickness}`}</p>
         <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(58,47,40,0.5)' }}>
-          {record.suggestions[0] || '—'}
+          {record.daily_task || record.suggestions[0] || '—'}
         </p>
       </div>
       <span className="text-[10px] font-mono shrink-0" style={{ color: 'rgba(58,47,40,0.35)' }}>

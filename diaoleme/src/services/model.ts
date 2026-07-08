@@ -2,16 +2,30 @@ import axios from 'axios'
 import type { AnalysisResult } from '../types'
 import { MODEL_API_CONFIG } from './config'
 
+export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
+
+const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不构成医学诊断或治疗建议。'
+
 /**
- * 调用大模型分析用户上传的头顶照片
- * 支持 base64 JSON（OpenAI qwen-vl 等 vision 接口）或 multipart/form-data
+ * 调用分析接口生成娱乐化反馈。未配置接口时自动使用可替换 mock，保证 demo 闭环可演示。
  */
-export async function analyzePhoto(file: File): Promise<AnalysisResult> {
+export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMode()): Promise<AnalysisResult> {
+  validateImageFile(file)
+
+  if (mode === 'mock-fail') {
+    await wait(900)
+    throw new Error('mock_fail')
+  }
+
+  if (mode === 'mock-success') {
+    return mockResult(file)
+  }
+
   const { url, apiKey, model, systemPrompt, timeout, useBase64 } = MODEL_API_CONFIG
 
   if (!url || !apiKey || url.includes('your-api-endpoint') || apiKey.includes('your-api-key')) {
     console.warn('[model] API 未配置，使用本地 mock 数据。请在 src/services/config.ts 填入 url 和 apiKey。')
-    return mockResult()
+    return mockResult(file)
   }
 
   try {
@@ -27,7 +41,7 @@ export async function analyzePhoto(file: File): Promise<AnalysisResult> {
             {
               role: 'user',
               content: [
-                { type: 'text', text: '请分析这张头发掉落的照片。' },
+                { type: 'text', text: '请分析这张掉发或头发状态照片，输出约定 JSON。' },
                 { type: 'image_url', image_url: { url: base64 } },
               ],
             },
@@ -51,9 +65,23 @@ export async function analyzePhoto(file: File): Promise<AnalysisResult> {
 
     return normalize(parseResponse(resp.data))
   } catch (err) {
-    console.error('[model] 大模型请求失败，回退到 mock：', err)
-    return mockResult()
+    console.error('[model] 分析接口请求失败：', err)
+    throw err
   }
+}
+
+export function getAnalyzeMode(): AnalyzeMode {
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const mode = params?.get('mock')
+  if (mode === 'success') return 'mock-success'
+  if (mode === 'fail') return 'mock-fail'
+  return 'auto'
+}
+
+export function validateImageFile(file: File) {
+  if (!file) throw new Error('empty_file')
+  if (!file.type.startsWith('image/')) throw new Error('not_image')
+  if (file.size <= 0) throw new Error('empty_file')
 }
 
 /** 从大模型响应里提取 JSON（兼容 choices[0].message.content 直接输出和工具调用） */
@@ -65,7 +93,6 @@ function parseResponse(data: any): Partial<AnalysisResult> {
     } else if (typeof data === 'object') {
       text = JSON.stringify(data)
     }
-    // 代码块包裹的情况 ```json ... ```
     text = text.replace(/```json\s*|\s*```/g, '').trim()
     return JSON.parse(text)
   } catch {
@@ -76,43 +103,73 @@ function parseResponse(data: any): Partial<AnalysisResult> {
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      // 已经是 data:image/...;base64,xxx 格式，直接用于 OpenAI vision
-      resolve(result)
-    }
+    reader.onload = () => resolve(reader.result as string)
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
 }
 
 function normalize(data: Partial<AnalysisResult>): AnalysisResult {
+  const score = typeof data.score === 'number' ? Math.max(0, Math.min(100, Math.round(data.score))) : 66
+  const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0
+    ? data.suggestions.slice(0, 5).map(String)
+    : [data.daily_task || '今晚给头皮放个假，早点睡 30 分钟']
+  const tags = Array.isArray(data.tags) && data.tags.length > 0
+    ? data.tags.slice(0, 4).map(String)
+    : buildTags(score)
+
   return {
-    score: typeof data.score === 'number' ? Math.max(0, Math.min(100, data.score)) : 50,
+    score,
+    title: safeText(data.title, score >= 70 ? '发丝巡逻队长' : score >= 45 ? '头毛观察员' : '发量守护实习生'),
+    summary: safeText(data.summary, score >= 70 ? '今天的头毛队形挺稳，适合继续轻松记录。' : '今天有一点小波动，但已经被你认真捕捉到了。'),
+    roast: safeText(data.roast, score >= 70 ? '发丝们排队下班，还挺讲秩序。' : '头发像开了早会，讨论得稍微热闹了一点。'),
+    encouragement: safeText(data.encouragement, '别紧张，记录本身就很棒，黏土小人会陪你慢慢养成节奏。'),
+    tags,
+    daily_task: safeText(data.daily_task, suggestions[0]),
+    disclaimer: safeText(data.disclaimer, DEFAULT_DISCLAIMER),
     count: data.count === '少量' || data.count === '偏多' ? data.count : '中等',
     thickness: data.thickness === '粗硬' || data.thickness === '细软' ? data.thickness : '正常',
-    suggestions: Array.isArray(data.suggestions) && data.suggestions.length > 0
-      ? data.suggestions.slice(0, 5)
-      : ['请保持健康作息，注意饮食均衡'],
+    suggestions,
   }
 }
 
-function mockResult(): Promise<AnalysisResult> {
+function safeText(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function buildTags(score: number) {
+  if (score >= 75) return ['队形稳定', '心态在线', '今日好梳']
+  if (score >= 50) return ['轻微波动', '继续观察', '早点睡派']
+  return ['需要抱抱', '从容记录', '温柔养成']
+}
+
+function mockResult(file?: File): Promise<AnalysisResult> {
+  const fileHint = file?.name ? `已读取「${file.name.slice(0, 18)}」` : '已读取今天的照片'
   return new Promise((resolve) =>
     setTimeout(() => {
       resolve({
-        score: 68,
+        score: 72,
+        title: '发际线守护者',
+        summary: `${fileHint}，画面里的头发队伍整体比较淡定，今天适合给自己发一枚“坚持观察”小勋章。`,
+        roast: '头发们像下班高峰的小电驴，数量有点存在感，但还没堵成一条街。',
+        encouragement: '不用和每根头发较劲，能记录下来已经赢过昨天的自己啦。',
+        tags: ['今日好梳', '轻松观察', '早睡加分'],
+        daily_task: '今晚睡前做 2 分钟头皮轻按摩，再给手机设一个早睡提醒。',
+        disclaimer: DEFAULT_DISCLAIMER,
         count: '中等',
         thickness: '正常',
         suggestions: [
           '今晚提前 30 分钟睡觉',
-          '洗头时水温不超过 38°C',
-          '使用含生姜成分的洗发水',
-          '每天做 5 分钟头皮按摩',
+          '洗头时水温尽量温和',
+          '睡前做 2 分钟头皮轻按摩',
         ],
       })
-    }, 1500),
+    }, 1200),
   )
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export const HAIRSTYLE_CATALOG: {
