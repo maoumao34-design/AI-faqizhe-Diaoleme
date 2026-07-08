@@ -1,0 +1,10 @@
+{
+  "name": "diaoleme-mock-api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "test": "node test-api.mjs"
+  }
+}
