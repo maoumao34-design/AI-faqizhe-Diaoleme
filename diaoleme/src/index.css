@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+@theme {
+  --color-cream: #fff8f0;
+  --color-cream-soft: #fdf3e7;
+  --color-pink: #f5c6cb;
+  --color-pink-soft: #fbe6e8;
+  --color-moss: #9bbf8a;
+  --color-moss-deep: #7fa66e;
+  --color-tangerine: #e67a5a;
+  --color-coffee: #3a2f28;
+  --color-latte: #e8d8c8;
+
+  --font-display: 'ZCOOL KuaiLe', 'Noto Sans SC', sans-serif;
+  --font-body: 'Noto Sans SC', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background: linear-gradient(180deg, #f5ede3 0%, #e8d8c8 100%);
+  color: var(--color-coffee);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+button:focus,
+button:active,
+button:focus-visible,
+a:focus,
+a:active,
+a:focus-visible,
+[role="button"]:focus,
+[role="button"]:active {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #f5c6cb;
+  color: #3a2f28;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
