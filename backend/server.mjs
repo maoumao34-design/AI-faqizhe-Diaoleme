@@ -1,13 +1,28 @@
 import { createServer } from 'node:http'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { existsSync, readFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024
 const UPLOAD_DIR = fileURLToPath(new URL('./uploads/', import.meta.url))
+
+loadDotEnv()
+
 const PORT = Number(process.env.PORT || 8787)
 const PRIMARY_ANALYSIS_PATH = '/api/hair-analysis'
+const SILICONFLOW_URL = 'https://api.siliconflow.cn/v1/chat/completions'
+const SILICONFLOW_MODEL = process.env.SILICONFLOW_MODEL || 'Qwen/Qwen3-VL-32B-Instruct'
+const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 30000)
+
+const SYSTEM_PROMPT =
+  '你是“掉了么”的趣味头发记录陪伴员。用户会上传掉发或头发状态照片。' +
+  '请只基于画面给出轻松、娱乐化、非医学的反馈，不要使用诊断、疾病风险、治疗建议、用药、就医等表达，也不要给出确定性健康判断。' +
+  '请返回严格 JSON，不要返回 Markdown 或解释。JSON 字段为：' +
+  '{"score":0-100,"title":"今日称号","summary":"轻松摘要","roast":"温和吐槽","encouragement":"鼓励",' +
+  '"tags":["趣味标签"],"daily_task":"今日小任务","count":"少量|中等|偏多","thickness":"粗硬|正常|细软",' +
+  '"suggestions":["建议1","建议2","建议3"],"disclaimer":"本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。"}'
 
 const SCENARIOS = {
   success: {
@@ -81,6 +96,22 @@ const SCENARIOS = {
   },
 }
 
+function loadDotEnv() {
+  const envPath = fileURLToPath(new URL('./.env', import.meta.url))
+  if (!existsSync(envPath)) return
+
+  for (const line of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const separator = trimmed.indexOf('=')
+    if (separator <= 0) continue
+    const key = trimmed.slice(0, separator).trim()
+    const rawValue = trimmed.slice(separator + 1).trim()
+    const value = rawValue.replace(/^["']|["']$/g, '')
+    if (!process.env[key]) process.env[key] = value
+  }
+}
+
 function jsonResponse(res, statusCode, payload) {
   res.writeHead(statusCode, {
     'content-type': 'application/json; charset=utf-8',
@@ -101,6 +132,7 @@ function buildAnalysisResponse(scenario, requestMeta = {}) {
     analysisId: `ana_${randomUUID()}`,
     record_status: data.record_status,
     image_url: imageUrl,
+    ai_source: 'mock',
     result: {
       score: data.score,
       title: data.title,
@@ -112,6 +144,12 @@ function buildAnalysisResponse(scenario, requestMeta = {}) {
       roast: data.roast,
       encouragement: data.encouragement,
       image_quality: data.image_quality,
+      source: 'mock',
+      source_label: 'Demo mock 结果',
+      daily_task: data.task.description,
+      count: '中等',
+      thickness: '正常',
+      suggestions: [data.task.description],
     },
   }
 }
@@ -192,25 +230,27 @@ async function saveUploadedFile(file) {
     size: file.buffer.length,
     content_type: file.contentType,
     url: `/uploads/${storedName}`,
+    buffer: file.buffer,
   }
 }
 
-function buildFallbackResponse(fallbackCode, message, imageUrl = null) {
+function buildFallbackResponse(fallbackCode, message, imageUrl = null, options = {}) {
   return {
     success: false,
     fallbackCode,
     record_id: `rec_${randomUUID()}`,
     analysisId: `ana_${randomUUID()}`,
-    record_status: 'demo_mock_fallback',
+    record_status: options.record_status || 'demo_ai_fallback',
     image_url: imageUrl,
+    ai_source: options.ai_source || 'fallback',
     error: { code: fallbackCode, message },
     result: {
       score: 50,
-      title: '记录先收下',
+      title: options.title || '记录先收下',
       summary: message,
       task: {
-        name: '重新记录一下',
-        description: '选择一张更清楚的照片再来一次。',
+        name: options.taskName || '轻松重试一下',
+        description: options.taskDescription || '稍后换张清楚照片，或检查后端 API key 配置后再试。',
         exp_reward: 0,
       },
       growthDelta: {
@@ -218,12 +258,194 @@ function buildFallbackResponse(fallbackCode, message, imageUrl = null) {
         current_level: 1,
         streak_days: 0,
       },
-      tags: ['待补图', '可重试'],
-      disclaimer: '当前为 demo mock fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
-      roast: '图片入口有点迷路，不过结果页不会空手而归。',
-      encouragement: '换个图片或传入 image_url 再试一次就好。',
-      image_quality: 'missing_or_unreadable',
+      tags: options.tags || ['已记录', '可重试'],
+      disclaimer: '当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
+      roast: options.roast || '分析小机器人暂时没连上外援，但结果页不会空手而归。',
+      encouragement: '不用担心，照片记录已经进入演示链路，可以稍后再试真实 AI。',
+      image_quality: options.image_quality || 'unknown',
+      source: 'fallback',
+      source_label: 'AI 兜底结果',
+      daily_task: options.taskDescription || '稍后再试一次真实 AI 分析。',
+      count: '中等',
+      thickness: '正常',
+      suggestions: [
+        '确认 backend/.env 已配置 SILICONFLOW_API_KEY',
+        '确认后端服务正在运行',
+        '稍后重新上传一张清楚照片',
+      ],
     },
+  }
+}
+
+function buildAiResponse(modelData, requestMeta = {}) {
+  const imageUrl = requestMeta.image_url || requestMeta.uploaded_file?.url || null
+  const score = clampScore(modelData.score)
+  const suggestions = normalizeStringArray(modelData.suggestions, [modelData.daily_task || '今晚给自己留 30 分钟放松时间'])
+  const dailyTask = safeText(modelData.daily_task, suggestions[0])
+
+  return {
+    success: true,
+    fallbackCode: null,
+    record_id: `rec_${randomUUID()}`,
+    analysisId: `ana_${randomUUID()}`,
+    record_status: 'ai_completed',
+    image_url: imageUrl,
+    ai_source: 'siliconflow',
+    result: {
+      score,
+      title: safeText(modelData.title, score >= 70 ? '发丝巡逻队长' : '头毛观察员'),
+      summary: safeText(modelData.summary, '今天的头发记录已收到，整体反馈保持轻松观察就好。'),
+      task: {
+        name: dailyTask,
+        description: dailyTask,
+        exp_reward: 12,
+      },
+      growthDelta: {
+        exp_added: 12,
+        current_level: 1,
+        streak_days: 1,
+      },
+      tags: normalizeStringArray(modelData.tags, buildTags(score)).slice(0, 4),
+      disclaimer: safeText(modelData.disclaimer, '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。'),
+      roast: safeText(modelData.roast, '头发小伙伴今天也在认真营业。'),
+      encouragement: safeText(modelData.encouragement, '继续轻松记录就好，保持节奏已经很棒。'),
+      image_quality: safeText(modelData.image_quality, 'ai_observed'),
+      source: 'api',
+      source_label: 'SiliconFlow AI 分析结果',
+      daily_task: dailyTask,
+      count: normalizeEnum(modelData.count, ['少量', '中等', '偏多'], '中等'),
+      thickness: normalizeEnum(modelData.thickness, ['粗硬', '正常', '细软'], '正常'),
+      suggestions,
+    },
+  }
+}
+
+async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
+  const apiKey = process.env.SILICONFLOW_API_KEY?.trim()
+  if (!apiKey) {
+    const err = new Error('Missing SILICONFLOW_API_KEY')
+    err.code = 'MISSING_API_KEY'
+    throw err
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), SILICONFLOW_TIMEOUT_MS)
+  try {
+    const imageContent = uploadedFile
+      ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
+      : imageUrl
+
+    console.log('[hair-analysis] proxying request to SiliconFlow')
+    const response = await fetch(SILICONFLOW_URL, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: SILICONFLOW_MODEL,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。用户备注：${safeText(note, '无')}`,
+              },
+              { type: 'image_url', image_url: { url: imageContent } },
+            ],
+          },
+        ],
+        temperature: 0.7,
+      }),
+    })
+
+    const rawText = await response.text()
+    if (!response.ok) {
+      const err = new Error(`SiliconFlow request failed: ${response.status}`)
+      err.code = response.status === 401 || response.status === 403 ? 'UPSTREAM_AUTH_FAILED' : 'UPSTREAM_FAILED'
+      err.status = response.status
+      err.upstreamBody = rawText.slice(0, 300)
+      throw err
+    }
+
+    let data
+    try {
+      data = JSON.parse(rawText)
+    } catch {
+      const err = new Error('SiliconFlow returned non-JSON response')
+      err.code = 'UPSTREAM_NON_JSON'
+      throw err
+    }
+
+    return extractModelJson(data)
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function extractModelJson(data) {
+  const content = data?.choices?.[0]?.message?.content
+  if (typeof content === 'object' && content) return content
+  if (typeof content !== 'string') {
+    const err = new Error('SiliconFlow response missing message content')
+    err.code = 'UPSTREAM_BAD_SHAPE'
+    throw err
+  }
+
+  const cleaned = content.replace(/```json\s*|```/g, '').trim()
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/)
+    if (match) return JSON.parse(match[0])
+    const err = new Error('SiliconFlow content is not JSON')
+    err.code = 'UPSTREAM_CONTENT_NOT_JSON'
+    throw err
+  }
+}
+
+function buildTags(score) {
+  if (score >= 75) return ['队形稳定', '心态在线', '今日好梳']
+  if (score >= 50) return ['轻微波动', '继续观察', '早点睡派']
+  return ['需要抱抱', '从容记录', '温柔养成']
+}
+
+function clampScore(value) {
+  return typeof value === 'number' ? Math.max(0, Math.min(100, Math.round(value))) : 66
+}
+
+function safeText(value, fallback) {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function normalizeStringArray(value, fallback) {
+  const items = Array.isArray(value) ? value.map(String).filter(Boolean) : []
+  return items.length ? items : fallback
+}
+
+function normalizeEnum(value, allowed, fallback) {
+  return allowed.includes(value) ? value : fallback
+}
+
+function fallbackFromError(error, imageUrl) {
+  if (error?.name === 'AbortError') {
+    return buildFallbackResponse('UPSTREAM_TIMEOUT', 'AI 分析接口这次响应超时了，先给你一个可展示的轻量兜底。', imageUrl)
+  }
+
+  switch (error?.code) {
+    case 'MISSING_API_KEY':
+      return buildFallbackResponse('MISSING_API_KEY', '后端还没有配置 SILICONFLOW_API_KEY，已返回可展示的 demo 兜底。', imageUrl)
+    case 'UPSTREAM_AUTH_FAILED':
+      return buildFallbackResponse('UPSTREAM_AUTH_FAILED', 'SiliconFlow API key 校验失败，请检查 backend/.env 中的 key。', imageUrl)
+    case 'UPSTREAM_NON_JSON':
+    case 'UPSTREAM_BAD_SHAPE':
+    case 'UPSTREAM_CONTENT_NOT_JSON':
+      return buildFallbackResponse('UPSTREAM_BAD_RESPONSE', 'AI 接口返回格式暂时不适合直接展示，先使用轻量兜底结果。', imageUrl)
+    default:
+      return buildFallbackResponse('UPSTREAM_FAILED', 'AI 分析接口暂时没有连上，先返回可展示的 demo 兜底。', imageUrl)
   }
 }
 
@@ -250,17 +472,39 @@ async function handleHairAnalysis(req, res) {
       ? payload.mock_scenario
       : typeof payload.scenario === 'string'
         ? payload.scenario
-        : 'success'
+        : 'ai'
 
     if (!imageUrl && !uploadedFile) {
-      return jsonResponse(res, 400, buildFallbackResponse('MISSING_IMAGE', '请上传 image 文件，或在请求体中提供 image_url。'))
+      return jsonResponse(res, 400, buildFallbackResponse('MISSING_IMAGE', '请上传 image 文件，或在请求体中提供 image_url。', null, {
+        record_status: 'demo_mock_fallback',
+        image_quality: 'missing_or_unreadable',
+      }))
     }
 
-    const response = buildAnalysisResponse(scenario, {
-      image_url: imageUrl,
-      uploaded_file: uploadedFile,
-    })
-    return jsonResponse(res, SCENARIOS[scenario]?.httpStatus || 200, response)
+    if (scenario in SCENARIOS) {
+      const response = buildAnalysisResponse(scenario, {
+        image_url: imageUrl,
+        uploaded_file: uploadedFile,
+      })
+      return jsonResponse(res, SCENARIOS[scenario]?.httpStatus || 200, response)
+    }
+
+    try {
+      const modelData = await callSiliconFlow({
+        imageUrl,
+        uploadedFile,
+        note: typeof payload.note === 'string' ? payload.note : '',
+      })
+      const response = buildAiResponse(modelData, {
+        image_url: imageUrl,
+        uploaded_file: uploadedFile,
+      })
+      console.log('[hair-analysis] proxied request to SiliconFlow successfully')
+      return jsonResponse(res, 200, response)
+    } catch (error) {
+      console.warn(`[hair-analysis] SiliconFlow fallback: ${error?.code || error?.name || 'UNKNOWN'}`)
+      return jsonResponse(res, 200, fallbackFromError(error, imageUrl || uploadedFile?.url || null))
+    }
   } catch (error) {
     const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'
     const status = code === 'BODY_TOO_LARGE' ? 413 : 400
@@ -286,7 +530,7 @@ export function createApp() {
     }
 
     if (req.method === 'GET' && url.pathname === '/api/health') {
-      return jsonResponse(res, 200, { ok: true, service: 'diaoleme-mock-api' })
+      return jsonResponse(res, 200, { ok: true, service: 'diaoleme-ai-proxy' })
     }
 
     if (req.method === 'POST' && url.pathname === PRIMARY_ANALYSIS_PATH) {
@@ -301,9 +545,9 @@ export function createApp() {
   })
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, '/')}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   createApp().listen(PORT, () => {
-    console.log(`Diaoleme mock API listening on http://localhost:${PORT}`)
+    console.log(`Diaoleme AI proxy listening on http://localhost:${PORT}`)
     console.log(`Primary analysis endpoint: POST ${PRIMARY_ANALYSIS_PATH}`)
   })
 }
