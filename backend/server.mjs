@@ -11,7 +11,8 @@ const UPLOAD_DIR = fileURLToPath(new URL('./uploads/', import.meta.url))
 loadDotEnv()
 
 const PORT = Number(process.env.PORT || 8787)
-const PRIMARY_ANALYSIS_PATH = '/api/hair-analysis'
+const PRIMARY_ANALYSIS_PATH = '/api/analyze'
+const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
 const SILICONFLOW_URL = 'https://api.siliconflow.cn/v1/chat/completions'
 const SILICONFLOW_MODEL = process.env.SILICONFLOW_MODEL || 'Qwen/Qwen3-VL-32B-Instruct'
 const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 30000)
@@ -533,7 +534,7 @@ export function createApp() {
       return jsonResponse(res, 200, { ok: true, service: 'diaoleme-ai-proxy' })
     }
 
-    if (req.method === 'POST' && url.pathname === PRIMARY_ANALYSIS_PATH) {
+    if (req.method === 'POST' && (url.pathname === PRIMARY_ANALYSIS_PATH || url.pathname === LEGACY_ANALYSIS_PATH)) {
       return handleHairAnalysis(req, res)
     }
 

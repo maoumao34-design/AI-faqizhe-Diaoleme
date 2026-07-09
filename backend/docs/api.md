@@ -36,7 +36,8 @@ npm run dev
 ## 图片分析
 
 - 接口名称：头发记录图片分析接口
-- 前端公开入口：`POST /api/hair-analysis`
+- 前端公开入口：`POST /api/analyze`
+- 兼容旧入口：`POST /api/hair-analysis`
 - 请求格式：`application/json` 或 `multipart/form-data`
 - 是否真实 AI：默认由后端读取 `backend/.env` 的 `SILICONFLOW_API_KEY`，代理请求 `https://api.siliconflow.cn/v1/chat/completions`。
 - 降级策略：缺少 key、401/403、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
@@ -146,7 +147,7 @@ npm run dev
 ### 真实 AI 代理
 
 ```bash
-curl -X POST http://localhost:8787/api/hair-analysis \
+curl -X POST http://localhost:8787/api/analyze \
   -H "content-type: application/json" \
   -d '{"image_url":"https://example.com/demo.jpg","note":"今天记录一下"}'
 ```
@@ -154,21 +155,21 @@ curl -X POST http://localhost:8787/api/hair-analysis \
 ### FormData 上传
 
 ```bash
-curl -X POST http://localhost:8787/api/hair-analysis \
+curl -X POST http://localhost:8787/api/analyze \
   -F "image=@./demo.jpg"
 ```
 
 ### Mock
 
 ```bash
-curl -X POST http://localhost:8787/api/hair-analysis \
+curl -X POST http://localhost:8787/api/analyze \
   -H "content-type: application/json" \
   -d '{"image_url":"https://example.com/demo.jpg","mock_scenario":"success"}'
 ```
 
 ## 前端联调说明
 
-- 前端只调用 `/api/hair-analysis`，Vite dev server 会把 `/api` 代理到 `http://localhost:8787`。
+- 前端默认调用 `http://localhost:8787/api/analyze`；如需跨环境联调，可用 `VITE_MODEL_API_URL` 覆盖。
 - 前端不读取、不保存真实 API key；真实 key 只放在 `backend/.env`。
 - 结果页可用 `result.source_label` 区分 `SiliconFlow AI 分析结果`、`AI 兜底结果`、`Demo mock 结果`。
 - 如果 `success=false` 或 `fallbackCode` 不为空，可展示轻量提示，但不要阻断结果页。

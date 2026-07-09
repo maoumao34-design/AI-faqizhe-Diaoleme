@@ -30,8 +30,8 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
 
     return normalize(parseResponse(resp.data), resp.data?.success === false ? 'fallback' : 'api')
   } catch (err) {
-    console.error('[model] 后端分析代理请求失败：', err)
-    throw err
+    console.warn('[model] 后端分析代理暂时不可用，使用 demo 兜底结果。', err)
+    return mockResult(file, 'fallback')
   }
 }
 
