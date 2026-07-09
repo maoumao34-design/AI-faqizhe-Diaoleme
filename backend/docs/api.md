@@ -1,6 +1,18 @@
-# 掉了么图片分析 mock API
+# 掉了么图片分析后端代理 API
 
 ## 本地启动
+
+在 `backend/.env` 配置真实 key（不要提交）：
+
+```bash
+SILICONFLOW_API_KEY=sk-xxx
+PORT=8787
+# 可选
+SILICONFLOW_MODEL=Qwen/Qwen3-VL-32B-Instruct
+SILICONFLOW_TIMEOUT_MS=30000
+```
+
+启动后端：
 
 ```bash
 cd backend
@@ -17,16 +29,17 @@ npm run dev
 ```json
 {
   "ok": true,
-  "service": "diaoleme-mock-api"
+  "service": "diaoleme-ai-proxy"
 }
 ```
 
 ## 图片分析
 
-- 接口名称：头发记录图片分析 mock 接口
+- 接口名称：头发记录图片分析接口
 - 前端公开入口：`POST /api/hair-analysis`
 - 请求格式：`application/json` 或 `multipart/form-data`
-- 是否真实 AI：否。当前统一返回 demo mock / fallback，用于前端联调和 demo 展示。
+- 是否真实 AI：默认由后端读取 `backend/.env` 的 `SILICONFLOW_API_KEY`，代理请求 `https://api.siliconflow.cn/v1/chat/completions`。
+- 降级策略：缺少 key、401/403、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
 
 ## 请求字段
 
@@ -35,8 +48,7 @@ npm run dev
 ```json
 {
   "image_url": "https://example.com/demo-hair.jpg",
-  "note": "今天洗头后记录一下",
-  "mock_scenario": "success"
+  "note": "今天洗头后记录一下"
 }
 ```
 
@@ -44,15 +56,17 @@ npm run dev
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `image` / `file` | File | 上传图片文件，demo 阶段保存到本地 `backend/uploads/` |
+| `image` / `file` | File | 上传图片文件，demo 阶段保存到本地 `backend/uploads/` 后转 base64 给 SiliconFlow |
 | `image_url` | string | 可选，图片地址；没有文件时必填 |
 | `note` | string | 可选，用户备注 |
-| `mock_scenario` | string | 可选：`success`、`low_quality`、`analysis_failed` |
+| `mock_scenario` | string | 可选：`success`、`low_quality`、`analysis_failed`，仅用于联调 mock |
 
 ## 统一响应契约
 
-顶层固定字段：`success/fallbackCode/record_id/analysisId/record_status/image_url`。
-展示字段固定放在 `result`：`score/title/summary/task/growthDelta/tags/disclaimer`，可选 `roast/encouragement/image_quality`。
+顶层固定字段：`success/fallbackCode/record_id/analysisId/record_status/image_url/ai_source`。
+展示字段固定放在 `result`：`score/title/summary/task/growthDelta/tags/disclaimer/roast/encouragement/source/source_label/daily_task/count/thickness/suggestions`。
+
+### AI 成功示例
 
 ```json
 {
@@ -60,15 +74,16 @@ npm run dev
   "fallbackCode": null,
   "record_id": "rec_xxx",
   "analysisId": "ana_xxx",
-  "record_status": "demo_mock_completed",
-  "image_url": "https://example.com/demo-hair.jpg",
+  "record_status": "ai_completed",
+  "image_url": "/uploads/demo.jpg",
+  "ai_source": "siliconflow",
   "result": {
-    "score": 86,
-    "title": "今日发量守护者",
-    "summary": "这张记录看起来清爽有精神，今天的头发小伙伴状态在线。",
+    "score": 82,
+    "title": "今日发丝巡逻队长",
+    "summary": "这张记录看起来状态挺轻松，继续保持观察节奏就好。",
     "task": {
       "name": "今晚早点睡",
-      "description": "给头发小伙伴一点安静休息时间。",
+      "description": "今晚早点睡",
       "exp_reward": 12
     },
     "growthDelta": {
@@ -76,16 +91,49 @@ npm run dev
       "current_level": 1,
       "streak_days": 1
     },
-    "tags": ["清爽", "稳定", "元气在线"],
-    "disclaimer": "当前为 demo mock 结果，仅用于娱乐记录和习惯养成展示，不代表医学判断。",
-    "roast": "发丝们开会很守秩序，没有上演离家出走大戏。",
-    "encouragement": "继续轻松记录就好，保持这个节奏很适合 demo 展示。",
-    "image_quality": "clear"
+    "tags": ["队形稳定", "心态在线"],
+    "disclaimer": "本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。",
+    "roast": "头发小伙伴今天也在认真营业。",
+    "encouragement": "继续轻松记录就好，保持节奏已经很棒。",
+    "source": "api",
+    "source_label": "SiliconFlow AI 分析结果",
+    "daily_task": "今晚早点睡",
+    "count": "中等",
+    "thickness": "正常",
+    "suggestions": ["今晚提前 30 分钟进入休息模式"]
   }
 }
 ```
 
-## mock / fallback 场景
+### Fallback 示例
+
+```json
+{
+  "success": false,
+  "fallbackCode": "MISSING_API_KEY",
+  "record_id": "rec_xxx",
+  "analysisId": "ana_xxx",
+  "record_status": "demo_ai_fallback",
+  "image_url": "https://example.com/demo.jpg",
+  "ai_source": "fallback",
+  "error": {
+    "code": "MISSING_API_KEY",
+    "message": "后端还没有配置 SILICONFLOW_API_KEY，已返回可展示的 demo 兜底。"
+  },
+  "result": {
+    "score": 50,
+    "title": "记录先收下",
+    "summary": "后端还没有配置 SILICONFLOW_API_KEY，已返回可展示的 demo 兜底。",
+    "source": "fallback",
+    "source_label": "AI 兜底结果",
+    "disclaimer": "当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。"
+  }
+}
+```
+
+## Mock 场景
+
+如需不走真实 AI，可传 `mock_scenario`：
 
 | `mock_scenario` | HTTP | `success` | `fallbackCode` | `record_status` | 用途 |
 | --- | --- | --- | --- | --- | --- |
@@ -95,7 +143,22 @@ npm run dev
 
 ## 本地调用示例
 
-### success
+### 真实 AI 代理
+
+```bash
+curl -X POST http://localhost:8787/api/hair-analysis \
+  -H "content-type: application/json" \
+  -d '{"image_url":"https://example.com/demo.jpg","note":"今天记录一下"}'
+```
+
+### FormData 上传
+
+```bash
+curl -X POST http://localhost:8787/api/hair-analysis \
+  -F "image=@./demo.jpg"
+```
+
+### Mock
 
 ```bash
 curl -X POST http://localhost:8787/api/hair-analysis \
@@ -103,73 +166,12 @@ curl -X POST http://localhost:8787/api/hair-analysis \
   -d '{"image_url":"https://example.com/demo.jpg","mock_scenario":"success"}'
 ```
 
-### 低质量可保存
-
-```bash
-curl -X POST http://localhost:8787/api/hair-analysis \
-  -H "content-type: application/json" \
-  -d '{"image_url":"https://example.com/dark.jpg","mock_scenario":"low_quality"}'
-```
-
-### 失败 fallback
-
-```bash
-curl -X POST http://localhost:8787/api/hair-analysis \
-  -H "content-type: application/json" \
-  -d '{"image_url":"https://example.com/fail.jpg","mock_scenario":"analysis_failed"}'
-```
-
-### FormData 上传
-
-```bash
-curl -X POST http://localhost:8787/api/hair-analysis \
-  -F "image=@./demo.jpg" \
-  -F "mock_scenario=success"
-```
-
-## 错误 fallback
-
-缺少图片或图片地址时返回 `400`，但仍保留可展示的 `result`：
-
-```json
-{
-  "success": false,
-  "fallbackCode": "MISSING_IMAGE",
-  "record_id": "rec_xxx",
-  "analysisId": "ana_xxx",
-  "record_status": "demo_mock_fallback",
-  "image_url": null,
-  "error": {
-    "code": "MISSING_IMAGE",
-    "message": "请上传 image 文件，或在请求体中提供 image_url。"
-  },
-  "result": {
-    "score": 50,
-    "title": "记录先收下",
-    "summary": "请上传 image 文件，或在请求体中提供 image_url。",
-    "task": {
-      "name": "重新记录一下",
-      "description": "选择一张更清楚的照片再来一次。",
-      "exp_reward": 0
-    },
-    "growthDelta": {
-      "exp_added": 0,
-      "current_level": 1,
-      "streak_days": 0
-    },
-    "tags": ["待补图", "可重试"],
-    "disclaimer": "当前为 demo mock fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。",
-    "image_quality": "missing_or_unreadable"
-  }
-}
-```
-
 ## 前端联调说明
 
-- 前端只调用 `POST /api/hair-analysis`，不要再接 `/api/analyze`、`/api/analysis` 或 `/api/records`。
-- 开发时可先传 `image_url`，不依赖真实云存储。
-- 上传文件会写入本地 `backend/uploads/`，该目录已忽略提交；第一阶段不代表真实对象存储能力。
-- 展示优先读取 `result`；如果 `fallbackCode` 不为空，可展示轻量提示但不要阻断结果页。
+- 前端只调用 `/api/hair-analysis`，Vite dev server 会把 `/api` 代理到 `http://localhost:8787`。
+- 前端不读取、不保存真实 API key；真实 key 只放在 `backend/.env`。
+- 结果页可用 `result.source_label` 区分 `SiliconFlow AI 分析结果`、`AI 兜底结果`、`Demo mock 结果`。
+- 如果 `success=false` 或 `fallbackCode` 不为空，可展示轻量提示，但不要阻断结果页。
 - 所有文案保持娱乐记录和习惯养成语气，不输出医疗诊断或治疗建议。
 
 ## 本地测试

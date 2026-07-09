@@ -30,11 +30,18 @@ function assertStableContract(data) {
   assert.equal(typeof data.result.task.name, 'string')
   assert.equal(typeof data.result.growthDelta.exp_added, 'number')
   assert.ok(Array.isArray(data.result.tags))
-  assert.match(data.result.disclaimer, /demo mock/)
+  assert.match(data.result.disclaimer, /demo/)
 }
 
 try {
-  const success = await postJson({ image_url: 'https://example.com/demo.jpg', note: 'demo' })
+  const missingKey = await postJson({ image_url: 'https://example.com/demo.jpg', note: 'demo' })
+  assert.equal(missingKey.response.status, 200)
+  assert.equal(missingKey.data.success, false)
+  assert.equal(missingKey.data.fallbackCode, 'MISSING_API_KEY')
+  assert.equal(missingKey.data.record_status, 'demo_ai_fallback')
+  assert.equal(missingKey.data.ai_source, 'fallback')
+
+  const success = await postJson({ image_url: 'https://example.com/demo.jpg', note: 'demo', mock_scenario: 'success' })
   assert.equal(success.response.status, 200)
   assert.equal(success.data.success, true)
   assert.equal(success.data.fallbackCode, null)

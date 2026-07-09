@@ -68,8 +68,8 @@ diaoleme/
 │   ├── store/
 │   │   └── UserStore.ts         Zustand 状态（localStorage 持久化）
 │   └── services/
-│       ├── config.ts            大模型 API 配置（url / apiKey / model）
-│       └── model.ts             大模型调用 + mock 兜底
+│       ├── config.ts            本地后端代理地址配置
+│       └── model.ts             后端代理调用 + mock 兜底
 ├── index.html
 ├── package.json
 ├── tsconfig.json
@@ -90,20 +90,23 @@ diaoleme/
 
 ## 🔌 接入大模型
 
-`src/services/config.ts` 中填入你的 API 信息：
+前端不保存真实 API Key，只调用本地后端代理：
 
 ```ts
 export const MODEL_API_CONFIG = {
-  url: 'https://api.siliconflow.cn/v1/chat/compatibles',  // 你的 API 地址
-  apiKey: 'sk-xxx',              // 你的 API Key
-  model: 'Qwen/Qwen3-VL-32B-Instruct',
-  systemPrompt: '...',           // 系统提示词已预设，按需调整
-  timeout: 30000,
-  useBase64: true,
+  url: '/api/hair-analysis',
+  timeout: 45000,
 }
 ```
 
-填好后，`analyzePhoto` 函数会自动调用真实接口；未配置时回退到本地 mock，不影响开发调试。
+真实 key 请放在 `backend/.env`：
+
+```bash
+SILICONFLOW_API_KEY=sk-xxx
+PORT=8787
+```
+
+同时启动 `backend` 和前端后，`analyzePhoto` 会经由 Vite `/api` 代理调用本地后端，再由后端请求 SiliconFlow。缺少 key 或上游失败时，后端会返回可展示的 AI 兜底结果。
 
 **期望返回 JSON 格式**（在 `src/types/index.ts` 中定义）：
 

@@ -7,7 +7,7 @@ export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
 const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
 
 /**
- * 调用分析接口生成娱乐化反馈。未配置接口时自动使用可替换 demo 兜底结果，保证演示闭环可跑通。
+ * 调用本地后端代理生成娱乐化反馈。真实 API key 只由后端读取，不进入前端代码。
  */
 export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMode()): Promise<AnalysisResult> {
   validateImageFile(file)
@@ -21,51 +21,16 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
     return mockResult(file, 'mock')
   }
 
-  const { url, apiKey, model, systemPrompt, timeout, useBase64 } = MODEL_API_CONFIG
-
-  if (!url || !apiKey || url.includes('your-api-endpoint') || apiKey.includes('your-api-key')) {
-    console.warn('[model] API 未配置，使用 demo 兜底结果。请在 src/services/config.ts 填入 url 和 apiKey。')
-    return mockResult(file, 'fallback')
-  }
-
   try {
-    let resp
-    if (useBase64) {
-      const base64 = await fileToBase64(file)
-      resp = await axios.post(
-        url,
-        {
-          model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: '请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。' },
-                { type: 'image_url', image_url: { url: base64 } },
-              ],
-            },
-          ],
-        },
-        {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          timeout,
-        },
-      )
-    } else {
-      const form = new FormData()
-      form.append('image', file)
-      form.append('model', model)
-      form.append('prompt', systemPrompt)
-      resp = await axios.post(url, form, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        timeout,
-      })
-    }
+    const form = new FormData()
+    form.append('image', file)
+    const resp = await axios.post(MODEL_API_CONFIG.url, form, {
+      timeout: MODEL_API_CONFIG.timeout,
+    })
 
-    return normalize(parseResponse(resp.data), 'api')
+    return normalize(parseResponse(resp.data), resp.data?.success === false ? 'fallback' : 'api')
   } catch (err) {
-    console.error('[model] 分析接口请求失败：', err)
+    console.error('[model] 后端分析代理请求失败：', err)
     throw err
   }
 }
@@ -84,29 +49,15 @@ export function validateImageFile(file: File) {
   if (file.size <= 0) throw new Error('empty_file')
 }
 
-/** 从接口响应里提取 JSON（兼容 choices[0].message.content 直接输出和工具调用） */
+/** 从后端代理响应里提取 result，兼容直接返回 AnalysisResult 的旧格式。 */
 function parseResponse(data: any): Partial<AnalysisResult> {
-  try {
-    let text = ''
-    if (data?.choices?.[0]?.message?.content) {
-      text = data.choices[0].message.content
-    } else if (typeof data === 'object') {
-      text = JSON.stringify(data)
-    }
-    text = text.replace(/```json\s*|\s*```/g, '').trim()
-    return JSON.parse(text)
-  } catch {
-    return {}
+  if (data?.result && typeof data.result === 'object') {
+    return data.result
   }
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+  if (data && typeof data === 'object') {
+    return data
+  }
+  return {}
 }
 
 function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.source || 'api'): AnalysisResult {
@@ -128,7 +79,7 @@ function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.
     daily_task: safeText(data.daily_task, suggestions[0]),
     disclaimer: safeText(data.disclaimer, DEFAULT_DISCLAIMER),
     source,
-    source_label: sourceLabel(source),
+    source_label: sourceLabel(source, data.source_label),
     count: data.count === '少量' || data.count === '偏多' ? data.count : '中等',
     thickness: data.thickness === '粗硬' || data.thickness === '细软' ? data.thickness : '正常',
     suggestions,
@@ -145,9 +96,10 @@ function buildTags(score: number) {
   return ['需要抱抱', '从容记录', '温柔养成']
 }
 
-function sourceLabel(source: AnalysisSource) {
-  if (source === 'api') return 'AI 分析结果'
-  if (source === 'fallback') return 'Demo 兜底结果'
+function sourceLabel(source: AnalysisSource, label?: string) {
+  if (label) return label
+  if (source === 'api') return 'SiliconFlow AI 分析结果'
+  if (source === 'fallback') return 'AI 兜底结果'
   return 'Demo mock 结果'
 }
 
