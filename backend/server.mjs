@@ -457,65 +457,25 @@ async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
   if (!apiKey) {
     const err = new Error('Missing SILICONFLOW_API_KEY')
     err.code = 'MISSING_API_KEY'
+    err.provider = 'siliconflow'
     throw err
   }
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), SILICONFLOW_TIMEOUT_MS)
-  try {
-    const imageContent = uploadedFile
-      ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
-      : imageUrl
+  const imageContent = uploadedFile
+    ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
+    : imageUrl
 
-    console.log('[hair-analysis] proxying request to SiliconFlow')
-    const response = await fetch(SILICONFLOW_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: SILICONFLOW_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。用户备注：${safeText(note, '无')}`,
-              },
-              { type: 'image_url', image_url: { url: imageContent } },
-            ],
-          },
-        ],
-        temperature: 0.7,
-      }),
-    })
-
-    const rawText = await response.text()
-    if (!response.ok) {
-      const err = new Error(`SiliconFlow request failed: ${response.status}`)
-      err.code = response.status === 401 || response.status === 403 ? 'UPSTREAM_AUTH_FAILED' : 'UPSTREAM_FAILED'
-      err.status = response.status
-      err.upstreamBody = rawText.slice(0, 300)
-      throw err
-    }
-
-    let data
-    try {
-      data = JSON.parse(rawText)
-    } catch {
-      const err = new Error('SiliconFlow returned non-JSON response')
-      err.code = 'UPSTREAM_NON_JSON'
-      throw err
-    }
-
-    return extractModelJson(data)
-  } finally {
-    clearTimeout(timeout)
-  }
+  return postChatCompletion({
+    url: SILICONFLOW_URL,
+    apiKey,
+    body: {
+      model: SILICONFLOW_MODEL,
+      messages: buildVisionMessages(imageContent, note),
+      temperature: 0.7,
+    },
+    timeoutMs: SILICONFLOW_TIMEOUT_MS,
+    provider: 'siliconflow',
+  })
 }
 
 function extractModelJson(data) {

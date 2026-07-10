@@ -191,6 +191,12 @@ curl -X POST http://localhost:8787/api/hair-analysis \
 - 如果 `success=false` 或 `fallbackCode` 不为空，可展示轻量提示，但不要阻断结果页。
 - 所有文案保持娱乐记录和习惯养成语气，不输出医疗诊断或治疗建议。
 
+## 结构清理说明
+
+- 当前后端 / AI 主链路统一在 `backend/server.mjs`，不要再新增平行的 AI proxy 服务目录。
+- OpenAI compatible 与 SiliconFlow 共用同一套请求、mock、fallback、响应清洗逻辑。
+- 详细保留 / 合并 / 删除 / 暂不动清单见 `backend/docs/cleanup-inventory.md`。
+
 ## 本地测试
 
 ```bash
