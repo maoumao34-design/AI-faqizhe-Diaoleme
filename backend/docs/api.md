@@ -5,9 +5,25 @@
 在 `backend/.env` 配置真实 key（不要提交）：
 
 ```bash
-SILICONFLOW_API_KEY=sk-xxx
+AI_PROVIDER=openai_compatible
+OPENAI_BASE_URL=https://claude-code.club/openai/v1
+OPENAI_MODEL=gpt-5.5
+OPENAI_API_KEY=sk-xxx
+OPENAI_TIMEOUT_MS=30000
 PORT=8787
-# 可选
+```
+
+如果 CC club 返回 `model not found` / `invalid model`，可临时改为：
+
+```bash
+OPENAI_MODEL=gpt-5.4
+```
+
+仍需使用旧 SiliconFlow 配置时可设置：
+
+```bash
+AI_PROVIDER=siliconflow
+SILICONFLOW_API_KEY=sk-xxx
 SILICONFLOW_MODEL=Qwen/Qwen3-VL-32B-Instruct
 SILICONFLOW_TIMEOUT_MS=30000
 ```
@@ -38,8 +54,9 @@ npm run dev
 - 接口名称：头发记录图片分析接口
 - 前端公开入口：`POST /api/hair-analysis`
 - 请求格式：`application/json` 或 `multipart/form-data`
-- 是否真实 AI：默认由后端读取 `backend/.env` 的 `SILICONFLOW_API_KEY`，代理请求 `https://api.siliconflow.cn/v1/chat/completions`。
-- 降级策略：缺少 key、401/403、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
+- 是否真实 AI：后端按 `AI_PROVIDER` 读取配置；推荐 `openai_compatible`，代理请求 `${OPENAI_BASE_URL}/chat/completions`，默认试跑 CC club `gpt-5.5`。
+- 降级策略：缺少 key、401/403、模型不可用、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
+- 路径兜底：当 `OPENAI_BASE_URL=https://claude-code.club/openai/v1` 返回 404 时，会再尝试 `https://claude-code.club/openai/chat/completions`，方便联调判断 `/openai/v1` 与 `/openai` 路径差异。
 
 ## 请求字段
 
@@ -56,7 +73,7 @@ npm run dev
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `image` / `file` | File | 上传图片文件，demo 阶段保存到本地 `backend/uploads/` 后转 base64 给 SiliconFlow |
+| `image` / `file` | File | 上传图片文件，demo 阶段保存到本地 `backend/uploads/` 后转 base64 给当前 AI provider |
 | `image_url` | string | 可选，图片地址；没有文件时必填 |
 | `note` | string | 可选，用户备注 |
 | `mock_scenario` | string | 可选：`success`、`low_quality`、`analysis_failed`，仅用于联调 mock |
@@ -76,7 +93,7 @@ npm run dev
   "analysisId": "ana_xxx",
   "record_status": "ai_completed",
   "image_url": "/uploads/demo.jpg",
-  "ai_source": "siliconflow",
+  "ai_source": "openai_compatible",
   "result": {
     "score": 82,
     "title": "今日发丝巡逻队长",
@@ -96,7 +113,7 @@ npm run dev
     "roast": "头发小伙伴今天也在认真营业。",
     "encouragement": "继续轻松记录就好，保持节奏已经很棒。",
     "source": "api",
-    "source_label": "SiliconFlow AI 分析结果",
+    "source_label": "CC club OpenAI compatible AI 分析结果",
     "daily_task": "今晚早点睡",
     "count": "中等",
     "thickness": "正常",
@@ -118,12 +135,12 @@ npm run dev
   "ai_source": "fallback",
   "error": {
     "code": "MISSING_API_KEY",
-    "message": "后端还没有配置 SILICONFLOW_API_KEY，已返回可展示的 demo 兜底。"
+    "message": "后端还没有配置 OPENAI_API_KEY，已返回可展示的 demo 兜底。"
   },
   "result": {
     "score": 50,
     "title": "记录先收下",
-    "summary": "后端还没有配置 SILICONFLOW_API_KEY，已返回可展示的 demo 兜底。",
+    "summary": "后端还没有配置 OPENAI_API_KEY，已返回可展示的 demo 兜底。",
     "source": "fallback",
     "source_label": "AI 兜底结果",
     "disclaimer": "当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。"
@@ -170,7 +187,7 @@ curl -X POST http://localhost:8787/api/hair-analysis \
 
 - 前端只调用 `/api/hair-analysis`，Vite dev server 会把 `/api` 代理到 `http://localhost:8787`。
 - 前端不读取、不保存真实 API key；真实 key 只放在 `backend/.env`。
-- 结果页可用 `result.source_label` 区分 `SiliconFlow AI 分析结果`、`AI 兜底结果`、`Demo mock 结果`。
+- 结果页可用 `result.source_label` 区分 `CC club OpenAI compatible AI 分析结果`、`AI 兜底结果`、`Demo mock 结果`。
 - 如果 `success=false` 或 `fallbackCode` 不为空，可展示轻量提示，但不要阻断结果页。
 - 所有文案保持娱乐记录和习惯养成语气，不输出医疗诊断或治疗建议。
 
