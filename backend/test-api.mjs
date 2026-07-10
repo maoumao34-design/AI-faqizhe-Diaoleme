@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
-import { createApp } from './server.mjs'
+
+process.env.AI_PROVIDER = 'openai_compatible'
+process.env.OPENAI_API_KEY = ' '
+
+const { createApp } = await import('./server.mjs')
 
 const server = createApp()
 server.listen(0)
@@ -40,6 +44,7 @@ try {
   assert.equal(missingKey.data.fallbackCode, 'MISSING_API_KEY')
   assert.equal(missingKey.data.record_status, 'demo_ai_fallback')
   assert.equal(missingKey.data.ai_source, 'fallback')
+  assert.match(missingKey.data.error.message, /OPENAI_API_KEY/)
 
   const success = await postJson({ image_url: 'https://example.com/demo.jpg', note: 'demo', mock_scenario: 'success' })
   assert.equal(success.response.status, 200)

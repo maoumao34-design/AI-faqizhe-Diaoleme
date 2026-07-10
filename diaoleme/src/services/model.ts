@@ -98,7 +98,7 @@ function buildTags(score: number) {
 
 function sourceLabel(source: AnalysisSource, label?: string) {
   if (label) return label
-  if (source === 'api') return 'SiliconFlow AI 分析结果'
+  if (source === 'api') return 'CC club OpenAI compatible AI 分析结果'
   if (source === 'fallback') return 'AI 兜底结果'
   return 'Demo mock 结果'
 }
