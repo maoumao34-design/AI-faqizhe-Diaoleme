@@ -191,7 +191,7 @@ export default function Scan() {
         <div className="mt-6 mb-8">
           <StickerCard accent="cream">
             <p className="text-xs leading-relaxed text-center text-coffee/60">
-              小贴士：未配置接口时使用本地/demo 兜底演示；接入分析接口时，图片仅用于本次分析请求。结果只做娱乐化记录，不做医学判断。
+              小贴士：前端会优先请求本地后端代理；后端暂时不可用时才使用 demo 兜底。图片仅用于本次分析请求，结果只做娱乐化记录，不做医学判断。
             </p>
           </StickerCard>
         </div>

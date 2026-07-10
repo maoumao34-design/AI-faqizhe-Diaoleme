@@ -8,7 +8,7 @@ await once(server, 'listening')
 const { port } = server.address()
 const baseUrl = `http://127.0.0.1:${port}`
 
-async function postJson(body, path = '/api/hair-analysis') {
+async function postJson(body, path = '/api/analyze') {
   const response = await fetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -72,7 +72,7 @@ try {
   const form = new FormData()
   form.append('image', new Blob(['demo image bytes'], { type: 'image/plain' }), 'demo.txt')
   form.append('mock_scenario', 'success')
-  const uploadResponse = await fetch(`${baseUrl}/api/hair-analysis`, { method: 'POST', body: form })
+  const uploadResponse = await fetch(`${baseUrl}/api/analyze`, { method: 'POST', body: form })
   const uploadData = await uploadResponse.json()
   assert.equal(uploadResponse.status, 200)
   assert.equal(uploadData.success, true)
