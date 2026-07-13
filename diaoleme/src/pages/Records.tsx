@@ -40,7 +40,7 @@ export default function Records() {
       <StickerCard accent="pink" className="!rounded-[28px] !p-5">
         <div className="flex items-center gap-2 text-[10px] text-coffee/50">
           <Calendar size={12} />
-          <span>掉发记录档案</span>
+          <span>头发状态记录</span>
           <span className="ml-auto font-mono">{history.length} 份</span>
         </div>
 
@@ -49,7 +49,7 @@ export default function Records() {
             <DonutScore score={latest.score} />
           </div>
           <div className="flex-1">
-            <p className="text-[11px] text-coffee/60">最新掉发指数</p>
+            <p className="text-[11px] text-coffee/60">最新趣味状态分</p>
             <p
               className={`font-mono text-4xl font-medium leading-none mt-0.5 ${
                 latest.score >= 70
@@ -69,7 +69,7 @@ export default function Records() {
           <Pill label="本周均值" value={String(avg)} valueClass="text-moss-deep" />
           <Pill label="最长坚持" value={`${Math.min(history.length, 30)}`} valueClass="text-tangerine" unit="天" />
           <Pill
-            label={trend.delta > 0 ? '指数上涨' : trend.delta < 0 ? '指数下降' : '保持稳定'}
+            label={trend.delta > 0 ? '状态升温' : trend.delta < 0 ? '状态波动' : '保持稳定'}
             value={`${Math.abs(trend.delta)}`}
             valueClass={trend.delta > 0 ? 'text-moss-deep' : trend.delta < 0 ? 'text-tangerine' : 'text-coffee'}
           />
@@ -339,7 +339,7 @@ function DayGroupCard({
             {countStr}掉落 · {thickness}
           </p>
           <p className="text-xs mt-1" style={{ color: 'rgba(58,47,40,0.6)' }}>
-            共 {count} 次记录 · 平均指数 {score}
+            共 {count} 次记录 · 平均状态分 {score}
           </p>
         </div>
 
@@ -384,8 +384,8 @@ function DetailCard({ record }: { record: ReportRecord }) {
 function ScoreBadge({ score }: { score: number }) {
   if (score >= 80) return <span className="text-[9px] text-moss">优秀</span>
   if (score >= 60) return <span className="text-[9px] text-moss-deep">良好</span>
-  if (score >= 40) return <span className="text-[9px] text-tangerine">注意</span>
-  return <span className="text-[9px] text-tangerine">需关注</span>
+  if (score >= 40) return <span className="text-[9px] text-tangerine">有点波动</span>
+  return <span className="text-[9px] text-tangerine">慢慢养成</span>
 }
 
 function calcTrend(sorted: ReportRecord[]): { delta: number } {
@@ -412,7 +412,7 @@ function formatTime(id: string) {
 
 function headlineFor(score: number) {
   if (score >= 80) return '今天状态不错 👌'
-  if (score >= 60) return '掉发趋于稳定 🌿'
-  if (score >= 40) return '发现一些压力信号'
+  if (score >= 60) return '今天队形挺稳定 🌿'
+  if (score >= 40) return '今天有一点小波动'
   return '这正说明你开始关心自己了 🌱'
 }

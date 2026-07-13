@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Camera, Upload, Loader2, AlertTriangle, ImagePlus, RotateCcw } from 'lucide-react'
 import StickerCard from '../components/Layout/StickerCard'
 import { useUserStore } from '../store/UserStore'
-import { analyzePhoto, validateImageFile } from '../services/model'
+import { MAX_IMAGE_SIZE_BYTES, analyzePhoto, validateImageFile } from '../services/model'
+
+const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
 
 export default function Scan() {
   const nav = useNavigate()
@@ -38,7 +40,12 @@ export default function Scan() {
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       setSelectedFile(null)
       setPreviewUrl(null)
-      setErrorMsg(err?.message === 'not_image' ? '这个文件不是图片，请选择 JPG、PNG 等图片文件。' : '图片文件为空，请重新选择。')
+      const messageMap: Record<string, string> = {
+        not_image: '这个文件不是图片，请选择 JPG、PNG 等图片文件。',
+        empty_file: '图片文件为空，请重新选择。',
+        file_too_large: `图片有点大啦，请选择 ${MAX_IMAGE_SIZE_MB}MB 以内的照片再试。`,
+      }
+      setErrorMsg(messageMap[err?.message] || '图片暂时读不出来，请换一张再试。')
       return
     }
 
@@ -123,7 +130,7 @@ export default function Scan() {
               >
                 <ImagePlus size={42} className="text-moss" />
                 <span className="mt-3 font-medium">点这里选择图片</span>
-                <span className="mt-1 text-xs text-coffee/50">支持拍照或相册上传</span>
+                <span className="mt-1 text-xs text-coffee/50">支持拍照或相册上传，单张不超过 {MAX_IMAGE_SIZE_MB}MB</span>
               </motion.button>
             )}
           </AnimatePresence>

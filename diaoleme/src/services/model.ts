@@ -5,6 +5,7 @@ import { MODEL_API_CONFIG } from './config'
 export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
 
 const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
+export const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 
 /**
  * 调用本地后端代理生成娱乐化反馈。真实 API key 只由后端读取，不进入前端代码。
@@ -47,6 +48,7 @@ export function validateImageFile(file: File) {
   if (!file) throw new Error('empty_file')
   if (!file.type.startsWith('image/')) throw new Error('not_image')
   if (file.size <= 0) throw new Error('empty_file')
+  if (file.size > MAX_IMAGE_SIZE_BYTES) throw new Error('file_too_large')
 }
 
 /** 从后端代理响应里提取 result，兼容直接返回 AnalysisResult 的旧格式。 */
