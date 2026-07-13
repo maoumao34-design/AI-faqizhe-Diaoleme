@@ -15,6 +15,9 @@ export interface AnalysisResult {
   disclaimer: string
   source: AnalysisSource
   source_label: string
+  fallback_code: string | null
+  record_status: string
+  record_id: string | null
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]

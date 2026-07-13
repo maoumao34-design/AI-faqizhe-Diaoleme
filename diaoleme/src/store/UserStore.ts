@@ -15,6 +15,9 @@ export interface ReportRecord {
   disclaimer: string
   source: AnalysisSource
   source_label: string
+  fallback_code: string | null
+  record_status: string
+  record_id: string | null
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -31,6 +34,9 @@ interface UserState {
   disclaimer: string
   source: AnalysisSource
   sourceLabel: string
+  fallbackCode: string | null
+  recordStatus: string
+  recordId: string | null
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -64,6 +70,9 @@ export const useUserStore = create<UserState>()(
       disclaimer: DEFAULT_DISCLAIMER,
       source: 'mock',
       sourceLabel: '等待分析',
+      fallbackCode: null,
+      recordStatus: 'idle',
+      recordId: null,
       count: '中等',
       thickness: '正常',
       suggestions: [],
@@ -84,6 +93,9 @@ export const useUserStore = create<UserState>()(
           disclaimer: r.disclaimer,
           source: r.source,
           sourceLabel: r.source_label,
+          fallbackCode: r.fallback_code,
+          recordStatus: r.record_status,
+          recordId: r.record_id,
           count: r.count,
           thickness: r.thickness,
           suggestions: r.suggestions,
@@ -103,6 +115,9 @@ export const useUserStore = create<UserState>()(
             disclaimer: rec.disclaimer,
             source: rec.source,
             sourceLabel: rec.source_label,
+            fallbackCode: rec.fallback_code,
+            recordStatus: rec.record_status,
+            recordId: rec.record_id,
             count: rec.count,
             thickness: rec.thickness,
             suggestions: rec.suggestions,
@@ -126,6 +141,9 @@ export const useUserStore = create<UserState>()(
           disclaimer: latest.disclaimer,
           source: latest.source,
           sourceLabel: latest.source_label,
+          fallbackCode: latest.fallback_code,
+          recordStatus: latest.record_status,
+          recordId: latest.record_id,
           count: latest.count,
           thickness: latest.thickness,
           suggestions: latest.suggestions,
@@ -169,6 +187,9 @@ export const useUserStore = create<UserState>()(
           disclaimer: DEFAULT_DISCLAIMER,
           source: 'mock',
           sourceLabel: '等待分析',
+          fallbackCode: null,
+          recordStatus: 'idle',
+          recordId: null,
           count: '中等',
           thickness: '正常',
           suggestions: [],
