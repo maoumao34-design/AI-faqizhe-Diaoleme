@@ -1,6 +1,6 @@
 # 掉了么 mock API 部署说明
 
-当前后端是 demo mock API，不接真实 AI，不包含密钥。部署后前端只需要把 API base URL 指向线上服务即可调用 `POST /api/hair-analysis`。
+当前后端支持 mock 与可配置的真实 AI 代理，不包含密钥。部署后前端只需要把 API base URL 指向线上服务即可调用 `POST /api/analyze`。
 
 ## 服务信息
 
@@ -9,10 +9,15 @@
 - 启动命令：`npm start`
 - 本地开发：`npm run dev`
 - 健康检查：`GET /api/health`
-- 分析接口：`POST /api/hair-analysis`
+- 分析接口：`POST /api/analyze`（兼容 `POST /api/hair-analysis`）
+- 历史接口：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`
 - 环境变量：
   - `PORT`：平台通常自动注入；本地默认 `8787`
   - `NODE_ENV`：可设为 `production`
+  - `AI_PROVIDER` 与对应 API key：真实 AI 所需；不配置时返回安全 fallback
+  - `RECORDS_FILE`：可选 JSON 存储路径；默认 `backend/data/records.json`
+
+注意：Render/Railway 的临时文件系统可能在重启或重新部署时清空 JSON 记录。5 周 demo 可先使用此方案；需要长期保留时应挂载持久卷或替换为数据库。
 
 ## Render 部署
 

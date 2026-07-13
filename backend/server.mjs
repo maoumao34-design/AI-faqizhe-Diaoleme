@@ -1,15 +1,21 @@
 import { createServer } from 'node:http'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
-import { extname, join } from 'node:path'
+import { dirname, extname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024
 const UPLOAD_DIR = fileURLToPath(new URL('./uploads/', import.meta.url))
+const SAFE_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。'
+const UNSAFE_CONTENT_PATTERN = /(诊断|疾病|病变|风险|严重脱发|脱发等级|治疗|用药|药物|就医|医院|处方|秃顶)/i
+let recordsWriteQueue = Promise.resolve()
 
 loadDotEnv()
 
+const RECORDS_FILE = process.env.RECORDS_FILE
+  ? join(process.cwd(), process.env.RECORDS_FILE)
+  : fileURLToPath(new URL('./data/records.json', import.meta.url))
 const PORT = Number(process.env.PORT || 8787)
 const PRIMARY_ANALYSIS_PATH = '/api/analyze'
 const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
@@ -179,16 +185,22 @@ function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
     let size = 0
+    let tooLarge = false
     req.on('data', (chunk) => {
       size += chunk.length
       if (size > MAX_BODY_BYTES) {
-        reject(Object.assign(new Error('BODY_TOO_LARGE'), { code: 'BODY_TOO_LARGE' }))
-        req.destroy()
+        tooLarge = true
         return
       }
       chunks.push(chunk)
     })
-    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('end', () => {
+      if (tooLarge) {
+        reject(Object.assign(new Error('BODY_TOO_LARGE'), { code: 'BODY_TOO_LARGE' }))
+        return
+      }
+      resolve(Buffer.concat(chunks))
+    })
     req.on('error', reject)
   })
 }
@@ -255,6 +267,14 @@ async function saveUploadedFile(file) {
   }
 }
 
+async function persistRecordBestEffort(record) {
+  try {
+    await saveRecord(record)
+  } catch (error) {
+    console.warn(`[records] save failed: ${error?.message || 'unknown error'}`)
+  }
+}
+
 function buildFallbackResponse(fallbackCode, message, imageUrl = null, options = {}) {
   return {
     success: false,
@@ -298,13 +318,17 @@ function buildFallbackResponse(fallbackCode, message, imageUrl = null, options =
   }
 }
 
-function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
+export function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
   const imageUrl = requestMeta.image_url || requestMeta.uploaded_file?.url || null
   const providerName = provider === 'openai_compatible' ? 'openai_compatible' : 'siliconflow'
   const providerLabel = provider === 'openai_compatible' ? 'CC club OpenAI compatible AI 分析结果' : 'SiliconFlow AI 分析结果'
   const score = clampScore(modelData.score)
-  const suggestions = normalizeStringArray(modelData.suggestions, [modelData.daily_task || '今晚给自己留 30 分钟放松时间'])
-  const dailyTask = safeText(modelData.daily_task, suggestions[0])
+  const suggestions = sanitizeTextArray(
+    modelData.suggestions,
+    ['今晚给自己留 30 分钟放松时间'],
+    '保持轻松记录，给自己一点休息时间。',
+  )
+  const dailyTask = sanitizeDisplayText(modelData.daily_task, suggestions[0], '保持轻松记录，给自己一点休息时间。')
 
   return {
     success: true,
@@ -316,8 +340,8 @@ function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
     ai_source: providerName,
     result: {
       score,
-      title: safeText(modelData.title, score >= 70 ? '发丝巡逻队长' : '头毛观察员'),
-      summary: safeText(modelData.summary, '今天的头发记录已收到，整体反馈保持轻松观察就好。'),
+      title: sanitizeDisplayText(modelData.title, score >= 70 ? '发丝巡逻队长' : '头毛观察员', '今日轻松记录官'),
+      summary: sanitizeDisplayText(modelData.summary, '今天的头发记录已收到，整体反馈保持轻松观察就好。', '今天的记录已收到，保持轻松观察就好。'),
       task: {
         name: dailyTask,
         description: dailyTask,
@@ -328,10 +352,10 @@ function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
         current_level: 1,
         streak_days: 1,
       },
-      tags: normalizeStringArray(modelData.tags, buildTags(score)).slice(0, 4),
-      disclaimer: safeText(modelData.disclaimer, '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。'),
-      roast: safeText(modelData.roast, '头发小伙伴今天也在认真营业。'),
-      encouragement: safeText(modelData.encouragement, '继续轻松记录就好，保持节奏已经很棒。'),
+      tags: sanitizeTextArray(modelData.tags, buildTags(score), '轻松记录').slice(0, 4),
+      disclaimer: sanitizeDisplayText(modelData.disclaimer, SAFE_DISCLAIMER, SAFE_DISCLAIMER),
+      roast: sanitizeDisplayText(modelData.roast, '头发小伙伴今天也在认真营业。', '头发小伙伴今天也在认真营业。'),
+      encouragement: sanitizeDisplayText(modelData.encouragement, '继续轻松记录就好，保持节奏已经很棒。', '继续轻松记录就好，保持节奏已经很棒。'),
       image_quality: safeText(modelData.image_quality, 'ai_observed'),
       source: 'api',
       source_label: providerLabel,
@@ -519,8 +543,87 @@ function normalizeStringArray(value, fallback) {
   return items.length ? items : fallback
 }
 
+function sanitizeDisplayText(value, fallback, unsafeFallback) {
+  const text = safeText(value, fallback)
+  return UNSAFE_CONTENT_PATTERN.test(text) ? unsafeFallback : text
+}
+
+function sanitizeTextArray(value, fallback, unsafeFallback) {
+  return normalizeStringArray(value, fallback)
+    .map((item) => sanitizeDisplayText(item, unsafeFallback, unsafeFallback))
+}
+
 function normalizeEnum(value, allowed, fallback) {
   return allowed.includes(value) ? value : fallback
+}
+
+async function readRecords() {
+  try {
+    const raw = await readFile(RECORDS_FILE, 'utf8')
+    const records = JSON.parse(raw)
+    return Array.isArray(records) ? records : []
+  } catch (error) {
+    if (error?.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+async function saveRecord(record) {
+  const storedRecord = {
+    ...record,
+    record_id: record.record_id || `rec_${randomUUID()}`,
+    created_at: record.created_at || new Date().toISOString(),
+  }
+  recordsWriteQueue = recordsWriteQueue.then(async () => {
+    const records = await readRecords()
+    const existingIndex = records.findIndex((item) => item.record_id === storedRecord.record_id)
+    if (existingIndex >= 0) records[existingIndex] = storedRecord
+    else records.unshift(storedRecord)
+    await mkdir(dirname(RECORDS_FILE), { recursive: true })
+    await writeFile(RECORDS_FILE, JSON.stringify(records, null, 2), 'utf8')
+  })
+  await recordsWriteQueue
+  return storedRecord
+}
+
+async function handleCreateRecord(req, res) {
+  try {
+    const contentType = req.headers['content-type'] || ''
+    if (!contentType.includes('application/json')) {
+      return jsonResponse(res, 415, { success: false, error: { code: 'UNSUPPORTED_CONTENT_TYPE', message: '记录接口仅支持 application/json。' } })
+    }
+    const payload = parseJsonBody(await readBody(req))
+    if (!payload || typeof payload !== 'object' || !payload.result || typeof payload.result !== 'object') {
+      return jsonResponse(res, 400, { success: false, error: { code: 'INVALID_RECORD', message: '请提供包含 result 的分析记录。' } })
+    }
+    const record = await saveRecord(payload)
+    return jsonResponse(res, 201, { success: true, record })
+  } catch (error) {
+    const tooLarge = error?.code === 'BODY_TOO_LARGE'
+    return jsonResponse(res, tooLarge ? 413 : 400, {
+      success: false,
+      error: {
+        code: tooLarge ? 'BODY_TOO_LARGE' : 'BAD_REQUEST',
+        message: tooLarge ? '记录内容太大，当前最多接收 8MB。' : '记录内容解析失败，请检查 JSON。',
+      },
+    })
+  }
+}
+
+async function handleListRecords(url, res) {
+  const requestedLimit = Number(url.searchParams.get('limit') || 50)
+  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 50
+  const records = await readRecords()
+  return jsonResponse(res, 200, { success: true, records: records.slice(0, limit), total: records.length })
+}
+
+async function handleGetRecord(recordId, res) {
+  const records = await readRecords()
+  const record = records.find((item) => item.record_id === recordId)
+  if (!record) {
+    return jsonResponse(res, 404, { success: false, error: { code: 'RECORD_NOT_FOUND', message: '没有找到这条记录。' } })
+  }
+  return jsonResponse(res, 200, { success: true, record })
 }
 
 function fallbackFromError(error, imageUrl) {
@@ -583,6 +686,7 @@ async function handleHairAnalysis(req, res) {
         image_url: imageUrl,
         uploaded_file: uploadedFile,
       })
+      await persistRecordBestEffort(response)
       return jsonResponse(res, SCENARIOS[scenario]?.httpStatus || 200, response)
     }
 
@@ -596,11 +700,14 @@ async function handleHairAnalysis(req, res) {
         image_url: imageUrl,
         uploaded_file: uploadedFile,
       }, AI_PROVIDER)
+      await persistRecordBestEffort(response)
       console.log(`[hair-analysis] proxied request to ${AI_PROVIDER} successfully`)
       return jsonResponse(res, 200, response)
     } catch (error) {
       console.warn(`[hair-analysis] ${AI_PROVIDER} fallback: ${error?.code || error?.name || 'UNKNOWN'}`)
-      return jsonResponse(res, 200, fallbackFromError(error, imageUrl || uploadedFile?.url || null))
+      const response = fallbackFromError(error, imageUrl || uploadedFile?.url || null)
+      await persistRecordBestEffort(response)
+      return jsonResponse(res, 200, response)
     }
   } catch (error) {
     const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'
@@ -634,10 +741,22 @@ export function createApp() {
       return handleHairAnalysis(req, res)
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/records') {
+      return handleCreateRecord(req, res)
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/records') {
+      return handleListRecords(url, res)
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/api/records/')) {
+      return handleGetRecord(decodeURIComponent(url.pathname.slice('/api/records/'.length)), res)
+    }
+
     return jsonResponse(res, 404, {
       success: false,
       fallbackCode: 'NOT_FOUND',
-      error: { code: 'NOT_FOUND', message: `接口不存在，请使用 POST ${PRIMARY_ANALYSIS_PATH}。` },
+      error: { code: 'NOT_FOUND', message: `接口不存在，请检查 /api/analyze 或 /api/records。` },
     })
   })
 }

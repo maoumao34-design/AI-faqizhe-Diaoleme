@@ -55,6 +55,7 @@ npm run dev
 - 前端公开入口：`POST /api/analyze`
 - 兼容旧入口：`POST /api/hair-analysis`
 - 请求格式：`application/json` 或 `multipart/form-data`
+- 存档行为：每次成功解析请求后会把 mock / AI / fallback 分析结果写入后端轻量 JSON 存储，供历史接口读取。
 - 是否真实 AI：后端按 `AI_PROVIDER` 读取配置；推荐 `openai_compatible`，代理请求 `${OPENAI_BASE_URL}/chat/completions`，默认试跑 CC club `gpt-5.5`。
 - 降级策略：缺少 key、401/403、模型不可用、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
 - 路径兜底：当 `OPENAI_BASE_URL=https://claude-code.club/openai/v1` 返回 404 时，会再尝试 `https://claude-code.club/openai/chat/completions`，方便联调判断 `/openai/v1` 与 `/openai` 路径差异。
@@ -148,6 +149,50 @@ npm run dev
   }
 }
 ```
+
+## 记录存档与历史查询
+
+### 创建记录
+
+- 接口路径：`POST /api/records`
+- 请求格式：`application/json`
+- 使用场景：前端如需主动补存一条已生成分析结果，可直接提交 `/api/analyze` 返回体。
+
+返回示例：
+
+```json
+{
+  "success": true,
+  "record": {
+    "record_id": "rec_xxx",
+    "created_at": "2026-07-13T08:00:00.000Z",
+    "image_url": "/uploads/demo.jpg",
+    "record_status": "ai_completed",
+    "result": {
+      "score": 82,
+      "title": "今日发丝巡逻队长"
+    }
+  }
+}
+```
+
+### 历史列表
+
+- 接口路径：`GET /api/records?limit=50`
+- `limit` 范围：1-100，默认 50。
+
+```json
+{
+  "success": true,
+  "records": [],
+  "total": 0
+}
+```
+
+### 记录详情
+
+- 接口路径：`GET /api/records/:id`
+- 未找到返回 `404` + `RECORD_NOT_FOUND`。
 
 ## Mock 场景
 

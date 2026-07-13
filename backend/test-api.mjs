@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
+import { rm } from 'node:fs/promises'
 
 process.env.AI_PROVIDER = 'openai_compatible'
 process.env.OPENAI_API_KEY = ' '
+process.env.RECORDS_FILE = `data/test-records-${process.pid}.json`
 
-const { createApp } = await import('./server.mjs')
+const { buildAiResponse, createApp } = await import('./server.mjs')
 
 const server = createApp()
 server.listen(0)
@@ -84,7 +86,54 @@ try {
   assert.match(uploadData.image_url, /^\/uploads\//)
   assertStableContract(uploadData)
 
-  console.log('All mock API checks passed')
+  const unsafeAiResponse = buildAiResponse({
+    score: 72,
+    title: '严重脱发诊断',
+    summary: '建议治疗并尽快就医',
+    roast: '需要用药',
+    encouragement: '保持轻松记录',
+    tags: ['疾病风险', '今日记录'],
+    daily_task: '去医院治疗',
+    suggestions: ['建议用药', '早点休息'],
+    disclaimer: '此结果可以作为诊断',
+  })
+  const displayedText = JSON.stringify(unsafeAiResponse.result)
+  assert.doesNotMatch(displayedText, /诊断|疾病|严重脱发|治疗|用药|就医|医院/)
+  assert.match(unsafeAiResponse.result.disclaimer, /不作为医疗用途/)
+
+  const createRecordResponse = await fetch(`${baseUrl}/api/records`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(success.data),
+  })
+  const createdRecord = await createRecordResponse.json()
+  assert.equal(createRecordResponse.status, 201)
+  assert.equal(createdRecord.success, true)
+  assert.equal(createdRecord.record.record_id, success.data.record_id)
+  assert.match(createdRecord.record.created_at, /^\d{4}-\d{2}-\d{2}T/)
+
+  const listResponse = await fetch(`${baseUrl}/api/records?limit=10`)
+  const listData = await listResponse.json()
+  assert.equal(listResponse.status, 200)
+  assert.ok(listData.total >= 4)
+  assert.ok(listData.records.some((record) => record.record_id === success.data.record_id))
+
+  const detailResponse = await fetch(`${baseUrl}/api/records/${success.data.record_id}`)
+  const detailData = await detailResponse.json()
+  assert.equal(detailResponse.status, 200)
+  assert.equal(detailData.record.result.title, success.data.result.title)
+
+  const oversizedResponse = await fetch(`${baseUrl}/api/analyze`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ image_url: 'https://example.com/demo.jpg', padding: 'x'.repeat(8 * 1024 * 1024) }),
+  })
+  const oversizedData = await oversizedResponse.json()
+  assert.equal(oversizedResponse.status, 413)
+  assert.equal(oversizedData.fallbackCode, 'BODY_TOO_LARGE')
+
+  console.log('All backend API checks passed')
 } finally {
   server.close()
+  await rm(new URL(process.env.RECORDS_FILE, import.meta.url), { force: true })
 }
