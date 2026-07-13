@@ -19,6 +19,7 @@ const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 3000
 const AI_PROVIDER = normalizeProvider(process.env.AI_PROVIDER || (process.env.OPENAI_API_KEY ? 'openai_compatible' : 'siliconflow'))
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://claude-code.club/openai/v1'
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5'
+const OPENAI_API_MODE = process.env.OPENAI_API_MODE === 'chat_completions' ? 'chat_completions' : 'responses'
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || process.env.SILICONFLOW_TIMEOUT_MS || 30000)
 
 const SYSTEM_PROMPT =
@@ -127,6 +128,10 @@ function activeProviderLabel() {
 
 function buildChatCompletionUrl(baseUrl) {
   return `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+}
+
+function buildResponsesUrl(baseUrl) {
+  return `${baseUrl.replace(/\/+$/, '')}/responses`
 }
 
 function buildOpenAICompatibleFallbackBaseUrl(baseUrl) {
@@ -423,31 +428,43 @@ async function callOpenAICompatible({ imageUrl, uploadedFile, note }) {
     ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
     : imageUrl
 
-  const body = {
-    model: OPENAI_MODEL,
-    messages: buildVisionMessages(imageContent, note),
-    temperature: 0.7,
-  }
+  const useResponsesApi = OPENAI_API_MODE === 'responses'
+  const body = useResponsesApi
+    ? {
+        model: OPENAI_MODEL,
+        instructions: SYSTEM_PROMPT,
+        input: [{
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: `请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。用户备注：${safeText(note, '无')}`,
+            },
+            { type: 'input_image', image_url: imageContent },
+          ],
+        }],
+      }
+    : {
+        model: OPENAI_MODEL,
+        messages: buildVisionMessages(imageContent, note),
+        temperature: 0.7,
+      }
+
+  const requestAtBaseUrl = (baseUrl) => postChatCompletion({
+    url: useResponsesApi ? buildResponsesUrl(baseUrl) : buildChatCompletionUrl(baseUrl),
+    apiKey,
+    body,
+    timeoutMs: OPENAI_TIMEOUT_MS,
+    provider: 'openai_compatible',
+  })
 
   try {
-    return await postChatCompletion({
-      url: buildChatCompletionUrl(OPENAI_BASE_URL),
-      apiKey,
-      body,
-      timeoutMs: OPENAI_TIMEOUT_MS,
-      provider: 'openai_compatible',
-    })
+    return await requestAtBaseUrl(OPENAI_BASE_URL)
   } catch (error) {
     const fallbackBaseUrl = buildOpenAICompatibleFallbackBaseUrl(OPENAI_BASE_URL)
     if (error?.status === 404 && fallbackBaseUrl !== OPENAI_BASE_URL.replace(/\/+$/, '')) {
       console.warn('[hair-analysis] OpenAI compatible /v1 path failed; retrying base path without /v1')
-      return postChatCompletion({
-        url: buildChatCompletionUrl(fallbackBaseUrl),
-        apiKey,
-        body,
-        timeoutMs: OPENAI_TIMEOUT_MS,
-        provider: 'openai_compatible',
-      })
+      return requestAtBaseUrl(fallbackBaseUrl)
     }
     throw error
   }
@@ -480,10 +497,13 @@ async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
 }
 
 function extractModelJson(data) {
-  const content = data?.choices?.[0]?.message?.content
+  const responseOutput = Array.isArray(data?.output)
+    ? data.output.flatMap((item) => item?.content || []).find((item) => item?.type === 'output_text')?.text
+    : null
+  const content = data?.choices?.[0]?.message?.content || data?.output_text || responseOutput
   if (typeof content === 'object' && content) return content
   if (typeof content !== 'string') {
-    const err = new Error('SiliconFlow response missing message content')
+    const err = new Error('AI provider response missing message content')
     err.code = 'UPSTREAM_BAD_SHAPE'
     throw err
   }
