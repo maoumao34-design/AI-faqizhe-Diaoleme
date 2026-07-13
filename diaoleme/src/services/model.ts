@@ -4,11 +4,16 @@ import { MODEL_API_CONFIG } from './config'
 
 export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
 
+interface ApiEnvelope {
+  success?: boolean
+  fallbackCode?: string | null
+  error?: { message?: string }
+  result?: Record<string, unknown>
+}
+
 const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
 
-/**
- * 调用本地后端代理生成娱乐化反馈。真实 API key 只由后端读取，不进入前端代码。
- */
+/** Calls the backend proxy; API keys always remain server-side. */
 export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMode()): Promise<AnalysisResult> {
   validateImageFile(file)
 
@@ -18,20 +23,20 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
   }
 
   if (mode === 'mock-success') {
-    return mockResult(file, 'mock')
+    return mockResult(file, 'mock', '演示模式已开启，当前展示本地 mock 反馈。')
   }
 
   try {
     const form = new FormData()
     form.append('image', file)
-    const resp = await axios.post(MODEL_API_CONFIG.url, form, {
+    const resp = await axios.post<ApiEnvelope>(MODEL_API_CONFIG.url, form, {
       timeout: MODEL_API_CONFIG.timeout,
     })
-
-    return normalize(parseResponse(resp.data), resp.data?.success === false ? 'fallback' : 'api')
+    const source = resp.data?.success === false ? 'fallback' : 'api'
+    return normalize(parseResponse(resp.data), source, fallbackNotice(resp.data))
   } catch (err) {
     console.warn('[model] 后端分析代理暂时不可用，使用 demo 兜底结果。', err)
-    return mockResult(file, 'fallback')
+    return mockResult(file, 'fallback', requestFailureNotice(err))
   }
 }
 
@@ -49,22 +54,26 @@ export function validateImageFile(file: File) {
   if (file.size <= 0) throw new Error('empty_file')
 }
 
-/** 从后端代理响应里提取 result，兼容直接返回 AnalysisResult 的旧格式。 */
-function parseResponse(data: any): Partial<AnalysisResult> {
-  if (data?.result && typeof data.result === 'object') {
-    return data.result
+/** Extracts result while retaining compatibility with the legacy direct-result response. */
+function parseResponse(data: ApiEnvelope | Record<string, unknown>): Partial<AnalysisResult> & Record<string, unknown> {
+  const response = data as Record<string, unknown>
+  if (response.result && typeof response.result === 'object') {
+    return response.result as Partial<AnalysisResult> & Record<string, unknown>
   }
-  if (data && typeof data === 'object') {
-    return data
-  }
-  return {}
+  return response
 }
 
-function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.source || 'api'): AnalysisResult {
+function normalize(
+  data: Partial<AnalysisResult> & Record<string, unknown>,
+  source: AnalysisSource = data.source || 'api',
+  serviceNotice?: string,
+): AnalysisResult {
   const score = typeof data.score === 'number' ? Math.max(0, Math.min(100, Math.round(data.score))) : 66
+  const task = data.task && typeof data.task === 'object' ? data.task as Record<string, unknown> : undefined
+  const taskText = safeText(data.daily_task, safeText(task?.description, safeText(task?.name, '今晚给自己留 30 分钟放松时间')))
   const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0
     ? data.suggestions.slice(0, 5).map(String)
-    : [data.daily_task || '今晚给自己留 30 分钟放松时间']
+    : [taskText]
   const tags = Array.isArray(data.tags) && data.tags.length > 0
     ? data.tags.slice(0, 4).map(String)
     : buildTags(score)
@@ -76,10 +85,11 @@ function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.
     roast: safeText(data.roast, score >= 70 ? '发丝们排队下班，还挺讲秩序。' : '头发像开了早会，讨论得稍微热闹了一点。'),
     encouragement: safeText(data.encouragement, '别紧张，记录本身就很棒，黏土小人会陪你慢慢养成节奏。'),
     tags,
-    daily_task: safeText(data.daily_task, suggestions[0]),
+    daily_task: taskText,
     disclaimer: safeText(data.disclaimer, DEFAULT_DISCLAIMER),
     source,
-    source_label: sourceLabel(source, data.source_label),
+    source_label: sourceLabel(source, typeof data.source_label === 'string' ? data.source_label : undefined),
+    service_notice: serviceNotice,
     count: data.count === '少量' || data.count === '偏多' ? data.count : '中等',
     thickness: data.thickness === '粗硬' || data.thickness === '细软' ? data.thickness : '正常',
     suggestions,
@@ -98,12 +108,25 @@ function buildTags(score: number) {
 
 function sourceLabel(source: AnalysisSource, label?: string) {
   if (label) return label
-  if (source === 'api') return 'CC club OpenAI compatible AI 分析结果'
-  if (source === 'fallback') return 'AI 兜底结果'
+  if (source === 'api') return '真实 AI 趣味反馈'
+  if (source === 'fallback') return 'Demo 降级反馈'
   return 'Demo mock 结果'
 }
 
-function mockResult(file?: File, source: AnalysisSource = 'mock'): Promise<AnalysisResult> {
+function fallbackNotice(data: ApiEnvelope) {
+  if (data.success !== false) return undefined
+  const message = safeText(data.error?.message, '后端暂时返回了保底结果。')
+  return `${message} 本次记录仍已完成，可稍后再试真实分析。`
+}
+
+function requestFailureNotice(err: unknown) {
+  if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
+    return '分析等待时间有点久，已自动切换为 demo 反馈，本次记录不会中断。'
+  }
+  return '真实分析服务暂时没有连上，已自动切换为 demo 反馈，本次记录不会中断。'
+}
+
+function mockResult(file?: File, source: AnalysisSource = 'mock', serviceNotice?: string): Promise<AnalysisResult> {
   const fileHint = file?.name ? `已读取「${file.name.slice(0, 18)}」` : '已读取今天的照片'
   return new Promise((resolve) =>
     setTimeout(() => {
@@ -118,6 +141,7 @@ function mockResult(file?: File, source: AnalysisSource = 'mock'): Promise<Analy
         disclaimer: DEFAULT_DISCLAIMER,
         source,
         source_label: sourceLabel(source),
+        service_notice: serviceNotice,
         count: '中等',
         thickness: '正常',
         suggestions: [
