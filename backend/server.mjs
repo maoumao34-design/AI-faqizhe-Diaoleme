@@ -18,6 +18,7 @@ const SILICONFLOW_MODEL = process.env.SILICONFLOW_MODEL || 'Qwen/Qwen3-VL-32B-In
 const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 30000)
 const AI_PROVIDER = normalizeProvider(process.env.AI_PROVIDER || (process.env.OPENAI_API_KEY ? 'openai_compatible' : 'siliconflow'))
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://claude-code.club/openai/v1'
+const OPENAI_RESPONSES_URL = process.env.OPENAI_RESPONSES_URL || buildEndpointUrl(OPENAI_BASE_URL, 'responses')
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5'
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || process.env.SILICONFLOW_TIMEOUT_MS || 30000)
 
@@ -125,12 +126,12 @@ function activeProviderLabel() {
   return AI_PROVIDER === 'openai_compatible' ? 'OpenAI compatible' : 'SiliconFlow'
 }
 
-function buildChatCompletionUrl(baseUrl) {
-  return `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+function buildEndpointUrl(baseUrl, endpoint) {
+  return `${baseUrl.replace(/\/+$/, '')}/${endpoint}`
 }
 
-function buildOpenAICompatibleFallbackBaseUrl(baseUrl) {
-  return baseUrl.replace(/\/+$/, '').replace(/\/v1$/i, '')
+function buildChatCompletionUrl(baseUrl) {
+  return buildEndpointUrl(baseUrl, 'chat/completions')
 }
 
 function jsonResponse(res, statusCode, payload) {
@@ -359,7 +360,26 @@ function buildVisionMessages(imageContent, note) {
   ]
 }
 
-async function postChatCompletion({ url, apiKey, body, timeoutMs, provider }) {
+function buildResponsesInput(imageContent, note) {
+  return [
+    {
+      role: 'system',
+      content: [{ type: 'input_text', text: SYSTEM_PROMPT }],
+    },
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'input_text',
+          text: `请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。用户备注：${safeText(note, '无')}`,
+        },
+        { type: 'input_image', image_url: imageContent },
+      ],
+    },
+  ]
+}
+
+async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extractResponse }) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -399,7 +419,7 @@ async function postChatCompletion({ url, apiKey, body, timeoutMs, provider }) {
       throw err
     }
 
-    return extractModelJson(data)
+    return extractResponse(data)
   } finally {
     clearTimeout(timeout)
   }
@@ -423,34 +443,17 @@ async function callOpenAICompatible({ imageUrl, uploadedFile, note }) {
     ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
     : imageUrl
 
-  const body = {
-    model: OPENAI_MODEL,
-    messages: buildVisionMessages(imageContent, note),
-    temperature: 0.7,
-  }
-
-  try {
-    return await postChatCompletion({
-      url: buildChatCompletionUrl(OPENAI_BASE_URL),
-      apiKey,
-      body,
-      timeoutMs: OPENAI_TIMEOUT_MS,
-      provider: 'openai_compatible',
-    })
-  } catch (error) {
-    const fallbackBaseUrl = buildOpenAICompatibleFallbackBaseUrl(OPENAI_BASE_URL)
-    if (error?.status === 404 && fallbackBaseUrl !== OPENAI_BASE_URL.replace(/\/+$/, '')) {
-      console.warn('[hair-analysis] OpenAI compatible /v1 path failed; retrying base path without /v1')
-      return postChatCompletion({
-        url: buildChatCompletionUrl(fallbackBaseUrl),
-        apiKey,
-        body,
-        timeoutMs: OPENAI_TIMEOUT_MS,
-        provider: 'openai_compatible',
-      })
-    }
-    throw error
-  }
+  return postModelRequest({
+    url: OPENAI_RESPONSES_URL,
+    apiKey,
+    body: {
+      model: OPENAI_MODEL,
+      input: buildResponsesInput(imageContent, note),
+    },
+    timeoutMs: OPENAI_TIMEOUT_MS,
+    provider: 'openai_compatible',
+    extractResponse: extractResponsesModelJson,
+  })
 }
 
 async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
@@ -466,7 +469,7 @@ async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
     ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
     : imageUrl
 
-  return postChatCompletion({
+  return postModelRequest({
     url: SILICONFLOW_URL,
     apiKey,
     body: {
@@ -476,14 +479,14 @@ async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
     },
     timeoutMs: SILICONFLOW_TIMEOUT_MS,
     provider: 'siliconflow',
+    extractResponse: extractChatCompletionModelJson,
   })
 }
 
-function extractModelJson(data) {
-  const content = data?.choices?.[0]?.message?.content
+function parseModelJson(content, provider) {
   if (typeof content === 'object' && content) return content
   if (typeof content !== 'string') {
-    const err = new Error('SiliconFlow response missing message content')
+    const err = new Error(`${provider} response missing model output text`)
     err.code = 'UPSTREAM_BAD_SHAPE'
     throw err
   }
@@ -493,11 +496,33 @@ function extractModelJson(data) {
     return JSON.parse(cleaned)
   } catch {
     const match = cleaned.match(/\{[\s\S]*\}/)
-    if (match) return JSON.parse(match[0])
-    const err = new Error('SiliconFlow content is not JSON')
+    if (match) {
+      try {
+        return JSON.parse(match[0])
+      } catch {
+        // Fall through to the stable content parsing fallback.
+      }
+    }
+    const err = new Error(`${provider} output is not JSON`)
     err.code = 'UPSTREAM_CONTENT_NOT_JSON'
     throw err
   }
+}
+
+function extractChatCompletionModelJson(data) {
+  return parseModelJson(data?.choices?.[0]?.message?.content, 'SiliconFlow')
+}
+
+function extractResponsesModelJson(data) {
+  if (typeof data?.output_text === 'string') {
+    return parseModelJson(data.output_text, 'OpenAI Responses')
+  }
+
+  const content = Array.isArray(data?.output)
+    ? data.output.flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+    : []
+  const output = content.find((item) => item?.type === 'output_text' && typeof item.text === 'string')
+  return parseModelJson(output?.text, 'OpenAI Responses')
 }
 
 function buildTags(score) {

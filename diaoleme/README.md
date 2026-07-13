@@ -104,12 +104,13 @@ export const MODEL_API_CONFIG = {
 ```bash
 AI_PROVIDER=openai_compatible
 OPENAI_BASE_URL=https://claude-code.club/openai/v1
+# 可选：OPENAI_RESPONSES_URL=https://claude-code.club/openai/v1/responses
 OPENAI_MODEL=gpt-5.5
 OPENAI_API_KEY=sk-xxx
 PORT=8787
 ```
 
-如果 CC club 返回模型不可用，可临时改为 `OPENAI_MODEL=gpt-5.4`。同时启动 `backend` 和前端后，`analyzePhoto` 会默认请求本地后端代理 `/api/analyze`，再由后端请求 OpenAI compatible provider。缺少 key、上游失败或后端不可用时，会安全降级为可展示的 demo/AI 兜底结果。
+如果 CC club 返回模型不可用，可临时改为 `OPENAI_MODEL=gpt-5.4`。同时启动 `backend` 和前端后，`analyzePhoto` 会默认请求本地后端代理 `/api/analyze`，再由后端请求 OpenAI compatible Responses API（默认 `${OPENAI_BASE_URL}/responses`）。缺少 key、鉴权失败、超时、上游异常或内容解析失败时，会安全降级为带明确 `fallbackCode` 的 demo/AI 兜底结果。
 
 **期望返回 JSON 格式**（在 `src/types/index.ts` 中定义）：
 

@@ -17,7 +17,7 @@
 | 来源 | 合并到 | 处理方式 |
 | --- | --- | --- |
 | `feature/aifa-7-openai-compatible-ai` 中的 OpenAI compatible provider 逻辑 | `backend/server.mjs` | 快进合并到本清理分支，沿用 `AI_PROVIDER=openai_compatible`，未另起新服务目录。 |
-| OpenAI compatible 与 SiliconFlow 的请求发送逻辑 | `postChatCompletion` + `buildVisionMessages` | 删除 SiliconFlow 分支内重复的 fetch / messages / JSON 解析流程，两个 provider 共用同一请求与解析入口。 |
+| OpenAI compatible 与 SiliconFlow 的请求发送逻辑 | `postModelRequest` + provider 专属输入/响应适配 | 两个 provider 共用 fetch、超时和错误映射；OpenAI compatible 使用 Responses API，SiliconFlow 保留 Chat Completions。 |
 | provider 运行说明 | `backend/docs/api.md` 与 `diaoleme/README.md` | 统一说明后端按 `AI_PROVIDER` 选择 provider，默认推荐 OpenAI compatible，旧 SiliconFlow 作为可选回退。 |
 
 ## 删除
