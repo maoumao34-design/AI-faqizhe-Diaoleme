@@ -7,6 +7,8 @@
 ```bash
 AI_PROVIDER=openai_compatible
 OPENAI_BASE_URL=https://claude-code.club/openai/v1
+# 可选；默认会请求 ${OPENAI_BASE_URL}/responses
+# OPENAI_RESPONSES_URL=https://claude-code.club/openai/v1/responses
 OPENAI_MODEL=gpt-5.5
 OPENAI_API_KEY=sk-xxx
 OPENAI_TIMEOUT_MS=30000
@@ -55,9 +57,9 @@ npm run dev
 - 前端公开入口：`POST /api/analyze`
 - 兼容旧入口：`POST /api/hair-analysis`
 - 请求格式：`application/json` 或 `multipart/form-data`
-- 是否真实 AI：后端按 `AI_PROVIDER` 读取配置；推荐 `openai_compatible`，代理请求 `${OPENAI_BASE_URL}/chat/completions`，默认试跑 CC club `gpt-5.5`。
-- 降级策略：缺少 key、401/403、模型不可用、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
-- 路径兜底：当 `OPENAI_BASE_URL=https://claude-code.club/openai/v1` 返回 404 时，会再尝试 `https://claude-code.club/openai/chat/completions`，方便联调判断 `/openai/v1` 与 `/openai` 路径差异。
+- 是否真实 AI：后端按 `AI_PROVIDER` 读取配置；推荐 `openai_compatible`，代理请求 Responses API（默认 `${OPENAI_BASE_URL}/responses`，也可用 `OPENAI_RESPONSES_URL` 精确覆盖），默认试跑 CC club `gpt-5.5`。
+- 降级策略：缺少 key、401/403、模型不可用、超时、上游返回非 JSON 或模型输出无法解析时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
+- 旧 SiliconFlow provider 仍使用 `/chat/completions`；CC club OpenAI compatible provider 不再请求 `/chat/completions`。
 
 ## 请求字段
 
@@ -167,6 +169,8 @@ npm run dev
 curl -X POST http://localhost:8787/api/analyze \
   -H "content-type: application/json" \
   -d '{"image_url":"https://example.com/demo.jpg","note":"今天记录一下"}'
+
+# 后端会转发到：${OPENAI_RESPONSES_URL:-${OPENAI_BASE_URL}/responses}
 ```
 
 ### FormData 上传
