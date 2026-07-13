@@ -15,6 +15,7 @@ export interface AnalysisResult {
   disclaimer: string
   source: AnalysisSource
   source_label: string
+  service_notice?: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]

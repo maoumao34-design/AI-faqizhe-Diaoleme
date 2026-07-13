@@ -15,6 +15,7 @@ export interface ReportRecord {
   disclaimer: string
   source: AnalysisSource
   source_label: string
+  service_notice?: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -31,6 +32,7 @@ interface UserState {
   disclaimer: string
   source: AnalysisSource
   sourceLabel: string
+  serviceNotice?: string
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
@@ -64,6 +66,7 @@ export const useUserStore = create<UserState>()(
       disclaimer: DEFAULT_DISCLAIMER,
       source: 'mock',
       sourceLabel: '等待分析',
+      serviceNotice: undefined,
       count: '中等',
       thickness: '正常',
       suggestions: [],
@@ -84,6 +87,7 @@ export const useUserStore = create<UserState>()(
           disclaimer: r.disclaimer,
           source: r.source,
           sourceLabel: r.source_label,
+          serviceNotice: r.service_notice,
           count: r.count,
           thickness: r.thickness,
           suggestions: r.suggestions,
@@ -103,6 +107,7 @@ export const useUserStore = create<UserState>()(
             disclaimer: rec.disclaimer,
             source: rec.source,
             sourceLabel: rec.source_label,
+            serviceNotice: rec.service_notice,
             count: rec.count,
             thickness: rec.thickness,
             suggestions: rec.suggestions,
@@ -126,6 +131,7 @@ export const useUserStore = create<UserState>()(
           disclaimer: latest.disclaimer,
           source: latest.source,
           sourceLabel: latest.source_label,
+          serviceNotice: latest.service_notice,
           count: latest.count,
           thickness: latest.thickness,
           suggestions: latest.suggestions,
@@ -169,6 +175,7 @@ export const useUserStore = create<UserState>()(
           disclaimer: DEFAULT_DISCLAIMER,
           source: 'mock',
           sourceLabel: '等待分析',
+          serviceNotice: undefined,
           count: '中等',
           thickness: '正常',
           suggestions: [],
