@@ -30,7 +30,7 @@
 
 | 路径 | 原因 | 后续建议 |
 | --- | --- | --- |
-| `docs/ai-analysis-contract.md` | 历史协议偏 v0.1，字段为 `analysis_id` / `entertainment_result`，与当前后端 `analysisId` / `result` 不完全一致，但仍保留了早期 schema、prompt、fallback 背景。 | 等产品 / AI schema 最终确认后，再由文档任务统一归档或改名为历史协议。 |
+| `docs/ai-analysis-contract.md` | 已更新为当前 `analysisId` / `result` canonical 契约，并指向 `docs/ai-analysis-schema.json`。 | 后续随运行时接口一起维护。 |
 | `docs/ai-analysis-schema.json` | 旧 schema 与当前可运行接口契约不一致，当前后端没有引入 schema 校验依赖。 | 后续若要做强校验，应基于 `backend/docs/api.md` 的当前响应重新生成，而不是直接复用旧 schema。 |
 | `docs/ai-analysis-mocks.json` | 旧 mock 结构仍可作为产品文案参考，但不是运行时 mock 来源。 | 运行时 mock 以 `backend/server.mjs` 的 `SCENARIOS` 为准；后续可迁移为测试 fixture。 |
 | `docs/ai-analysis-prompt.md` | 旧 prompt 结构比当前后端精细，暂不直接替换 AIFA-7 prompt，避免破坏已接入链路。 | AI Agent 确认模型 schema 后再统一更新。 |

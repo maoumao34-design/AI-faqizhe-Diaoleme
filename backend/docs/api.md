@@ -82,8 +82,10 @@ npm run dev
 
 ## 统一响应契约
 
-顶层固定字段：`success/fallbackCode/record_id/analysisId/record_status/image_url/ai_source`。
-展示字段固定放在 `result`：`score/title/summary/task/growthDelta/tags/disclaimer/roast/encouragement/source/source_label/daily_task/count/thickness/suggestions`。
+顶层固定字段：`success/fallbackCode/record_id/analysisId/record_status/image_url/ai_source/result`。
+展示字段固定放在 `result`：`score/title/summary/task/growthDelta/tags/disclaimer/roast/encouragement/image_quality/source/source_label/daily_task/count/thickness/suggestions`。
+
+`docs/ai-analysis-schema.json` 是当前唯一 canonical 响应契约；`POST /api/analyze` 与兼容入口 `POST /api/hair-analysis` 均按该 schema 返回。历史文档中的 `analysis_id/entertainment_result/fallback_code` 不再作为运行时字段。
 
 ### AI 成功示例
 
@@ -111,7 +113,7 @@ npm run dev
       "streak_days": 1
     },
     "tags": ["队形稳定", "心态在线"],
-    "disclaimer": "本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。",
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。",
     "roast": "头发小伙伴今天也在认真营业。",
     "encouragement": "继续轻松记录就好，保持节奏已经很棒。",
     "source": "api",
@@ -145,7 +147,7 @@ npm run dev
     "summary": "后端还没有配置 OPENAI_API_KEY，已返回可展示的 demo 兜底。",
     "source": "fallback",
     "source_label": "AI 兜底结果",
-    "disclaimer": "当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。"
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。"
   }
 }
 ```
@@ -235,7 +237,7 @@ curl -X POST http://localhost:8787/api/analyze \
 - 前端不读取、不保存真实 API key；真实 key 只放在 `backend/.env`。
 - 结果页可用 `result.source_label` 区分 `CC club OpenAI compatible AI 分析结果`、`AI 兜底结果`、`Demo mock 结果`。
 - 如果 `success=false` 或 `fallbackCode` 不为空，可展示轻量提示，但不要阻断结果页。
-- 所有文案保持娱乐记录和习惯养成语气，不输出医疗诊断或治疗建议。
+- 所有文案保持娱乐记录和习惯养成语气；模型展示字段命中疾病、诊断、严重脱发、治疗、用药或就医等表达时，服务端统一返回 `CONTENT_BLOCKED` 安全 fallback。
 
 ## 结构清理说明
 
