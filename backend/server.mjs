@@ -21,6 +21,14 @@ const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://claude-code.club
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5'
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || process.env.SILICONFLOW_TIMEOUT_MS || 30000)
 
+const SAFE_DISCLAIMER = '本结果仅用于娱乐和习惯记录，不构成医疗建议。'
+const UNSAFE_AI_CONTENT = [
+  /严重脱发|病理性脱发|雄激素性脱发|斑秃|秃了|秃头/u,
+  /疾病|患病|病症|诊断|确诊|治疗|用药|药物|处方|就医|医院|医生/u,
+  /发际线.{0,6}(明显)?后移|健康风险|疾病风险/u,
+  /diagnos(?:is|e)|disease|treat(?:ment)?|medication|prescription|see a doctor/iu,
+]
+
 const SYSTEM_PROMPT =
   '你是“掉了么”的趣味头发记录陪伴员。用户会上传掉发或头发状态照片。' +
   '请只基于画面给出轻松、娱乐化、非医学的反馈，不要使用诊断、疾病风险、治疗建议、用药、就医等表达，也不要给出确定性健康判断。' +
@@ -161,7 +169,7 @@ function buildAnalysisResponse(scenario, requestMeta = {}) {
       task: data.task,
       growthDelta: data.growthDelta,
       tags: data.tags,
-      disclaimer: '当前为 demo mock 结果，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
+      disclaimer: SAFE_DISCLAIMER,
       roast: data.roast,
       encouragement: data.encouragement,
       image_quality: data.image_quality,
@@ -280,7 +288,7 @@ function buildFallbackResponse(fallbackCode, message, imageUrl = null, options =
         streak_days: 0,
       },
       tags: options.tags || ['已记录', '可重试'],
-      disclaimer: '当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
+      disclaimer: SAFE_DISCLAIMER,
       roast: options.roast || '分析小机器人暂时没连上外援，但结果页不会空手而归。',
       encouragement: '不用担心，照片记录已经进入演示链路，可以稍后再试真实 AI。',
       image_quality: options.image_quality || 'unknown',
@@ -298,8 +306,23 @@ function buildFallbackResponse(fallbackCode, message, imageUrl = null, options =
   }
 }
 
-function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
+export function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
   const imageUrl = requestMeta.image_url || requestMeta.uploaded_file?.url || null
+  if (containsUnsafeAiContent(modelData)) {
+    return buildFallbackResponse(
+      'CONTENT_BLOCKED',
+      '本次 AI 文案不符合轻松记录口径，已自动换成安全的娱乐化反馈。',
+      imageUrl,
+      {
+        title: '轻松记录守门员',
+        taskName: '继续轻松打卡',
+        taskDescription: '换个稳定光线记录一次，今天不和头发较劲。',
+        tags: ['娱乐参考', '安全改写', '继续记录'],
+        roast: '文案守门员及时接球，焦虑表达没有进入结果页。',
+      },
+    )
+  }
+
   const providerName = provider === 'openai_compatible' ? 'openai_compatible' : 'siliconflow'
   const providerLabel = provider === 'openai_compatible' ? 'CC club OpenAI compatible AI 分析结果' : 'SiliconFlow AI 分析结果'
   const score = clampScore(modelData.score)
@@ -329,7 +352,7 @@ function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
         streak_days: 1,
       },
       tags: normalizeStringArray(modelData.tags, buildTags(score)).slice(0, 4),
-      disclaimer: safeText(modelData.disclaimer, '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。'),
+      disclaimer: SAFE_DISCLAIMER,
       roast: safeText(modelData.roast, '头发小伙伴今天也在认真营业。'),
       encouragement: safeText(modelData.encouragement, '继续轻松记录就好，保持节奏已经很棒。'),
       image_quality: safeText(modelData.image_quality, 'ai_observed'),
@@ -498,6 +521,25 @@ function extractModelJson(data) {
     err.code = 'UPSTREAM_CONTENT_NOT_JSON'
     throw err
   }
+}
+
+function containsUnsafeAiContent(modelData) {
+  const displayValues = [
+    modelData?.title,
+    modelData?.summary,
+    modelData?.roast,
+    modelData?.encouragement,
+    modelData?.daily_task,
+    modelData?.image_quality,
+    modelData?.disclaimer,
+    ...(Array.isArray(modelData?.tags) ? modelData.tags : []),
+    ...(Array.isArray(modelData?.suggestions) ? modelData.suggestions : []),
+  ]
+
+  return displayValues.some((value) => {
+    if (typeof value !== 'string') return false
+    return UNSAFE_AI_CONTENT.some((pattern) => pattern.test(value))
+  })
 }
 
 function buildTags(score) {
