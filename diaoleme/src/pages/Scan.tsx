@@ -71,6 +71,7 @@ export default function Scan() {
         disclaimer: result.disclaimer,
         source: result.source,
         source_label: result.source_label,
+        service_notice: result.service_notice,
         count: result.count,
         thickness: result.thickness,
         suggestions: result.suggestions,
@@ -169,7 +170,7 @@ export default function Scan() {
           className="mt-3 w-full active:scale-[0.98] transition-all font-medium py-4 rounded-2xl flex items-center justify-center gap-2 bg-moss text-coffee shadow-md shadow-moss/25 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? <Loader2 size={19} className="animate-spin" /> : <ImagePlus size={19} />}
-          {busy ? '分析中，黏土小人正在眯眼观察...' : '开始趣味分析'}
+          {busy ? '正在连接趣味分析，暂不可重复提交...' : '开始趣味分析'}
         </button>
 
         {selectedFile && !busy && (
@@ -191,7 +192,7 @@ export default function Scan() {
         <div className="mt-6 mb-8">
           <StickerCard accent="cream">
             <p className="text-xs leading-relaxed text-center text-coffee/60">
-              小贴士：前端会优先请求本地后端代理；后端暂时不可用时才使用 demo 兜底。图片仅用于本次分析请求，结果只做娱乐化记录，不做医学判断。
+              小贴士：前端会优先请求已配置的分析服务；服务暂时不可用时自动使用 demo 反馈，记录流程不会中断。图片仅用于本次请求，结果只做娱乐化记录，不做医学判断。
             </p>
           </StickerCard>
         </div>
