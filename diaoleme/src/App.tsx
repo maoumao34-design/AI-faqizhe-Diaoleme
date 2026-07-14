@@ -470,7 +470,7 @@ function renderJourney(root: HTMLElement, history: ReportRecord[]) {
   `).join('') : `
     <div class="item journey-empty">
       <span>📷</span>
-      <b>暂无历史记录<small>以后用户在 Scan 上传图片生成的报告，以及历史报告都会在这里沉淀。</small></b>
+      <b>还没有旅程记录<small>完成一次 Scan 上传后，你的趣味报告和历史对比会自动出现在这里。</small></b>
       <button class="pill primary" data-go="scan">去上传第一张</button>
     </div>
   `)
