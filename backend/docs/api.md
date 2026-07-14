@@ -7,6 +7,8 @@
 ```bash
 AI_PROVIDER=openai_compatible
 OPENAI_BASE_URL=https://claude-code.club/openai/v1
+# 可选；默认会请求 ${OPENAI_BASE_URL}/responses
+# OPENAI_RESPONSES_URL=https://claude-code.club/openai/v1/responses
 OPENAI_MODEL=gpt-5.5
 OPENAI_API_KEY=sk-xxx
 OPENAI_TIMEOUT_MS=30000
@@ -55,9 +57,10 @@ npm run dev
 - 前端公开入口：`POST /api/analyze`
 - 兼容旧入口：`POST /api/hair-analysis`
 - 请求格式：`application/json` 或 `multipart/form-data`
-- 是否真实 AI：后端按 `AI_PROVIDER` 读取配置；推荐 `openai_compatible`，代理请求 `${OPENAI_BASE_URL}/chat/completions`，默认试跑 CC club `gpt-5.5`。
-- 降级策略：缺少 key、401/403、模型不可用、超时、上游返回非 JSON 时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
-- 路径兜底：当 `OPENAI_BASE_URL=https://claude-code.club/openai/v1` 返回 404 时，会再尝试 `https://claude-code.club/openai/chat/completions`，方便联调判断 `/openai/v1` 与 `/openai` 路径差异。
+- 存档行为：每次成功解析请求后会把 mock / AI / fallback 分析结果写入后端轻量 JSON 存储，供历史接口读取。
+- 是否真实 AI：后端按 `AI_PROVIDER` 读取配置；推荐 `openai_compatible`，代理请求 Responses API（默认 `${OPENAI_BASE_URL}/responses`，也可用 `OPENAI_RESPONSES_URL` 精确覆盖），默认试跑 CC club `gpt-5.5`。
+- 降级策略：缺少 key、401/403、模型不可用、超时、上游返回非 JSON、模型输出无法解析或触发医疗化文案拦截时，返回 `success:false` + `fallbackCode` + 可展示 `result`，不让结果页崩溃。
+- 旧 SiliconFlow provider 仍使用 `/chat/completions`；CC club OpenAI compatible provider 不再请求 `/chat/completions`.
 
 ## 请求字段
 
@@ -81,8 +84,10 @@ npm run dev
 
 ## 统一响应契约
 
-顶层固定字段：`success/fallbackCode/record_id/analysisId/record_status/image_url/ai_source`。
-展示字段固定放在 `result`：`score/title/summary/task/growthDelta/tags/disclaimer/roast/encouragement/source/source_label/daily_task/count/thickness/suggestions`。
+顶层固定字段：`success/fallbackCode/record_id/analysisId/record_status/image_url/ai_source/result`。
+展示字段固定放在 `result`：`score/title/summary/task/growthDelta/tags/disclaimer/roast/encouragement/image_quality/source/source_label/daily_task/count/thickness/suggestions`。
+
+`docs/ai-analysis-schema.json` 是当前唯一 canonical 响应契约；`POST /api/analyze` 与兼容入口 `POST /api/hair-analysis` 均按该 schema 返回。历史文档中的 `analysis_id/entertainment_result/fallback_code` 不再作为运行时字段。
 
 ### AI 成功示例
 
@@ -110,7 +115,7 @@ npm run dev
       "streak_days": 1
     },
     "tags": ["队形稳定", "心态在线"],
-    "disclaimer": "本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。",
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。",
     "roast": "头发小伙伴今天也在认真营业。",
     "encouragement": "继续轻松记录就好，保持节奏已经很棒。",
     "source": "api",
@@ -144,10 +149,54 @@ npm run dev
     "summary": "后端还没有配置 OPENAI_API_KEY，已返回可展示的 demo 兜底。",
     "source": "fallback",
     "source_label": "AI 兜底结果",
-    "disclaimer": "当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。"
+    "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。"
   }
 }
 ```
+
+## 记录存档与历史查询
+
+### 创建记录
+
+- 接口路径：`POST /api/records`
+- 请求格式：`application/json`
+- 使用场景：前端如需主动补存一条已生成分析结果，可直接提交 `/api/analyze` 返回体。
+
+返回示例：
+
+```json
+{
+  "success": true,
+  "record": {
+    "record_id": "rec_xxx",
+    "created_at": "2026-07-13T08:00:00.000Z",
+    "image_url": "/uploads/demo.jpg",
+    "record_status": "ai_completed",
+    "result": {
+      "score": 82,
+      "title": "今日发丝巡逻队长"
+    }
+  }
+}
+```
+
+### 历史列表
+
+- 接口路径：`GET /api/records?limit=50`
+- `limit` 范围：1-100，默认 50。
+
+```json
+{
+  "success": true,
+  "records": [],
+  "total": 0
+}
+```
+
+### 记录详情
+
+- 接口路径：`GET /api/records/:id`
+- 未找到返回 `404` + `RECORD_NOT_FOUND`。
 
 ## Mock 场景
 
@@ -167,6 +216,8 @@ npm run dev
 curl -X POST http://localhost:8787/api/analyze \
   -H "content-type: application/json" \
   -d '{"image_url":"https://example.com/demo.jpg","note":"今天记录一下"}'
+
+# 后端会转发到：${OPENAI_RESPONSES_URL:-${OPENAI_BASE_URL}/responses}
 ```
 
 ### FormData 上传
@@ -190,7 +241,7 @@ curl -X POST http://localhost:8787/api/analyze \
 - 前端不读取、不保存真实 API key；真实 key 只放在 `backend/.env`。
 - 结果页可用 `result.source_label` 区分 `CC club OpenAI compatible AI 分析结果`、`AI 兜底结果`、`Demo mock 结果`。
 - 如果 `success=false` 或 `fallbackCode` 不为空，可展示轻量提示，但不要阻断结果页。
-- 所有文案保持娱乐记录和习惯养成语气，不输出医疗诊断或治疗建议。
+- 所有文案保持娱乐记录和习惯养成语气；模型展示字段命中疾病、诊断、严重脱发、治疗、用药或就医等表达时，服务端统一返回 `CONTENT_BLOCKED` 安全 fallback。
 
 ## 结构清理说明
 

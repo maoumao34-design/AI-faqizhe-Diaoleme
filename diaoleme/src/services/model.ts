@@ -4,16 +4,12 @@ import { MODEL_API_CONFIG } from './config'
 
 export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
 
-interface ApiEnvelope {
-  success?: boolean
-  fallbackCode?: string | null
-  error?: { message?: string }
-  result?: Record<string, unknown>
-}
-
 const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
+export const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 
-/** Calls the backend proxy; API keys always remain server-side. */
+/**
+ * 调用本地后端代理生成娱乐化反馈。真实 API key 只由后端读取，不进入前端代码。
+ */
 export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMode()): Promise<AnalysisResult> {
   validateImageFile(file)
 
@@ -23,20 +19,20 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
   }
 
   if (mode === 'mock-success') {
-    return mockResult(file, 'mock', '演示模式已开启，当前展示本地 mock 反馈。')
+    return mockResult(file, 'mock')
   }
 
   try {
     const form = new FormData()
     form.append('image', file)
-    const resp = await axios.post<ApiEnvelope>(MODEL_API_CONFIG.url, form, {
+    const resp = await axios.post(MODEL_API_CONFIG.url, form, {
       timeout: MODEL_API_CONFIG.timeout,
     })
-    const source = resp.data?.success === false ? 'fallback' : 'api'
-    return normalize(parseResponse(resp.data), source, fallbackNotice(resp.data))
+
+    return normalizeResponse(resp.data)
   } catch (err) {
-    console.warn('[model] 后端分析代理暂时不可用，使用 demo 兜底结果。', err)
-    return mockResult(file, 'fallback', requestFailureNotice(err))
+    console.warn('[model] 后端分析代理不可达，返回明确的本地 fallback。', err)
+    return localFallbackResult(file)
   }
 }
 
@@ -52,28 +48,34 @@ export function validateImageFile(file: File) {
   if (!file) throw new Error('empty_file')
   if (!file.type.startsWith('image/')) throw new Error('not_image')
   if (file.size <= 0) throw new Error('empty_file')
+  if (file.size > MAX_IMAGE_SIZE_BYTES) throw new Error('file_too_large')
 }
 
-/** Extracts result while retaining compatibility with the legacy direct-result response. */
-function parseResponse(data: ApiEnvelope | Record<string, unknown>): Partial<AnalysisResult> & Record<string, unknown> {
-  const response = data as Record<string, unknown>
-  if (response.result && typeof response.result === 'object') {
-    return response.result as Partial<AnalysisResult> & Record<string, unknown>
-  }
-  return response
+/** 保留后端顶层状态，避免把 fallback 或 mock 响应误标成真实 AI。 */
+export function normalizeResponse(payload: any): AnalysisResult {
+  const data = payload?.result && typeof payload.result === 'object'
+    ? payload.result as Partial<AnalysisResult>
+    : payload && typeof payload === 'object'
+      ? payload as Partial<AnalysisResult>
+      : {}
+  const source = normalizeSource(data.source, payload?.ai_source, payload?.success)
+
+  return normalize(data, source, {
+    fallbackCode: safeNullableText(payload?.fallbackCode ?? payload?.fallback_code),
+    recordStatus: safeText(payload?.record_status, source === 'api' ? 'ai_completed' : `${source}_result`),
+    recordId: safeNullableText(payload?.record_id),
+  })
 }
 
 function normalize(
-  data: Partial<AnalysisResult> & Record<string, unknown>,
+  data: Partial<AnalysisResult>,
   source: AnalysisSource = data.source || 'api',
-  serviceNotice?: string,
+  meta: { fallbackCode?: string | null; recordStatus?: string; recordId?: string | null } = {},
 ): AnalysisResult {
   const score = typeof data.score === 'number' ? Math.max(0, Math.min(100, Math.round(data.score))) : 66
-  const task = data.task && typeof data.task === 'object' ? data.task as Record<string, unknown> : undefined
-  const taskText = safeText(data.daily_task, safeText(task?.description, safeText(task?.name, '今晚给自己留 30 分钟放松时间')))
   const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0
     ? data.suggestions.slice(0, 5).map(String)
-    : [taskText]
+    : [data.daily_task || '今晚给自己留 30 分钟放松时间']
   const tags = Array.isArray(data.tags) && data.tags.length > 0
     ? data.tags.slice(0, 4).map(String)
     : buildTags(score)
@@ -85,11 +87,13 @@ function normalize(
     roast: safeText(data.roast, score >= 70 ? '发丝们排队下班，还挺讲秩序。' : '头发像开了早会，讨论得稍微热闹了一点。'),
     encouragement: safeText(data.encouragement, '别紧张，记录本身就很棒，黏土小人会陪你慢慢养成节奏。'),
     tags,
-    daily_task: taskText,
+    daily_task: safeText(data.daily_task, suggestions[0]),
     disclaimer: safeText(data.disclaimer, DEFAULT_DISCLAIMER),
     source,
-    source_label: sourceLabel(source, typeof data.source_label === 'string' ? data.source_label : undefined),
-    service_notice: serviceNotice,
+    source_label: sourceLabel(source, data.source_label),
+    fallback_code: meta.fallbackCode ?? null,
+    record_status: meta.recordStatus || `${source}_result`,
+    record_id: meta.recordId ?? null,
     count: data.count === '少量' || data.count === '偏多' ? data.count : '中等',
     thickness: data.thickness === '粗硬' || data.thickness === '细软' ? data.thickness : '正常',
     suggestions,
@@ -100,6 +104,17 @@ function safeText(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }
 
+function safeNullableText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function normalizeSource(resultSource: unknown, aiSource: unknown, success: unknown): AnalysisSource {
+  if (resultSource === 'api' || resultSource === 'mock' || resultSource === 'fallback') return resultSource
+  if (success === false || aiSource === 'fallback') return 'fallback'
+  if (aiSource === 'mock') return 'mock'
+  return 'api'
+}
+
 function buildTags(score: number) {
   if (score >= 75) return ['队形稳定', '心态在线', '今日好梳']
   if (score >= 50) return ['轻微波动', '继续观察', '早点睡派']
@@ -108,25 +123,12 @@ function buildTags(score: number) {
 
 function sourceLabel(source: AnalysisSource, label?: string) {
   if (label) return label
-  if (source === 'api') return '真实 AI 趣味反馈'
-  if (source === 'fallback') return 'Demo 降级反馈'
+  if (source === 'api') return 'CC club OpenAI compatible AI 分析结果'
+  if (source === 'fallback') return 'AI 兜底结果'
   return 'Demo mock 结果'
 }
 
-function fallbackNotice(data: ApiEnvelope) {
-  if (data.success !== false) return undefined
-  const message = safeText(data.error?.message, '后端暂时返回了保底结果。')
-  return `${message} 本次记录仍已完成，可稍后再试真实分析。`
-}
-
-function requestFailureNotice(err: unknown) {
-  if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
-    return '分析等待时间有点久，已自动切换为 demo 反馈，本次记录不会中断。'
-  }
-  return '真实分析服务暂时没有连上，已自动切换为 demo 反馈，本次记录不会中断。'
-}
-
-function mockResult(file?: File, source: AnalysisSource = 'mock', serviceNotice?: string): Promise<AnalysisResult> {
+function mockResult(file?: File, source: AnalysisSource = 'mock'): Promise<AnalysisResult> {
   const fileHint = file?.name ? `已读取「${file.name.slice(0, 18)}」` : '已读取今天的照片'
   return new Promise((resolve) =>
     setTimeout(() => {
@@ -141,7 +143,9 @@ function mockResult(file?: File, source: AnalysisSource = 'mock', serviceNotice?
         disclaimer: DEFAULT_DISCLAIMER,
         source,
         source_label: sourceLabel(source),
-        service_notice: serviceNotice,
+        fallback_code: null,
+        record_status: 'frontend_demo_mock',
+        record_id: null,
         count: '中等',
         thickness: '正常',
         suggestions: [
@@ -152,6 +156,19 @@ function mockResult(file?: File, source: AnalysisSource = 'mock', serviceNotice?
       })
     }, 1200),
   )
+}
+
+async function localFallbackResult(file: File): Promise<AnalysisResult> {
+  const result = await mockResult(file, 'fallback')
+  return {
+    ...result,
+    title: '本地兜底记录',
+    summary: '后端分析服务暂时不可达，当前展示的是本地 demo fallback，不是真实 AI 结果。',
+    disclaimer: '当前为本地 demo fallback，仅用于娱乐记录和习惯养成展示，不代表真实 AI 分析或医学判断。',
+    source_label: '本地 Demo fallback（非真实 AI）',
+    fallback_code: 'BACKEND_UNREACHABLE',
+    record_status: 'frontend_local_fallback',
+  }
 }
 
 function wait(ms: number) {

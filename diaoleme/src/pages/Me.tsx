@@ -246,7 +246,7 @@ export const ShareCard = forwardRef<
       <div className="flex items-center mt-4 gap-4">
         <ClayAvatar score={score} size={72} hair="short" />
         <div className="flex-1">
-          <p className="text-xs" style={{ color: 'rgba(58,47,40,0.6)' }}>今日掉发指数</p>
+          <p className="text-xs" style={{ color: 'rgba(58,47,40,0.6)' }}>今日趣味状态分</p>
           <p
             className="text-4xl font-mono font-medium leading-tight"
             style={{ color: scoreColor }}
@@ -267,9 +267,9 @@ export const ShareCard = forwardRef<
           <p className="text-lg font-mono font-medium" style={{ color: '#E67A5A' }}>{points}</p>
         </div>
         <div className="rounded-2xl p-2.5 text-center" style={{ background: 'rgba(245,198,203,0.2)' }}>
-          <p className="text-[10px]" style={{ color: 'rgba(58,47,40,0.6)' }}>发量状态</p>
+          <p className="text-[10px]" style={{ color: 'rgba(58,47,40,0.6)' }}>今日状态</p>
           <p className="text-lg font-medium" style={{ color: accentColor }}>
-            {grade === 'great' ? '优秀' : grade === 'good' ? '良好' : grade === 'ok' ? '注意' : grade === 'sad' ? '需关注' : '—'}
+            {grade === 'great' ? '元气满满' : grade === 'good' ? '轻松在线' : grade === 'ok' ? '有点波动' : grade === 'sad' ? '慢慢养成' : '—'}
           </p>
         </div>
       </div>

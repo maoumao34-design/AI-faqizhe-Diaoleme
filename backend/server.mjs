@@ -1,15 +1,19 @@
 import { createServer } from 'node:http'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
-import { extname, join } from 'node:path'
+import { dirname, extname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024
 const UPLOAD_DIR = fileURLToPath(new URL('./uploads/', import.meta.url))
+let recordsWriteQueue = Promise.resolve()
 
 loadDotEnv()
 
+const RECORDS_FILE = process.env.RECORDS_FILE
+  ? join(process.cwd(), process.env.RECORDS_FILE)
+  : fileURLToPath(new URL('./data/records.json', import.meta.url))
 const PORT = Number(process.env.PORT || 8787)
 const PRIMARY_ANALYSIS_PATH = '/api/analyze'
 const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
@@ -18,9 +22,17 @@ const SILICONFLOW_MODEL = process.env.SILICONFLOW_MODEL || 'Qwen/Qwen3-VL-32B-In
 const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 30000)
 const AI_PROVIDER = normalizeProvider(process.env.AI_PROVIDER || (process.env.OPENAI_API_KEY ? 'openai_compatible' : 'siliconflow'))
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://claude-code.club/openai/v1'
+const OPENAI_RESPONSES_URL = process.env.OPENAI_RESPONSES_URL || buildEndpointUrl(OPENAI_BASE_URL, 'responses')
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5'
-const OPENAI_API_MODE = process.env.OPENAI_API_MODE === 'chat_completions' ? 'chat_completions' : 'responses'
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || process.env.SILICONFLOW_TIMEOUT_MS || 30000)
+
+const SAFE_DISCLAIMER = '本结果仅用于娱乐和习惯记录，不构成医疗建议。'
+const UNSAFE_AI_CONTENT = [
+  /严重脱发|病理性脱发|雄激素性脱发|斑秃|秃了|秃头/u,
+  /疾病|患病|病症|诊断|确诊|治疗|用药|药物|处方|就医|医院|医生/u,
+  /发际线.{0,6}(明显)?后移|健康风险|疾病风险/u,
+  /diagnos(?:is|e)|disease|treat(?:ment)?|medication|prescription|see a doctor/iu,
+]
 
 const SYSTEM_PROMPT =
   '你是“掉了么”的趣味头发记录陪伴员。用户会上传掉发或头发状态照片。' +
@@ -126,16 +138,12 @@ function activeProviderLabel() {
   return AI_PROVIDER === 'openai_compatible' ? 'OpenAI compatible' : 'SiliconFlow'
 }
 
+function buildEndpointUrl(baseUrl, endpoint) {
+  return `${baseUrl.replace(/\/+$/, '')}/${endpoint}`
+}
+
 function buildChatCompletionUrl(baseUrl) {
-  return `${baseUrl.replace(/\/+$/, '')}/chat/completions`
-}
-
-function buildResponsesUrl(baseUrl) {
-  return `${baseUrl.replace(/\/+$/, '')}/responses`
-}
-
-function buildOpenAICompatibleFallbackBaseUrl(baseUrl) {
-  return baseUrl.replace(/\/+$/, '').replace(/\/v1$/i, '')
+  return buildEndpointUrl(baseUrl, 'chat/completions')
 }
 
 function jsonResponse(res, statusCode, payload) {
@@ -166,7 +174,7 @@ function buildAnalysisResponse(scenario, requestMeta = {}) {
       task: data.task,
       growthDelta: data.growthDelta,
       tags: data.tags,
-      disclaimer: '当前为 demo mock 结果，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
+      disclaimer: SAFE_DISCLAIMER,
       roast: data.roast,
       encouragement: data.encouragement,
       image_quality: data.image_quality,
@@ -184,16 +192,22 @@ function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
     let size = 0
+    let tooLarge = false
     req.on('data', (chunk) => {
       size += chunk.length
       if (size > MAX_BODY_BYTES) {
-        reject(Object.assign(new Error('BODY_TOO_LARGE'), { code: 'BODY_TOO_LARGE' }))
-        req.destroy()
+        tooLarge = true
         return
       }
       chunks.push(chunk)
     })
-    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('end', () => {
+      if (tooLarge) {
+        reject(Object.assign(new Error('BODY_TOO_LARGE'), { code: 'BODY_TOO_LARGE' }))
+        return
+      }
+      resolve(Buffer.concat(chunks))
+    })
     req.on('error', reject)
   })
 }
@@ -260,6 +274,14 @@ async function saveUploadedFile(file) {
   }
 }
 
+async function persistRecordBestEffort(record) {
+  try {
+    await saveRecord(record)
+  } catch (error) {
+    console.warn(`[records] save failed: ${error?.message || 'unknown error'}`)
+  }
+}
+
 function buildFallbackResponse(fallbackCode, message, imageUrl = null, options = {}) {
   return {
     success: false,
@@ -285,7 +307,7 @@ function buildFallbackResponse(fallbackCode, message, imageUrl = null, options =
         streak_days: 0,
       },
       tags: options.tags || ['已记录', '可重试'],
-      disclaimer: '当前为 demo fallback，仅用于娱乐记录和习惯养成展示，不代表医学判断。',
+      disclaimer: SAFE_DISCLAIMER,
       roast: options.roast || '分析小机器人暂时没连上外援，但结果页不会空手而归。',
       encouragement: '不用担心，照片记录已经进入演示链路，可以稍后再试真实 AI。',
       image_quality: options.image_quality || 'unknown',
@@ -303,8 +325,23 @@ function buildFallbackResponse(fallbackCode, message, imageUrl = null, options =
   }
 }
 
-function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
+export function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
   const imageUrl = requestMeta.image_url || requestMeta.uploaded_file?.url || null
+  if (containsUnsafeAiContent(modelData)) {
+    return buildFallbackResponse(
+      'CONTENT_BLOCKED',
+      '本次 AI 文案不符合轻松记录口径，已自动换成安全的娱乐化反馈。',
+      imageUrl,
+      {
+        title: '轻松记录守门员',
+        taskName: '继续轻松打卡',
+        taskDescription: '换个稳定光线记录一次，今天不和头发较劲。',
+        tags: ['娱乐参考', '安全改写', '继续记录'],
+        roast: '文案守门员及时接球，焦虑表达没有进入结果页。',
+      },
+    )
+  }
+
   const providerName = provider === 'openai_compatible' ? 'openai_compatible' : 'siliconflow'
   const providerLabel = provider === 'openai_compatible' ? 'CC club OpenAI compatible AI 分析结果' : 'SiliconFlow AI 分析结果'
   const score = clampScore(modelData.score)
@@ -334,7 +371,7 @@ function buildAiResponse(modelData, requestMeta = {}, provider = AI_PROVIDER) {
         streak_days: 1,
       },
       tags: normalizeStringArray(modelData.tags, buildTags(score)).slice(0, 4),
-      disclaimer: safeText(modelData.disclaimer, '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。'),
+      disclaimer: SAFE_DISCLAIMER,
       roast: safeText(modelData.roast, '头发小伙伴今天也在认真营业。'),
       encouragement: safeText(modelData.encouragement, '继续轻松记录就好，保持节奏已经很棒。'),
       image_quality: safeText(modelData.image_quality, 'ai_observed'),
@@ -364,7 +401,26 @@ function buildVisionMessages(imageContent, note) {
   ]
 }
 
-async function postChatCompletion({ url, apiKey, body, timeoutMs, provider }) {
+function buildResponsesInput(imageContent, note) {
+  return [
+    {
+      role: 'system',
+      content: [{ type: 'input_text', text: SYSTEM_PROMPT }],
+    },
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'input_text',
+          text: `请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。用户备注：${safeText(note, '无')}`,
+        },
+        { type: 'input_image', image_url: imageContent },
+      ],
+    },
+  ]
+}
+
+async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extractResponse }) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -404,7 +460,7 @@ async function postChatCompletion({ url, apiKey, body, timeoutMs, provider }) {
       throw err
     }
 
-    return extractModelJson(data)
+    return extractResponse(data)
   } finally {
     clearTimeout(timeout)
   }
@@ -428,46 +484,17 @@ async function callOpenAICompatible({ imageUrl, uploadedFile, note }) {
     ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
     : imageUrl
 
-  const useResponsesApi = OPENAI_API_MODE === 'responses'
-  const body = useResponsesApi
-    ? {
-        model: OPENAI_MODEL,
-        instructions: SYSTEM_PROMPT,
-        input: [{
-          role: 'user',
-          content: [
-            {
-              type: 'input_text',
-              text: `请基于这张头发记录照片输出约定 JSON，语气轻松，不做医学判断。用户备注：${safeText(note, '无')}`,
-            },
-            { type: 'input_image', image_url: imageContent },
-          ],
-        }],
-      }
-    : {
-        model: OPENAI_MODEL,
-        messages: buildVisionMessages(imageContent, note),
-        temperature: 0.7,
-      }
-
-  const requestAtBaseUrl = (baseUrl) => postChatCompletion({
-    url: useResponsesApi ? buildResponsesUrl(baseUrl) : buildChatCompletionUrl(baseUrl),
+  return postModelRequest({
+    url: OPENAI_RESPONSES_URL,
     apiKey,
-    body,
+    body: {
+      model: OPENAI_MODEL,
+      input: buildResponsesInput(imageContent, note),
+    },
     timeoutMs: OPENAI_TIMEOUT_MS,
     provider: 'openai_compatible',
+    extractResponse: extractResponsesModelJson,
   })
-
-  try {
-    return await requestAtBaseUrl(OPENAI_BASE_URL)
-  } catch (error) {
-    const fallbackBaseUrl = buildOpenAICompatibleFallbackBaseUrl(OPENAI_BASE_URL)
-    if (error?.status === 404 && fallbackBaseUrl !== OPENAI_BASE_URL.replace(/\/+$/, '')) {
-      console.warn('[hair-analysis] OpenAI compatible /v1 path failed; retrying base path without /v1')
-      return requestAtBaseUrl(fallbackBaseUrl)
-    }
-    throw error
-  }
 }
 
 async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
@@ -483,7 +510,7 @@ async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
     ? `data:${uploadedFile.content_type || 'image/jpeg'};base64,${uploadedFile.buffer.toString('base64')}`
     : imageUrl
 
-  return postChatCompletion({
+  return postModelRequest({
     url: SILICONFLOW_URL,
     apiKey,
     body: {
@@ -493,17 +520,14 @@ async function callSiliconFlow({ imageUrl, uploadedFile, note }) {
     },
     timeoutMs: SILICONFLOW_TIMEOUT_MS,
     provider: 'siliconflow',
+    extractResponse: extractChatCompletionModelJson,
   })
 }
 
-function extractModelJson(data) {
-  const responseOutput = Array.isArray(data?.output)
-    ? data.output.flatMap((item) => item?.content || []).find((item) => item?.type === 'output_text')?.text
-    : null
-  const content = data?.choices?.[0]?.message?.content || data?.output_text || responseOutput
+function parseModelJson(content, provider) {
   if (typeof content === 'object' && content) return content
   if (typeof content !== 'string') {
-    const err = new Error('AI provider response missing message content')
+    const err = new Error(`${provider} response missing model output text`)
     err.code = 'UPSTREAM_BAD_SHAPE'
     throw err
   }
@@ -513,11 +537,52 @@ function extractModelJson(data) {
     return JSON.parse(cleaned)
   } catch {
     const match = cleaned.match(/\{[\s\S]*\}/)
-    if (match) return JSON.parse(match[0])
-    const err = new Error('SiliconFlow content is not JSON')
+    if (match) {
+      try {
+        return JSON.parse(match[0])
+      } catch {
+        // Fall through to the stable content parsing fallback.
+      }
+    }
+    const err = new Error(`${provider} output is not JSON`)
     err.code = 'UPSTREAM_CONTENT_NOT_JSON'
     throw err
   }
+}
+
+function extractChatCompletionModelJson(data) {
+  return parseModelJson(data?.choices?.[0]?.message?.content, 'SiliconFlow')
+}
+
+function extractResponsesModelJson(data) {
+  if (typeof data?.output_text === 'string') {
+    return parseModelJson(data.output_text, 'OpenAI Responses')
+  }
+
+  const content = Array.isArray(data?.output)
+    ? data.output.flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+    : []
+  const output = content.find((item) => item?.type === 'output_text' && typeof item.text === 'string')
+  return parseModelJson(output?.text, 'OpenAI Responses')
+}
+
+function containsUnsafeAiContent(modelData) {
+  const displayValues = [
+    modelData?.title,
+    modelData?.summary,
+    modelData?.roast,
+    modelData?.encouragement,
+    modelData?.daily_task,
+    modelData?.image_quality,
+    modelData?.disclaimer,
+    ...(Array.isArray(modelData?.tags) ? modelData.tags : []),
+    ...(Array.isArray(modelData?.suggestions) ? modelData.suggestions : []),
+  ]
+
+  return displayValues.some((value) => {
+    if (typeof value !== 'string') return false
+    return UNSAFE_AI_CONTENT.some((pattern) => pattern.test(value))
+  })
 }
 
 function buildTags(score) {
@@ -541,6 +606,75 @@ function normalizeStringArray(value, fallback) {
 
 function normalizeEnum(value, allowed, fallback) {
   return allowed.includes(value) ? value : fallback
+}
+
+async function readRecords() {
+  try {
+    const raw = await readFile(RECORDS_FILE, 'utf8')
+    const records = JSON.parse(raw)
+    return Array.isArray(records) ? records : []
+  } catch (error) {
+    if (error?.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+async function saveRecord(record) {
+  const storedRecord = {
+    ...record,
+    record_id: record.record_id || `rec_${randomUUID()}`,
+    created_at: record.created_at || new Date().toISOString(),
+  }
+  recordsWriteQueue = recordsWriteQueue.then(async () => {
+    const records = await readRecords()
+    const existingIndex = records.findIndex((item) => item.record_id === storedRecord.record_id)
+    if (existingIndex >= 0) records[existingIndex] = storedRecord
+    else records.unshift(storedRecord)
+    await mkdir(dirname(RECORDS_FILE), { recursive: true })
+    await writeFile(RECORDS_FILE, JSON.stringify(records, null, 2), 'utf8')
+  })
+  await recordsWriteQueue
+  return storedRecord
+}
+
+async function handleCreateRecord(req, res) {
+  try {
+    const contentType = req.headers['content-type'] || ''
+    if (!contentType.includes('application/json')) {
+      return jsonResponse(res, 415, { success: false, error: { code: 'UNSUPPORTED_CONTENT_TYPE', message: '记录接口仅支持 application/json。' } })
+    }
+    const payload = parseJsonBody(await readBody(req))
+    if (!payload || typeof payload !== 'object' || !payload.result || typeof payload.result !== 'object') {
+      return jsonResponse(res, 400, { success: false, error: { code: 'INVALID_RECORD', message: '请提供包含 result 的分析记录。' } })
+    }
+    const record = await saveRecord(payload)
+    return jsonResponse(res, 201, { success: true, record })
+  } catch (error) {
+    const tooLarge = error?.code === 'BODY_TOO_LARGE'
+    return jsonResponse(res, tooLarge ? 413 : 400, {
+      success: false,
+      error: {
+        code: tooLarge ? 'BODY_TOO_LARGE' : 'BAD_REQUEST',
+        message: tooLarge ? '记录内容太大，当前最多接收 8MB。' : '记录内容解析失败，请检查 JSON。',
+      },
+    })
+  }
+}
+
+async function handleListRecords(url, res) {
+  const requestedLimit = Number(url.searchParams.get('limit') || 50)
+  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 50
+  const records = await readRecords()
+  return jsonResponse(res, 200, { success: true, records: records.slice(0, limit), total: records.length })
+}
+
+async function handleGetRecord(recordId, res) {
+  const records = await readRecords()
+  const record = records.find((item) => item.record_id === recordId)
+  if (!record) {
+    return jsonResponse(res, 404, { success: false, error: { code: 'RECORD_NOT_FOUND', message: '没有找到这条记录。' } })
+  }
+  return jsonResponse(res, 200, { success: true, record })
 }
 
 function fallbackFromError(error, imageUrl) {
@@ -603,6 +737,7 @@ async function handleHairAnalysis(req, res) {
         image_url: imageUrl,
         uploaded_file: uploadedFile,
       })
+      await persistRecordBestEffort(response)
       return jsonResponse(res, SCENARIOS[scenario]?.httpStatus || 200, response)
     }
 
@@ -616,11 +751,14 @@ async function handleHairAnalysis(req, res) {
         image_url: imageUrl,
         uploaded_file: uploadedFile,
       }, AI_PROVIDER)
+      await persistRecordBestEffort(response)
       console.log(`[hair-analysis] proxied request to ${AI_PROVIDER} successfully`)
       return jsonResponse(res, 200, response)
     } catch (error) {
       console.warn(`[hair-analysis] ${AI_PROVIDER} fallback: ${error?.code || error?.name || 'UNKNOWN'}`)
-      return jsonResponse(res, 200, fallbackFromError(error, imageUrl || uploadedFile?.url || null))
+      const response = fallbackFromError(error, imageUrl || uploadedFile?.url || null)
+      await persistRecordBestEffort(response)
+      return jsonResponse(res, 200, response)
     }
   } catch (error) {
     const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'
@@ -654,10 +792,22 @@ export function createApp() {
       return handleHairAnalysis(req, res)
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/records') {
+      return handleCreateRecord(req, res)
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/records') {
+      return handleListRecords(url, res)
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/api/records/')) {
+      return handleGetRecord(decodeURIComponent(url.pathname.slice('/api/records/'.length)), res)
+    }
+
     return jsonResponse(res, 404, {
       success: false,
       fallbackCode: 'NOT_FOUND',
-      error: { code: 'NOT_FOUND', message: `接口不存在，请使用 POST ${PRIMARY_ANALYSIS_PATH}。` },
+      error: { code: 'NOT_FOUND', message: `接口不存在，请检查 /api/analyze 或 /api/records。` },
     })
   })
 }

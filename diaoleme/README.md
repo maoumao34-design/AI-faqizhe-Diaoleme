@@ -90,34 +90,49 @@ diaoleme/
 
 ## 🔌 接入大模型
 
-前端不保存真实 API Key，只调用后端代理。分析入口统一为 `POST /api/hair-analysis`，地址按以下优先级解析：
+前端不保存真实 API Key，只调用本地后端代理：
 
-1. `public/config.js` 的运行时 `apiBaseUrl`（部署后可直接替换，不用改页面业务代码或重新构建）
-2. 构建变量 `VITE_API_BASE_URL`
-3. 兼容旧配置 `VITE_MODEL_API_URL`（这里传完整接口 URL）
-4. 默认 `http://localhost:8787/api/hair-analysis`
-
-本地使用默认配置即可。GitHub Pages 联调公网后端时，将 `public/config.js` 改为：
-
-```js
-window.__DIAOLEME_CONFIG__ = {
-  apiBaseUrl: 'https://your-backend.example.com',
+```ts
+export const MODEL_API_CONFIG = {
+  url: import.meta.env.VITE_MODEL_API_URL || 'http://localhost:8787/api/analyze',
+  timeout: 45000,
 }
 ```
-
-`apiBaseUrl` 只配置 origin，不带 `/api/hair-analysis`。GitHub Pages 是 HTTPS 页面，公网后端也必须提供 HTTPS，否则浏览器会拦截混合内容。当前后端已对 `POST`/`OPTIONS` 返回 CORS 头；正式部署时建议再将 `Access-Control-Allow-Origin` 从 `*` 收紧到实际 Pages 域名。
 
 真实 key 请放在 `backend/.env`：
 
 ```bash
 AI_PROVIDER=openai_compatible
 OPENAI_BASE_URL=https://claude-code.club/openai/v1
+# 可选：OPENAI_RESPONSES_URL=https://claude-code.club/openai/v1/responses
 OPENAI_MODEL=gpt-5.5
 OPENAI_API_KEY=sk-xxx
 PORT=8787
 ```
 
-如果 CC club 返回模型不可用，可临时改为 `OPENAI_MODEL=gpt-5.4`。同时启动 `backend` 和前端后，`analyzePhoto` 会请求后端代理 `/api/hair-analysis`，再由后端请求 OpenAI compatible provider。缺少 key、上游失败或后端不可用时，会安全降级为可展示的 demo/AI 兜底结果，并在结果页明确提示当前为降级反馈。
+如果 CC club 返回模型不可用，可临时改为 `OPENAI_MODEL=gpt-5.4`。同时启动 `backend` 和前端后，`analyzePhoto` 会默认请求本地后端代理 `/api/analyze`，再由后端请求 OpenAI compatible Responses API（默认 `${OPENAI_BASE_URL}/responses`）。缺少 key、鉴权失败、超时、上游异常或内容解析失败时，后端返回带 `fallbackCode` 的可展示兜底；后端不可达时，前端返回 `BACKEND_UNREACHABLE` 本地 fallback。结果页会明确标出 fallback，绝不会把它伪装成真实 AI 成功结果。
+
+### 本地联调验证
+
+分别开两个终端：
+
+```bash
+cd backend
+npm test
+npm run dev
+```
+
+```bash
+cd diaoleme
+npm run dev
+```
+
+打开 `http://localhost:5173/tab/scan` 上传图片：
+
+- 真实成功：配置有效 `OPENAI_API_KEY` 后，结果来源显示 `CC club OpenAI compatible AI 分析结果`，且没有 fallback 提示。
+- 后端 fallback：不配置 key 时，后端返回 `MISSING_API_KEY`，结果页明确显示“不是实时 AI 分析”。
+- 本地 fallback：停止后端后上传，结果页显示 `BACKEND_UNREACHABLE` 和“本地 Demo fallback（非真实 AI）”。
+- 前端演示 mock：URL 加 `?mock=success`，来源显示 `Demo mock 结果`；该模式仅用于演示，不会标成 API 成功。
 
 **期望返回 JSON 格式**（在 `src/types/index.ts` 中定义）：
 

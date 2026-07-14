@@ -17,7 +17,7 @@
 | 来源 | 合并到 | 处理方式 |
 | --- | --- | --- |
 | `feature/aifa-7-openai-compatible-ai` 中的 OpenAI compatible provider 逻辑 | `backend/server.mjs` | 快进合并到本清理分支，沿用 `AI_PROVIDER=openai_compatible`，未另起新服务目录。 |
-| OpenAI compatible 与 SiliconFlow 的请求发送逻辑 | `postChatCompletion` + `buildVisionMessages` | 删除 SiliconFlow 分支内重复的 fetch / messages / JSON 解析流程，两个 provider 共用同一请求与解析入口。 |
+| OpenAI compatible 与 SiliconFlow 的请求发送逻辑 | `postModelRequest` + provider 专属输入/响应适配 | 两个 provider 共用 fetch、超时和错误映射；OpenAI compatible 使用 Responses API，SiliconFlow 保留 Chat Completions。 |
 | provider 运行说明 | `backend/docs/api.md` 与 `diaoleme/README.md` | 统一说明后端按 `AI_PROVIDER` 选择 provider，默认推荐 OpenAI compatible，旧 SiliconFlow 作为可选回退。 |
 
 ## 删除
@@ -30,7 +30,7 @@
 
 | 路径 | 原因 | 后续建议 |
 | --- | --- | --- |
-| `docs/ai-analysis-contract.md` | 历史协议偏 v0.1，字段为 `analysis_id` / `entertainment_result`，与当前后端 `analysisId` / `result` 不完全一致，但仍保留了早期 schema、prompt、fallback 背景。 | 等产品 / AI schema 最终确认后，再由文档任务统一归档或改名为历史协议。 |
+| `docs/ai-analysis-contract.md` | 已更新为当前 `analysisId` / `result` canonical 契约，并指向 `docs/ai-analysis-schema.json`。 | 后续随运行时接口一起维护。 |
 | `docs/ai-analysis-schema.json` | 旧 schema 与当前可运行接口契约不一致，当前后端没有引入 schema 校验依赖。 | 后续若要做强校验，应基于 `backend/docs/api.md` 的当前响应重新生成，而不是直接复用旧 schema。 |
 | `docs/ai-analysis-mocks.json` | 旧 mock 结构仍可作为产品文案参考，但不是运行时 mock 来源。 | 运行时 mock 以 `backend/server.mjs` 的 `SCENARIOS` 为准；后续可迁移为测试 fixture。 |
 | `docs/ai-analysis-prompt.md` | 旧 prompt 结构比当前后端精细，暂不直接替换 AIFA-7 prompt，避免破坏已接入链路。 | AI Agent 确认模型 schema 后再统一更新。 |

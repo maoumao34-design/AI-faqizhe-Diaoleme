@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Camera, Upload, Loader2, AlertTriangle, ImagePlus, RotateCcw } from 'lucide-react'
 import StickerCard from '../components/Layout/StickerCard'
 import { useUserStore } from '../store/UserStore'
-import { analyzePhoto, validateImageFile } from '../services/model'
+import { MAX_IMAGE_SIZE_BYTES, analyzePhoto, validateImageFile } from '../services/model'
+
+const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
 
 export default function Scan() {
   const nav = useNavigate()
@@ -38,7 +40,12 @@ export default function Scan() {
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       setSelectedFile(null)
       setPreviewUrl(null)
-      setErrorMsg(err?.message === 'not_image' ? '这个文件不是图片，请选择 JPG、PNG 等图片文件。' : '图片文件为空，请重新选择。')
+      const messageMap: Record<string, string> = {
+        not_image: '这个文件不是图片，请选择 JPG、PNG 等图片文件。',
+        empty_file: '图片文件为空，请重新选择。',
+        file_too_large: `图片有点大啦，请选择 ${MAX_IMAGE_SIZE_MB}MB 以内的照片再试。`,
+      }
+      setErrorMsg(messageMap[err?.message] || '图片暂时读不出来，请换一张再试。')
       return
     }
 
@@ -71,7 +78,9 @@ export default function Scan() {
         disclaimer: result.disclaimer,
         source: result.source,
         source_label: result.source_label,
-        service_notice: result.service_notice,
+        fallback_code: result.fallback_code,
+        record_status: result.record_status,
+        record_id: result.record_id,
         count: result.count,
         thickness: result.thickness,
         suggestions: result.suggestions,
@@ -124,7 +133,7 @@ export default function Scan() {
               >
                 <ImagePlus size={42} className="text-moss" />
                 <span className="mt-3 font-medium">点这里选择图片</span>
-                <span className="mt-1 text-xs text-coffee/50">支持拍照或相册上传</span>
+                <span className="mt-1 text-xs text-coffee/50">支持拍照或相册上传，单张不超过 {MAX_IMAGE_SIZE_MB}MB</span>
               </motion.button>
             )}
           </AnimatePresence>
@@ -170,7 +179,7 @@ export default function Scan() {
           className="mt-3 w-full active:scale-[0.98] transition-all font-medium py-4 rounded-2xl flex items-center justify-center gap-2 bg-moss text-coffee shadow-md shadow-moss/25 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? <Loader2 size={19} className="animate-spin" /> : <ImagePlus size={19} />}
-          {busy ? '正在连接趣味分析，暂不可重复提交...' : '开始趣味分析'}
+          {busy ? '分析中，黏土小人正在眯眼观察...' : '开始趣味分析'}
         </button>
 
         {selectedFile && !busy && (
@@ -192,7 +201,7 @@ export default function Scan() {
         <div className="mt-6 mb-8">
           <StickerCard accent="cream">
             <p className="text-xs leading-relaxed text-center text-coffee/60">
-              小贴士：前端会优先请求已配置的分析服务；服务暂时不可用时自动使用 demo 反馈，记录流程不会中断。图片仅用于本次请求，结果只做娱乐化记录，不做医学判断。
+              小贴士：前端会优先请求本地后端代理；后端暂时不可用时才使用 demo 兜底。图片仅用于本次分析请求，结果只做娱乐化记录，不做医学判断。
             </p>
           </StickerCard>
         </div>

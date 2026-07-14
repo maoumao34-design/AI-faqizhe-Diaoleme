@@ -1,4 +1,5 @@
-const ANALYSIS_PATH = '/api/hair-analysis'
+const ANALYSIS_PATH = '/api/analyze'
+const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
 const LOCAL_API_ORIGIN = 'http://localhost:8787'
 
 declare global {
@@ -27,11 +28,14 @@ function resolveApiUrl() {
 }
 
 function appendAnalysisPath(baseUrl: string) {
-  return baseUrl.endsWith(ANALYSIS_PATH) ? baseUrl : `${baseUrl}${ANALYSIS_PATH}`
+  if (baseUrl.endsWith(ANALYSIS_PATH) || baseUrl.endsWith(LEGACY_ANALYSIS_PATH)) return baseUrl
+  return `${baseUrl}${ANALYSIS_PATH}`
 }
 
 export const MODEL_API_CONFIG = {
-  /** public/config.js can switch deployments without rebuilding page business code. */
+  /** public/config.js or VITE_API_BASE_URL can switch deployments without rebuilding page business code. */
   url: resolveApiUrl(),
+
+  /** 请求超时（毫秒） */
   timeout: 45000,
 }

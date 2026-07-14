@@ -1,28 +1,504 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import TabLayout from './layouts/TabLayout'
-import Hello from './pages/Hello'
-import Scan from './pages/Scan'
-import Report from './pages/Report'
-import Tasks from './pages/Tasks'
-import Hairstyle from './pages/Hairstyle'
-import Records from './pages/Records'
-import Me from './pages/Me'
+import { useEffect, useRef } from 'react'
+import { analyzePhoto, HAIRSTYLE_CATALOG, MAX_IMAGE_SIZE_BYTES, validateImageFile } from './services/model'
+import { useUserStore, type ReportRecord } from './store/UserStore'
+import type { AnalysisResult } from './types'
+import { prototypeBody, prototypeScript, prototypeStyle } from './prototypeHtml'
+
+const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
+const todayKey = () => new Date().toISOString().slice(0, 10)
+const taskKey = () => `diaoleme-prototype-tasks-${todayKey()}`
+const taskBonusKey = () => `diaoleme-prototype-task-bonus-${todayKey()}`
 
 export default function App() {
-  return (
-    <div className="relative h-[100dvh] w-[448px] max-w-full bg-cream shadow-2xl shadow-coffee/20 overflow-hidden">
-      <Routes>
-        <Route path="/" element={<Hello />} />
-        <Route element={<TabLayout />}>
-          <Route path="/tab/scan" element={<Scan />} />
-          <Route path="/tab/report" element={<Report />} />
-          <Route path="/tab/records" element={<Records />} />
-          <Route path="/tab/tasks" element={<Tasks />} />
-          <Route path="/tab/hairstyle" element={<Hairstyle />} />
-          <Route path="/tab/me" element={<Me />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
-  )
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let styleTag = document.getElementById('diaoleme-prototype-style') as HTMLStyleElement | null
+    if (!styleTag) {
+      styleTag = document.createElement('style')
+      styleTag.id = 'diaoleme-prototype-style'
+      document.head.appendChild(styleTag)
+    }
+    styleTag.textContent = `${prototypeStyle}\n${integrationStyle}`
+
+    let cleanup = () => {}
+    if (rootRef.current) {
+      rootRef.current.innerHTML = prototypeBody
+      new Function(prototypeScript)()
+      cleanup = attachPrototypeFeatures(rootRef.current)
+    }
+
+    return () => {
+      cleanup()
+      if (rootRef.current) rootRef.current.innerHTML = ''
+    }
+  }, [])
+
+  return <div ref={rootRef} />
 }
+
+function attachPrototypeFeatures(root: HTMLElement) {
+  const scanCleanup = attachPrototypeAnalysis(root)
+  const render = () => renderStatefulSections(root)
+  render()
+  const unsubscribe = useUserStore.subscribe(render)
+
+  const onClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement
+    const taskBtn = target.closest<HTMLElement>('[data-task-index]')
+    const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
+    const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
+    const viewReportBtn = target.closest<HTMLElement>('[data-view-report]')
+    const resetBtn = target.closest<HTMLElement>('[data-action="reset-progress"]')
+    const shareBtn = target.closest<HTMLElement>('#guideBtn')
+
+    if (taskBtn) {
+      completeTask(Number(taskBtn.dataset.taskIndex))
+      render()
+    }
+    if (checkinBtn) {
+      useUserStore.getState().markCheckinToday()
+      render()
+    }
+    if (unlockBtn) {
+      const item = HAIRSTYLE_CATALOG.find((h) => h.id === unlockBtn.dataset.unlockId)
+      if (item) {
+        const ok = useUserStore.getState().unlockHairStyle(item.id, item.cost)
+        showToast(root, ok ? `已解锁 ${item.name}` : `积分还差 ${item.cost - useUserStore.getState().points}`)
+        render()
+      }
+    }
+    if (viewReportBtn?.dataset.viewReport) {
+      useUserStore.getState().viewReport(viewReportBtn.dataset.viewReport)
+      showPage(root, 'scan')
+      renderAnalysisCard(root, currentAnalysisFromStore())
+    }
+    if (resetBtn) {
+      if (confirm('重置所有进度、积分、打卡和历史记录？')) {
+        useUserStore.getState().resetAll()
+        localStorage.removeItem(taskKey())
+        localStorage.removeItem(taskBonusKey())
+        render()
+      }
+    }
+    if (shareBtn) {
+      downloadShareCard()
+    }
+  }
+
+  document.addEventListener('click', onClick)
+
+  return () => {
+    scanCleanup()
+    unsubscribe()
+    document.removeEventListener('click', onClick)
+  }
+}
+
+function attachPrototypeAnalysis(root: HTMLElement) {
+  const scanSection = root.querySelector<HTMLElement>('[data-page="scan"]')
+  const scanBtn = root.querySelector<HTMLButtonElement>('#scanBtn')
+  const uploadBtn = scanSection?.querySelector<HTMLButtonElement>('.cta.ghost')
+  const percent = root.querySelector<HTMLElement>('#scanPercent')
+  const scanCard = scanSection?.querySelector<HTMLElement>('.card[style*="text-align:center"]')
+  const input = document.createElement('input')
+  let selectedFile: File | null = null
+  let previewUrl: string | null = null
+
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.style.display = 'none'
+  document.body.appendChild(input)
+
+  const setStatus = (message: string, tone: 'idle' | 'error' | 'success' = 'idle') => {
+    const existing = scanCard?.querySelector<HTMLElement>('[data-analysis-status]')
+    const status = existing || document.createElement('p')
+    status.dataset.analysisStatus = 'true'
+    status.textContent = message
+    status.style.color = tone === 'error' ? '#ff7a2f' : tone === 'success' ? '#65c982' : '#65709e'
+    status.style.fontWeight = '800'
+    if (!existing) scanCard?.appendChild(status)
+  }
+
+  const showPreview = (file: File) => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    previewUrl = URL.createObjectURL(file)
+    const orbit = root.querySelector<HTMLElement>('.scan-orbit')
+    const existing = orbit?.querySelector<HTMLImageElement>('[data-upload-preview]')
+    const img = existing || document.createElement('img')
+    img.dataset.uploadPreview = 'true'
+    img.src = previewUrl
+    img.alt = '上传预览'
+    Object.assign(img.style, {
+      position: 'absolute',
+      inset: '22px',
+      width: 'calc(100% - 44px)',
+      height: 'calc(100% - 44px)',
+      objectFit: 'cover',
+      borderRadius: '50%',
+      boxShadow: '0 18px 45px rgba(99, 75, 168, 0.22)',
+      zIndex: '3',
+    })
+    if (!existing) orbit?.appendChild(img)
+    if (percent) {
+      percent.textContent = '已选'
+      percent.style.zIndex = '4'
+    }
+    setStatus(`已选择：${file.name}，点击“拍照扫描”开始 AI 分析。`)
+  }
+
+  const chooseFile = () => input.click()
+
+  const onFileChange = () => {
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+    try {
+      validateImageFile(file)
+      selectedFile = file
+      showPreview(file)
+    } catch (error: any) {
+      selectedFile = null
+      const messages: Record<string, string> = {
+        not_image: '这个文件不是图片，请选择 JPG、PNG 等图片文件。',
+        empty_file: '图片文件为空，请重新选择。',
+        file_too_large: `图片有点大啦，请选择 ${MAX_IMAGE_SIZE_MB}MB 以内的照片再试。`,
+      }
+      setStatus(messages[error?.message] || '图片暂时读不出来，请换一张再试。', 'error')
+    }
+  }
+
+  const runAnalysis = async () => {
+    if (!selectedFile) {
+      chooseFile()
+      setStatus('请先选择或拍摄一张图片。')
+      return
+    }
+    scanBtn && (scanBtn.disabled = true)
+    uploadBtn && (uploadBtn.disabled = true)
+    setStatus('分析中，正在调用后端 AI 代理...')
+    let value = 10
+    if (percent) percent.textContent = '10%'
+    const timer = window.setInterval(() => {
+      value = Math.min(value + 8, 96)
+      if (percent) percent.textContent = `${value}%`
+    }, 140)
+    try {
+      const result = await analyzePhoto(selectedFile)
+      saveAnalysisResult(result)
+      window.clearInterval(timer)
+      renderAnalysisCard(root, result)
+      renderStatefulSections(root)
+      setStatus(result.fallback_code ? '已生成 fallback 结果，可继续演示完整流程。' : 'AI 分析完成，结果已写入报告和历史记录。', 'success')
+    } catch (error) {
+      console.error('[prototype] analyze failed:', error)
+      window.clearInterval(timer)
+      if (percent) percent.textContent = '失败'
+      setStatus('分析接口暂时不可用，请稍后重试。', 'error')
+    } finally {
+      scanBtn && (scanBtn.disabled = false)
+      uploadBtn && (uploadBtn.disabled = false)
+    }
+  }
+
+  input.addEventListener('change', onFileChange)
+  uploadBtn?.addEventListener('click', chooseFile)
+  scanBtn?.addEventListener('click', runAnalysis)
+
+  return () => {
+    input.removeEventListener('change', onFileChange)
+    uploadBtn?.removeEventListener('click', chooseFile)
+    scanBtn?.removeEventListener('click', runAnalysis)
+    input.remove()
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+  }
+}
+
+function renderStatefulSections(root: HTMLElement) {
+  renderAnalysisCard(root, currentAnalysisFromStore())
+  renderHome(root)
+  renderTasks(root)
+  renderHistory(root)
+  renderRewards(root)
+  renderLeague(root)
+  renderProfile(root)
+}
+
+function saveAnalysisResult(result: AnalysisResult) {
+  const store = useUserStore.getState()
+  store.setAnalysis(result)
+  store.addReport({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    date: todayKey(),
+    score: result.score,
+    title: result.title,
+    summary: result.summary,
+    roast: result.roast,
+    encouragement: result.encouragement,
+    tags: result.tags,
+    daily_task: result.daily_task,
+    disclaimer: result.disclaimer,
+    source: result.source,
+    source_label: result.source_label,
+    fallback_code: result.fallback_code,
+    record_status: result.record_status,
+    record_id: result.record_id,
+    count: result.count,
+    thickness: result.thickness,
+    suggestions: result.suggestions,
+  })
+}
+
+function currentAnalysisFromStore(): AnalysisResult {
+  const s = useUserStore.getState()
+  return {
+    score: s.dropScore ?? 66,
+    title: s.title,
+    summary: s.summary,
+    roast: s.roast,
+    encouragement: s.encouragement,
+    tags: s.tags.length ? s.tags : ['等待记录'],
+    daily_task: s.dailyTask,
+    disclaimer: s.disclaimer,
+    source: s.source,
+    source_label: s.sourceLabel,
+    fallback_code: s.fallbackCode,
+    record_status: s.recordStatus,
+    record_id: s.recordId,
+    count: s.count,
+    thickness: s.thickness,
+    suggestions: s.suggestions,
+  }
+}
+
+function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
+  const percent = root.querySelector<HTMLElement>('#scanPercent')
+  const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
+  if (percent && useUserStore.getState().dropScore != null) percent.textContent = `${result.score}`
+  if (!scanCard || useUserStore.getState().dropScore == null) return
+
+  const old = scanCard.querySelector('[data-analysis-result]')
+  old?.remove()
+  const fallback = result.fallback_code
+    ? `<div class="badge" style="background:rgba(255,154,61,.18);color:#ff7a2f">fallback: ${escapeHtml(result.fallback_code)}</div>`
+    : ''
+  scanCard.insertAdjacentHTML('beforeend', `
+    <div class="card soft" data-analysis-result style="margin-top:18px;text-align:left">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:0">${escapeHtml(result.title)}</h3>
+        <span class="badge">${escapeHtml(result.source_label)}</span>
+      </div>
+      ${fallback}
+      <p>${escapeHtml(result.summary)}</p>
+      <div class="three grid" style="text-align:center">
+        <div><span class="big-number">${result.score}</span><br>趣味状态分</div>
+        <div><span class="big-number">${escapeHtml(result.count)}</span><br>掉发量</div>
+        <div><span class="big-number">${escapeHtml(result.thickness)}</span><br>发质观感</div>
+      </div>
+      <p><b>温柔吐槽：</b>${escapeHtml(result.roast)}</p>
+      <p><b>今日任务：</b>${escapeHtml(result.daily_task)}</p>
+      <div class="row">${result.tags.map((tag) => `<span class="badge">${escapeHtml(tag)}</span>`).join('')}</div>
+      <small>${escapeHtml(result.disclaimer)}</small>
+    </div>
+  `)
+}
+
+function renderHome(root: HTMLElement) {
+  const s = useUserStore.getState()
+  setHtml(root.querySelector('.compact-quests'), getSuggestions().slice(0, 4).map((q, i) => `<div class="item" style="grid-template-columns:34px 1fr auto"><span>${['💧', '🌙', '🥗', '🖐'][i] || '✨'}</span><b>${escapeHtml(q)}</b><span class="status">+${i === 0 ? 5 : 2} XP</span></div>`).join(''))
+  setHtml(root.querySelector('.small-leaders'), buildLeaders().slice(0, 4).map((l) => `<div class="leader ${l.isMe ? 'you' : ''}" style="grid-template-columns:34px 1fr auto"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}</b><span>${l.points} XP</span></div>`).join(''))
+  const heroBadges = root.querySelectorAll<HTMLElement>('[data-page="home"] .stats .badge, [data-page="home"] .badge')
+  if (heroBadges[0]) heroBadges[0].textContent = `${s.points} XP`
+}
+
+function renderTasks(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const tasks = getSuggestions()
+  const done = loadDoneTasks()
+  const allDone = tasks.length > 0 && tasks.every((_, index) => done.has(index))
+  setHtml(root.querySelector('#questList'), tasks.map((task, index) => {
+    const isDone = done.has(index)
+    return `<div class="item"><span style="font-size:26px">${['💧', '🌙', '🥗', '🖐', '🚶'][index] || '✨'}</span><b>${escapeHtml(task)}<small>${index === 0 ? '来自 AI 轻量建议' : '完成后获得积分'}</small></b><span>${isDone ? '1/1' : '0/1'}</span><button data-task-index="${index}" class="quest-btn ${isDone ? 'done' : ''}">${isDone ? '✓ 已完成' : '去完成'}</button></div>`
+  }).join('') + `<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${allDone ? '今日建议全部完成！' : '完成所有每日任务可获得额外奖励！'}</b><span>+10 XP</span><button class="quest-btn done">${allDone ? '已领取' : '未完成'}</button></div>`)
+  setHtml(root.querySelector('#weekRewards'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < s.checkinDays.length ? '✓' : d}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`).join(''))
+}
+
+function renderHistory(root: HTMLElement) {
+  const history = useUserStore.getState().reportHistory
+  const latest = history.slice(0, 5)
+  setHtml(root.querySelector('[data-page="scan"] .grid .card:nth-child(2)'), `<h3>本周扫描数据</h3><div class="three grid"><div><span class="big-number">${history.length}</span><br>扫描次数</div><div><span class="big-number">${avgScore(history) || '--'}</span><br>平均状态分</div><div><span class="badge">${history[0]?.source_label || '等待分析'}</span><br>最新来源</div></div>`)
+  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3>${renderRecordItems(latest)}`)
+  setHtml(root.querySelector('#timeline'), latest.length ? renderRecordItems(latest, true) : `<div class="item"><span>🌱</span><b>暂无历史记录<small>先去 Scan 上传一张图片生成报告。</small></b><span class="status">等待</span></div>`)
+  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${new Date(r.id.length > 6 ? Date.now() : Date.now()).getDate()}</b><br>记录</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
+}
+
+function renderRewards(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const latestHair = s.unlockedHairStyles[s.unlockedHairStyles.length - 1]
+  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.slice(0, 6).map((h) => {
+    const owned = s.unlockedHairStyles.includes(h.id)
+    return `<button class="skin ${h.id === latestHair ? 'active' : ''}" data-unlock-id="${h.id}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${owned ? '已拥有' : `${h.cost} XP`}</small></button>`
+  }).join(''))
+  setHtml(root.querySelector('#shop'), HAIRSTYLE_CATALOG.map((h) => {
+    const owned = s.unlockedHairStyles.includes(h.id)
+    return `<div class="reward"><div class="reward-art">${escapeHtml(h.emoji)}</div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.description)}</small><b style="color:var(--purple)">${owned ? '已拥有' : `${h.cost} XP`}</b><button class="pill ${owned ? '' : 'primary'}" data-unlock-id="${h.id}">${owned ? '使用' : '解锁'}</button></div>`
+  }).join(''))
+}
+
+function renderLeague(root: HTMLElement) {
+  setHtml(root.querySelector('#leaders'), buildLeaders().map((l) => `<div class="leader ${l.isMe ? 'you' : ''}"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}<small>${escapeHtml(l.note)}</small></b><span>${l.points} XP</span><span>${l.trend}</span></div>`).join(''))
+}
+
+function renderProfile(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const checked = s.checkinDays.includes(todayKey())
+  setHtml(root.querySelector('#streak'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join(''))
+  setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
+}
+
+function completeTask(index: number) {
+  if (!Number.isFinite(index)) return
+  const done = loadDoneTasks()
+  if (done.has(index)) return
+  done.add(index)
+  localStorage.setItem(taskKey(), JSON.stringify([...done]))
+  useUserStore.getState().addPoints(2)
+  const tasks = getSuggestions()
+  if (tasks.length > 0 && tasks.every((_, i) => done.has(i)) && localStorage.getItem(taskBonusKey()) !== '1') {
+    localStorage.setItem(taskBonusKey(), '1')
+    useUserStore.getState().addPoints(10)
+  }
+}
+
+function loadDoneTasks() {
+  try {
+    return new Set<number>(JSON.parse(localStorage.getItem(taskKey()) || '[]'))
+  } catch {
+    return new Set<number>()
+  }
+}
+
+function getSuggestions() {
+  const suggestions = useUserStore.getState().suggestions
+  return suggestions.length ? suggestions : ['上传一张照片生成专属建议', '今晚提前 30 分钟休息', '洗头时水温尽量温和']
+}
+
+function buildLeaders() {
+  const s = useUserStore.getState()
+  const base = [
+    { name: 'Luna', note: '头发是生命的种子 🌱', points: 28760, trend: '↑ 1', isMe: false },
+    { name: 'Mia', note: '每天进步 1% ✨', points: 25480, trend: '↓ 1', isMe: false },
+    { name: 'Ray', note: '慢慢来，比较更重要 💜', points: 22140, trend: '—', isMe: false },
+    { name: 'Sophia', note: '关注头皮，从现在开始', points: 18900, trend: '↑ 2', isMe: false },
+    { name: 'You', note: `${s.checkinDays.length} 天打卡`, points: s.points, trend: '↑', isMe: true },
+  ].sort((a, b) => b.points - a.points)
+  return base.map((item, index) => ({ ...item, rank: index + 1 }))
+}
+
+function renderRecordItems(records: ReportRecord[], timeline = false) {
+  if (!records.length) return `<div class="item"><span>📷</span><b>暂无记录<small>上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
+  return records.map((r) => `<div class="item"><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="status" data-view-report="${escapeHtml(r.id)}">${r.score} 分</button></div>`).join('')
+}
+
+function avgScore(records: ReportRecord[]) {
+  if (!records.length) return null
+  return Math.round(records.reduce((sum, item) => sum + item.score, 0) / records.length)
+}
+
+function showPage(root: HTMLElement, id: string) {
+  root.querySelectorAll<HTMLElement>('.page').forEach((page) => page.classList.toggle('active', page.dataset.page === id))
+  root.querySelectorAll<HTMLElement>('[data-go]').forEach((btn) => btn.classList.toggle('active', btn.dataset.go === id))
+  const heading = root.querySelector<HTMLElement>('#pageHeading')
+  const sub = root.querySelector<HTMLElement>('#pageSub')
+  const meta: Record<string, [string, string]> = {
+    scan: ['Scan', '用科学的方式，了解你的头发状况 💗'],
+    diary: ['Diary', '真实分析记录会在这里沉淀'],
+  }
+  if (heading && meta[id]) heading.textContent = meta[id][0]
+  if (sub && meta[id]) sub.textContent = meta[id][1]
+}
+
+function showToast(root: HTMLElement, message: string) {
+  const old = root.querySelector('[data-toast]')
+  old?.remove()
+  const toast = document.createElement('div')
+  toast.dataset.toast = 'true'
+  toast.className = 'prototype-toast'
+  toast.textContent = message
+  root.appendChild(toast)
+  window.setTimeout(() => toast.remove(), 1800)
+}
+
+function downloadShareCard() {
+  const s = useUserStore.getState()
+  const canvas = document.createElement('canvas')
+  canvas.width = 720
+  canvas.height = 960
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#f7edff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = '#13205f'
+  ctx.font = 'bold 54px sans-serif'
+  ctx.fillText('掉了么 Diaoleme', 64, 110)
+  ctx.font = 'bold 92px sans-serif'
+  ctx.fillText(`${s.dropScore ?? '--'} 分`, 64, 250)
+  ctx.font = 'bold 38px sans-serif'
+  ctx.fillText(s.title, 64, 330)
+  ctx.font = '28px sans-serif'
+  wrapCanvasText(ctx, s.summary, 64, 400, 590, 42)
+  ctx.fillStyle = '#8b5cf6'
+  ctx.font = 'bold 30px sans-serif'
+  ctx.fillText(`${s.points} XP · 打卡 ${s.checkinDays.length} 天`, 64, 820)
+  const a = document.createElement('a')
+  a.href = canvas.toDataURL('image/png')
+  a.download = `掉了么-分享-${todayKey()}.png`
+  a.click()
+}
+
+function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  let line = ''
+  for (const char of text) {
+    const test = line + char
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, y)
+      line = char
+      y += lineHeight
+    } else {
+      line = test
+    }
+  }
+  if (line) ctx.fillText(line, x, y)
+}
+
+function setHtml(target: Element | null | undefined, html: string) {
+  if (target) target.innerHTML = html
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const integrationStyle = `
+  .prototype-toast {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 20;
+    border-radius: 999px;
+    padding: 14px 20px;
+    background: rgba(19,32,95,.92);
+    color: #fff;
+    box-shadow: 0 18px 45px rgba(19,32,95,.24);
+    font-weight: 800;
+  }
+  [data-analysis-result] .badge,
+  #checkin .pill,
+  #shop .pill {
+    margin-top: 8px;
+  }
+`

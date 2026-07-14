@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { AlertTriangle, ChevronDown, ChevronRight, Sparkles, ShieldCheck } from 'lucide-react'
+import { ChevronDown, ChevronRight, Sparkles, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import ClayAvatar from '../components/ClayAvatar'
@@ -18,7 +18,7 @@ export default function Report() {
     dailyTask,
     disclaimer,
     sourceLabel,
-    serviceNotice,
+    fallbackCode,
     count,
     thickness,
     suggestions,
@@ -33,7 +33,7 @@ export default function Report() {
       dailyTask: s.dailyTask,
       disclaimer: s.disclaimer,
       sourceLabel: s.sourceLabel,
-      serviceNotice: s.serviceNotice,
+      fallbackCode: s.fallbackCode,
       count: s.count,
       thickness: s.thickness,
       suggestions: s.suggestions,
@@ -63,6 +63,11 @@ export default function Report() {
         <div className="mb-3 inline-flex rounded-full bg-white/65 px-3 py-1 text-[11px] font-medium text-coffee/60">
           {sourceLabel}
         </div>
+        {fallbackCode && (
+          <div className="mb-3 rounded-2xl bg-tangerine/15 px-3 py-2 text-xs leading-relaxed text-tangerine">
+            当前为明确 fallback（{fallbackCode}），不是实时 AI 分析；记录仍可用于 demo 展示。
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-coffee/50 mb-1">娱乐状态分</p>
@@ -82,13 +87,6 @@ export default function Report() {
         </div>
         <p className="mt-3 text-sm leading-relaxed text-coffee/70">{summary}</p>
       </StickerCard>
-
-      {serviceNotice && (
-        <div className="mt-4 flex w-full max-w-sm items-start gap-2 rounded-2xl bg-tangerine/15 px-4 py-3 text-tangerine">
-          <AlertTriangle size={17} className="mt-0.5 shrink-0" />
-          <p className="text-sm leading-relaxed">{serviceNotice}</p>
-        </div>
-      )}
 
       <div className="mt-4 flex w-full max-w-sm flex-wrap gap-2">
         {tags.map((tag) => (
