@@ -1,7 +1,35 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
+import { createServer } from 'node:http'
+
+const upstream = createServer(async (req, res) => {
+  for await (const _chunk of req) { /* Drain request body before responding. */ }
+  res.writeHead(200, { 'content-type': 'application/json' })
+  res.end(JSON.stringify({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          score: 91,
+          title: '真实代理测试称号',
+          summary: '来自测试上游的成功结果。',
+          roast: '测试发丝准时到岗。',
+          encouragement: '成功链路保持在线。',
+          tags: ['真实代理测试'],
+          daily_task: '完成一次集成验证',
+          count: '少量',
+          thickness: '粗硬',
+          suggestions: ['保留上游真实字段'],
+        }),
+      },
+    }],
+  }))
+})
+upstream.listen(0)
+await once(upstream, 'listening')
+const upstreamPort = upstream.address().port
 
 process.env.AI_PROVIDER = 'openai_compatible'
+process.env.OPENAI_BASE_URL = `http://127.0.0.1:${upstreamPort}/v1`
 process.env.OPENAI_API_KEY = ' '
 
 const { createApp } = await import('./server.mjs')
@@ -46,6 +74,17 @@ try {
   assert.equal(missingKey.data.record_status, 'demo_ai_fallback')
   assert.equal(missingKey.data.ai_source, 'fallback')
   assert.match(missingKey.data.error.message, /OPENAI_API_KEY/)
+
+  process.env.OPENAI_API_KEY = 'integration-test-key'
+  const aiSuccess = await postJson({ image_url: 'https://example.com/real.jpg', note: 'real integration' })
+  assert.equal(aiSuccess.response.status, 200)
+  assert.equal(aiSuccess.data.success, true)
+  assert.equal(aiSuccess.data.fallbackCode, null)
+  assert.equal(aiSuccess.data.record_status, 'ai_completed')
+  assert.equal(aiSuccess.data.ai_source, 'openai_compatible')
+  assert.equal(aiSuccess.data.result.source, 'api')
+  assert.equal(aiSuccess.data.result.title, '真实代理测试称号')
+  assert.equal(aiSuccess.data.result.score, 91)
 
   const success = await postJson({ image_url: 'https://example.com/demo.jpg', note: 'demo', mock_scenario: 'success' })
   assert.equal(success.response.status, 200)
@@ -139,4 +178,5 @@ try {
 } finally {
   globalThis.fetch = originalFetch
   server.close()
+  upstream.close()
 }

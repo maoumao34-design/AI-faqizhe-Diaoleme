@@ -18,6 +18,7 @@ export default function Report() {
     dailyTask,
     disclaimer,
     sourceLabel,
+    fallbackCode,
     count,
     thickness,
     suggestions,
@@ -32,6 +33,7 @@ export default function Report() {
       dailyTask: s.dailyTask,
       disclaimer: s.disclaimer,
       sourceLabel: s.sourceLabel,
+      fallbackCode: s.fallbackCode,
       count: s.count,
       thickness: s.thickness,
       suggestions: s.suggestions,
@@ -61,6 +63,11 @@ export default function Report() {
         <div className="mb-3 inline-flex rounded-full bg-white/65 px-3 py-1 text-[11px] font-medium text-coffee/60">
           {sourceLabel}
         </div>
+        {fallbackCode && (
+          <div className="mb-3 rounded-2xl bg-tangerine/15 px-3 py-2 text-xs leading-relaxed text-tangerine">
+            当前为明确 fallback（{fallbackCode}），不是实时 AI 分析；记录仍可用于 demo 展示。
+          </div>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-coffee/50 mb-1">娱乐状态分</p>

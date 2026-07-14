@@ -29,10 +29,10 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
       timeout: MODEL_API_CONFIG.timeout,
     })
 
-    return normalize(parseResponse(resp.data), resp.data?.success === false ? 'fallback' : 'api')
+    return normalizeResponse(resp.data)
   } catch (err) {
-    console.warn('[model] 后端分析代理暂时不可用，使用 demo 兜底结果。', err)
-    return mockResult(file, 'fallback')
+    console.warn('[model] 后端分析代理不可达，返回明确的本地 fallback。', err)
+    return localFallbackResult(file)
   }
 }
 
@@ -51,18 +51,27 @@ export function validateImageFile(file: File) {
   if (file.size > MAX_IMAGE_SIZE_BYTES) throw new Error('file_too_large')
 }
 
-/** 从后端代理响应里提取 result，兼容直接返回 AnalysisResult 的旧格式。 */
-function parseResponse(data: any): Partial<AnalysisResult> {
-  if (data?.result && typeof data.result === 'object') {
-    return data.result
-  }
-  if (data && typeof data === 'object') {
-    return data
-  }
-  return {}
+/** 保留后端顶层状态，避免把 fallback 或 mock 响应误标成真实 AI。 */
+export function normalizeResponse(payload: any): AnalysisResult {
+  const data = payload?.result && typeof payload.result === 'object'
+    ? payload.result as Partial<AnalysisResult>
+    : payload && typeof payload === 'object'
+      ? payload as Partial<AnalysisResult>
+      : {}
+  const source = normalizeSource(data.source, payload?.ai_source, payload?.success)
+
+  return normalize(data, source, {
+    fallbackCode: safeNullableText(payload?.fallbackCode ?? payload?.fallback_code),
+    recordStatus: safeText(payload?.record_status, source === 'api' ? 'ai_completed' : `${source}_result`),
+    recordId: safeNullableText(payload?.record_id),
+  })
 }
 
-function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.source || 'api'): AnalysisResult {
+function normalize(
+  data: Partial<AnalysisResult>,
+  source: AnalysisSource = data.source || 'api',
+  meta: { fallbackCode?: string | null; recordStatus?: string; recordId?: string | null } = {},
+): AnalysisResult {
   const score = typeof data.score === 'number' ? Math.max(0, Math.min(100, Math.round(data.score))) : 66
   const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0
     ? data.suggestions.slice(0, 5).map(String)
@@ -82,6 +91,9 @@ function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.
     disclaimer: safeText(data.disclaimer, DEFAULT_DISCLAIMER),
     source,
     source_label: sourceLabel(source, data.source_label),
+    fallback_code: meta.fallbackCode ?? null,
+    record_status: meta.recordStatus || `${source}_result`,
+    record_id: meta.recordId ?? null,
     count: data.count === '少量' || data.count === '偏多' ? data.count : '中等',
     thickness: data.thickness === '粗硬' || data.thickness === '细软' ? data.thickness : '正常',
     suggestions,
@@ -90,6 +102,17 @@ function normalize(data: Partial<AnalysisResult>, source: AnalysisSource = data.
 
 function safeText(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function safeNullableText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function normalizeSource(resultSource: unknown, aiSource: unknown, success: unknown): AnalysisSource {
+  if (resultSource === 'api' || resultSource === 'mock' || resultSource === 'fallback') return resultSource
+  if (success === false || aiSource === 'fallback') return 'fallback'
+  if (aiSource === 'mock') return 'mock'
+  return 'api'
 }
 
 function buildTags(score: number) {
@@ -120,6 +143,9 @@ function mockResult(file?: File, source: AnalysisSource = 'mock'): Promise<Analy
         disclaimer: DEFAULT_DISCLAIMER,
         source,
         source_label: sourceLabel(source),
+        fallback_code: null,
+        record_status: 'frontend_demo_mock',
+        record_id: null,
         count: '中等',
         thickness: '正常',
         suggestions: [
@@ -130,6 +156,19 @@ function mockResult(file?: File, source: AnalysisSource = 'mock'): Promise<Analy
       })
     }, 1200),
   )
+}
+
+async function localFallbackResult(file: File): Promise<AnalysisResult> {
+  const result = await mockResult(file, 'fallback')
+  return {
+    ...result,
+    title: '本地兜底记录',
+    summary: '后端分析服务暂时不可达，当前展示的是本地 demo fallback，不是真实 AI 结果。',
+    disclaimer: '当前为本地 demo fallback，仅用于娱乐记录和习惯养成展示，不代表真实 AI 分析或医学判断。',
+    source_label: '本地 Demo fallback（非真实 AI）',
+    fallback_code: 'BACKEND_UNREACHABLE',
+    record_status: 'frontend_local_fallback',
+  }
 }
 
 function wait(ms: number) {
