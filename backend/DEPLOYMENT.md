@@ -9,13 +9,17 @@
 - 启动命令：`npm start`
 - 本地开发：`npm run dev`
 - 健康检查：`GET /api/health`
-- 分析接口：`POST /api/analyze`（兼容 `/api/hair-analysis`）
+- 分析接口：`POST /api/analyze`（兼容 `POST /api/hair-analysis`）
+- 历史接口：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`
 - 环境变量：
   - `PORT`：平台通常自动注入；本地默认 `8787`
   - `NODE_ENV`：可设为 `production`
   - `AI_PROVIDER`：`openai_compatible` 或 `siliconflow`
-  - `OPENAI_BASE_URL` / `OPENAI_MODEL` / `OPENAI_API_KEY`：OpenAI compatible 配置
+  - `OPENAI_BASE_URL` / `OPENAI_RESPONSES_URL` / `OPENAI_MODEL` / `OPENAI_API_KEY`：OpenAI compatible Responses API 配置
   - `SILICONFLOW_MODEL` / `SILICONFLOW_API_KEY`：SiliconFlow 配置
+  - `RECORDS_FILE`：可选 JSON 存储路径；默认 `backend/data/records.json`
+
+注意：Render/Railway 的临时文件系统可能在重启或重新部署时清空 JSON 记录。5 周 demo 可先使用此方案；需要长期保留时应挂载持久卷或替换为数据库.
 
 ## Render 部署
 
