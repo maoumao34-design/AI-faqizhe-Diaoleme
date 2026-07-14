@@ -8,6 +8,50 @@ const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
 const todayKey = () => new Date().toISOString().slice(0, 10)
 const taskKey = () => `diaoleme-prototype-tasks-${todayKey()}`
 const taskBonusKey = () => `diaoleme-prototype-task-bonus-${todayKey()}`
+const questProgressKey = (category: QuestCategory) => `diaoleme-prototype-quest-progress-${category}-${todayKey()}`
+
+type QuestCategory = 'daily' | 'weekly' | 'growth' | 'special'
+
+type QuestDefinition = {
+  id: string
+  category: QuestCategory
+  icon: string
+  title: string
+  description: string
+  target: string
+  reward: number
+  actionLabel: string
+}
+
+const QUEST_CATEGORIES: QuestCategory[] = ['daily', 'weekly', 'growth', 'special']
+
+const CATEGORY_LABELS: Record<QuestCategory, string> = {
+  daily: '每日任务',
+  weekly: '每周任务',
+  growth: '成长任务',
+  special: '特别任务',
+}
+
+const QUEST_CONFIG: Record<Exclude<QuestCategory, 'daily'>, QuestDefinition[]> = {
+  weekly: [
+    { id: 'weekly-scan-3', category: 'weekly', icon: '📷', title: '完成 3 次记录', description: '给小发球攒一组本周观察素材。', target: '0/3', reward: 35, actionLabel: '记录本周' },
+    { id: 'weekly-sleep-4', category: 'weekly', icon: '🌙', title: '4 天温柔早睡', description: '不卷到深夜，给头皮也放个小假。', target: '0/4', reward: 40, actionLabel: '打卡早睡' },
+    { id: 'weekly-share', category: 'weekly', icon: '💬', title: '分享一次发球周报', description: '把本周小进步发给朋友，轻松晒一下。', target: '0/1', reward: 25, actionLabel: '去分享' },
+    { id: 'weekly-massage', category: 'weekly', icon: '🪮', title: '完成 3 次头皮放松', description: '睡前 5 分钟，给自己按下暂停键。', target: '0/3', reward: 30, actionLabel: '开始放松' },
+  ],
+  growth: [
+    { id: 'growth-first-report', category: 'growth', icon: '🌱', title: '生成第一份种子报告', description: '上传照片后获得你的第一枚趣味称号。', target: '0/1', reward: 45, actionLabel: '去扫描' },
+    { id: 'growth-7-day', category: 'growth', icon: '🔥', title: '连续记录 7 天', description: '把小习惯养成小成就，不求完美只求坚持。', target: '0/7', reward: 80, actionLabel: '点亮进度' },
+    { id: 'growth-unlock-style', category: 'growth', icon: '🎀', title: '解锁一个新造型', description: '给小发球换套新皮肤，奖励认真生活的你。', target: '0/1', reward: 60, actionLabel: '去解锁' },
+    { id: 'growth-history', category: 'growth', icon: '📒', title: '查看一次历史趋势', description: '回头看看，最近的自己已经很棒啦。', target: '0/1', reward: 25, actionLabel: '看趋势' },
+  ],
+  special: [
+    { id: 'special-spring', category: 'special', icon: '🌸', title: '春风吹发季签到', description: '参与限时季节活动，领取春日能量。', target: '0/1', reward: 50, actionLabel: '领取能量' },
+    { id: 'special-mood', category: 'special', icon: '😊', title: '写下今日心情弹幕', description: '把压力吐槽给小发球听，轻轻放过自己。', target: '0/1', reward: 30, actionLabel: '写一句' },
+    { id: 'special-buddy', category: 'special', icon: '☁️', title: '和 Buddy 互动一次', description: '摸摸小发球，让陪伴感上线。', target: '0/1', reward: 35, actionLabel: '去互动' },
+    { id: 'special-community', category: 'special', icon: '✨', title: '逛逛社区治愈帖', description: '看看大家的小妙招，找到一点轻松感。', target: '0/1', reward: 25, actionLabel: '去看看' },
+  ],
+}
 
 export default function App() {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -39,13 +83,15 @@ export default function App() {
 
 function attachPrototypeFeatures(root: HTMLElement) {
   const scanCleanup = attachPrototypeAnalysis(root)
-  const render = () => renderStatefulSections(root)
+  let activeQuestCategory: QuestCategory = 'daily'
+  const render = () => renderStatefulSections(root, activeQuestCategory)
   render()
   const unsubscribe = useUserStore.subscribe(render)
 
   const onClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement
-    const taskBtn = target.closest<HTMLElement>('[data-task-index]')
+    const categoryBtn = target.closest<HTMLElement>('[data-quest-category]')
+    const questBtn = target.closest<HTMLElement>('[data-quest-id]')
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
     const viewReportBtn = target.closest<HTMLElement>('[data-view-report]')
@@ -56,8 +102,12 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const openJourneyBtn = target.closest<HTMLElement>('[data-action="open-journey"]')
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
 
-    if (taskBtn) {
-      completeTask(Number(taskBtn.dataset.taskIndex))
+    if (categoryBtn?.dataset.questCategory && isQuestCategory(categoryBtn.dataset.questCategory)) {
+      activeQuestCategory = categoryBtn.dataset.questCategory
+      render()
+    }
+    if (questBtn?.dataset.questId && questBtn.dataset.questCategory && isQuestCategory(questBtn.dataset.questCategory)) {
+      completeQuest(questBtn.dataset.questCategory, questBtn.dataset.questId, root)
       render()
     }
     if (checkinBtn) {
@@ -94,6 +144,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
         useUserStore.getState().resetAll()
         localStorage.removeItem(taskKey())
         localStorage.removeItem(taskBonusKey())
+        QUEST_CATEGORIES.forEach((category) => localStorage.removeItem(questProgressKey(category)))
         render()
       }
     }
@@ -237,10 +288,10 @@ function attachPrototypeAnalysis(root: HTMLElement) {
   }
 }
 
-function renderStatefulSections(root: HTMLElement) {
+function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily') {
   renderAnalysisCard(root, currentAnalysisFromStore())
   renderHome(root)
-  renderTasks(root)
+  renderTasks(root, activeQuestCategory)
   renderHistory(root)
   renderRewards(root)
   renderLeague(root)
@@ -334,16 +385,56 @@ function renderHome(root: HTMLElement) {
   if (heroBadges[0]) heroBadges[0].textContent = `${s.points} XP`
 }
 
-function renderTasks(root: HTMLElement) {
+function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
   const s = useUserStore.getState()
-  const tasks = getSuggestions()
-  const done = loadDoneTasks()
-  const allDone = tasks.length > 0 && tasks.every((_, index) => done.has(index))
-  setHtml(root.querySelector('#questList'), tasks.map((task, index) => {
-    const isDone = done.has(index)
-    return `<div class="item"><span style="font-size:26px">${['💧', '🌙', '🥗', '🖐', '🚶'][index] || '✨'}</span><b>${escapeHtml(task)}<small>${index === 0 ? '来自 AI 轻量建议' : '完成后获得积分'}</small></b><span>${isDone ? '1/1' : '0/1'}</span><button data-task-index="${index}" class="quest-btn ${isDone ? 'done' : ''}">${isDone ? '✓ 已完成' : '去完成'}</button></div>`
-  }).join('') + `<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${allDone ? '今日建议全部完成！' : '完成所有每日任务可获得额外奖励！'}</b><span>+10 XP</span><button class="quest-btn done">${allDone ? '已领取' : '未完成'}</button></div>`)
+  const quests = getQuests(activeCategory)
+  const done = loadDoneQuests(activeCategory)
+  const categoryDone = quests.filter((quest) => done.has(quest.id)).length
+  const totalQuests = QUEST_CATEGORIES.flatMap(getQuests)
+  const totalDone = QUEST_CATEGORIES.reduce((sum, category) => sum + loadDoneQuests(category).size, 0)
+  const overallPercent = totalQuests.length ? Math.round((totalDone / totalQuests.length) * 100) : 0
+  const allDailyDone = getQuests('daily').every((quest) => loadDoneQuests('daily').has(quest.id))
+
+  setHtml(root.querySelector('[data-page="quests"] .tabs'), QUEST_CATEGORIES.map((category) => `<button class="pill ${category === activeCategory ? 'primary' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`).join(''))
+  setHtml(root.querySelector('#questList'), quests.map((quest) => renderQuestItem(quest, done.has(quest.id))).join('') + renderQuestSummary(activeCategory, categoryDone, quests.length, allDailyDone))
   setHtml(root.querySelector('#weekRewards'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < s.checkinDays.length ? '✓' : d}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`).join(''))
+  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(1)'), `<h3>我的任务进度</h3><div class="big-number">${overallPercent}%</div><div class="meter"><div class="fill" style="--w:${overallPercent}%"></div></div><p>完成 ${totalDone}/${totalQuests.length} 个任务</p><small>${CATEGORY_LABELS[activeCategory]}：${categoryDone}/${quests.length}</small>`)
+  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(3)'), `<h3>任务小贴士</h3><p>${questTip(activeCategory)}</p><div class="mini-buddy"></div>`)
+  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(4)'), `<h3>本周任务总览</h3><div class="donut" data-label="${totalDone}/${totalQuests.length}\A 已完成"></div><p>${allDailyDone ? '每日建议已全部点亮，额外奖励已入账。' : '今天再点亮一个小任务，就很不错啦。'}</p>`)
+}
+
+function renderQuestItem(quest: QuestDefinition, isDone: boolean) {
+  return `<div class="item"><span style="font-size:26px">${quest.icon}</span><b>${escapeHtml(quest.title)}<small>${escapeHtml(quest.description)}</small></b><span>${isDone ? '1/1' : escapeHtml(quest.target)}</span><button data-quest-category="${quest.category}" data-quest-id="${quest.id}" class="quest-btn ${isDone ? 'done' : ''}">${isDone ? '✓ 已领取' : escapeHtml(quest.actionLabel)}</button></div>`
+}
+
+function renderQuestSummary(category: QuestCategory, doneCount: number, total: number, allDailyDone: boolean) {
+  const reward = category === 'daily' ? 10 : Math.max(20, total * 10)
+  const complete = doneCount >= total
+  return `<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${category === 'daily' ? (allDailyDone ? '今日建议全部完成！' : '完成所有每日任务可获得额外奖励！') : `${CATEGORY_LABELS[category]}完成度 ${doneCount}/${total}`}<small>${complete ? '小发球已经收到这份能量。' : '慢慢来，完成一个也算数。'}</small></b><span>+${reward} XP</span><button class="quest-btn done">${complete ? '已点亮' : '未完成'}</button></div>`
+}
+
+function getQuests(category: QuestCategory): QuestDefinition[] {
+  if (category !== 'daily') return QUEST_CONFIG[category]
+  return getSuggestions().map((task, index) => ({
+    id: `daily-${index}`,
+    category: 'daily',
+    icon: ['💧', '🌙', '🥗', '🖐', '🚶'][index] || '✨',
+    title: task,
+    description: index === 0 ? '来自 AI 的轻量建议' : '完成后给小发球增加一点能量',
+    target: '0/1',
+    reward: index === 0 ? 5 : 2,
+    actionLabel: '去完成',
+  }))
+}
+
+function questTip(category: QuestCategory) {
+  const tips: Record<QuestCategory, string> = {
+    daily: '今天不用做到满分，挑一个最容易的小任务开始就很好。',
+    weekly: '周任务适合拆成几天完成，记录、休息和放松都算成长。',
+    growth: '成长任务会长期保留，像养小发球一样一点点解锁。',
+    special: '特别任务偏活动和社交，主打轻松参与，不制造压力。',
+  }
+  return tips[category]
 }
 
 function renderHistory(root: HTMLElement) {
@@ -431,26 +522,61 @@ function renderProfile(root: HTMLElement) {
   setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 }
 
-function completeTask(index: number) {
-  if (!Number.isFinite(index)) return
-  const done = loadDoneTasks()
-  if (done.has(index)) return
-  done.add(index)
-  localStorage.setItem(taskKey(), JSON.stringify([...done]))
-  useUserStore.getState().addPoints(2)
-  const tasks = getSuggestions()
-  if (tasks.length > 0 && tasks.every((_, i) => done.has(i)) && localStorage.getItem(taskBonusKey()) !== '1') {
-    localStorage.setItem(taskBonusKey(), '1')
-    useUserStore.getState().addPoints(10)
+function completeQuest(category: QuestCategory, questId: string, root: HTMLElement) {
+  const quest = getQuests(category).find((item) => item.id === questId)
+  if (!quest) return
+  const done = loadDoneQuests(category)
+  if (done.has(questId)) {
+    showToast(root, '这个任务已经领取过啦')
+    return
+  }
+  done.add(questId)
+  saveDoneQuests(category, done)
+  useUserStore.getState().addPoints(quest.reward)
+  showToast(root, `+${quest.reward} XP · ${quest.title}`)
+
+  if (category === 'daily') {
+    const dailyQuests = getQuests('daily')
+    if (dailyQuests.length > 0 && dailyQuests.every((item) => done.has(item.id)) && localStorage.getItem(taskBonusKey()) !== '1') {
+      localStorage.setItem(taskBonusKey(), '1')
+      useUserStore.getState().addPoints(10)
+      showToast(root, '每日建议全完成，额外 +10 XP')
+    }
   }
 }
 
-function loadDoneTasks() {
+function loadDoneQuests(category: QuestCategory) {
+  try {
+    const next = new Set<string>(JSON.parse(localStorage.getItem(questProgressKey(category)) || '[]'))
+    if (category === 'daily' && next.size === 0) {
+      loadLegacyDoneTasks().forEach((index) => next.add(`daily-${index}`))
+    }
+    return next
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function saveDoneQuests(category: QuestCategory, done: Set<string>) {
+  localStorage.setItem(questProgressKey(category), JSON.stringify([...done]))
+  if (category === 'daily') {
+    const legacyIndexes = [...done]
+      .map((id) => Number(id.replace('daily-', '')))
+      .filter((index) => Number.isFinite(index))
+    localStorage.setItem(taskKey(), JSON.stringify(legacyIndexes))
+  }
+}
+
+function loadLegacyDoneTasks() {
   try {
     return new Set<number>(JSON.parse(localStorage.getItem(taskKey()) || '[]'))
   } catch {
     return new Set<number>()
   }
+}
+
+function isQuestCategory(value: string): value is QuestCategory {
+  return QUEST_CATEGORIES.includes(value as QuestCategory)
 }
 
 function getSuggestions() {
