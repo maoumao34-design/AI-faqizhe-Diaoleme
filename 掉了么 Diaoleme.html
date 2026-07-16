@@ -756,6 +756,30 @@
         margin-bottom: 6px;
       }
 
+      .scan-side-panel .card,
+      .scan-side-panel b,
+      .scan-side-panel small {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .scan-stat-grid .big-number {
+        display: inline-block;
+        font-size: clamp(28px, 2.6vw, 42px);
+        max-width: 100%;
+        overflow-wrap: anywhere;
+      }
+
+      .scan-history-card .item {
+        gap: 10px;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        padding: 12px;
+      }
+
+      .scan-history-card .status {
+        white-space: nowrap;
+      }
+
       .skin-grid {
         display: grid;
         grid-template-columns: repeat(6, minmax(120px, 1fr));
@@ -1187,20 +1211,21 @@
             <div class="card" style="text-align:center">
               <div class="scan-orbit">
                 <div class="buddy" style="transform:scale(.78)"><div class="fluff"></div><div class="sprout"></div><div class="face"><span class="eye left"></span><span class="eye right"></span><span class="nose"></span><span class="blush left"></span><span class="blush right"></span></div><div class="body"></div><div class="shoe left"></div><div class="shoe right"></div></div>
-                <div class="scan-percent" id="scanPercent">完成</div>
+                <div class="scan-percent" id="scanPercent">待上传</div>
               </div>
               <h3>请将头发平铺在对比清晰的背景上</h3>
               <p>确保光线充足，避免阴影和反光</p>
               <div class="hero-buttons" style="justify-content:center">
                 <button class="cta primary" id="scanBtn">📷 拍照扫描</button>
-                <button class="cta ghost">🖼 相册上传</button>
+                <button class="cta ghost" id="uploadBtn">🖼 相册上传</button>
+                <button class="cta primary" id="scanCompleteBtn" style="display:none">完成</button>
               </div>
             </div>
-            <div class="grid">
-              <div class="card"><h3>如何获得更准确的结果？</h3><div class="three grid"><div>✅<br><b>单根或少量头发</b></div><div>❌<br><b>头发打结成团</b></div><div>❌<br><b>背景颜色复杂</b></div></div></div>
-              <div class="card"><h3>本周扫描数据</h3><div class="three grid"><div><span class="big-number">3</span><br>扫描次数</div><div><span class="big-number">126</span><br>平均掉发量</div><div><span class="badge">正常</span><br>整体状态</div></div></div>
-              <div class="card item-list"><h3>最近扫描记录</h3><div class="item"><span>〰</span><b>2024/05/18 10:30</b><span class="status">128 根</span></div><div class="item"><span>〰</span><b>2024/05/17 10:25</b><span class="status">132 根</span></div><div class="item"><span>〰</span><b>2024/05/16 10:28</b><span class="status">118 根</span></div></div>
-            </div>
+            <div class="grid scan-side-panel">
+              <div class="card"><h3>如何获得更准确的结果？</h3><div class="three grid scan-example-grid"><div>✅<br><b>保持相同环境</b></div><div>❌<br><b>头发打结成团</b></div><div>❌<br><b>背景颜色复杂</b></div></div></div>
+              <div class="card scan-week-card"><h3>本周扫描数据</h3><div class="three grid scan-stat-grid"><div><span class="big-number">3</span><br><small>扫描次数</small></div><div><span class="big-number">126</span><br><small>平均掉发量</small></div><div><span class="badge">正常</span><br><small>整体状态</small></div></div></div>
+              <div class="card item-list scan-history-card"><h3>最近扫描记录</h3><div class="item"><span>〰</span><b>2024/05/18 10:30</b><span class="status">128 根</span></div><div class="item"><span>〰</span><b>2024/05/17 10:25</b><span class="status">132 根</span></div><div class="item"><span>〰</span><b>2024/05/16 10:28</b><span class="status">118 根</span></div></div>
+              </div>
           </div>
         </section>
 
@@ -1406,20 +1431,6 @@
       document.querySelector("#weekRewards").innerHTML = ["一", "二", "三", "四", "五", "六", "日"].map((d, i) => `<span class="badge">${i < 2 ? "✓" : d}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`).join("");
       document.querySelector("#streak").innerHTML = ["一", "二", "三", "四", "五", "六", "日"].map((d, i) => `<span class="badge">${i < 6 ? "✓" : "🎁"}<br><small>${d}</small></span>`).join("");
       document.querySelector("#checkin").innerHTML = ["一", "二", "三", "四", "五", "六", "日"].map((d, i) => `<span class="badge">${i < 6 ? "✓" : "🎁"}<br><small>${d}</small></span>`).join("");
-
-      document.querySelector("#scanBtn").addEventListener("click", () => {
-        const label = document.querySelector("#scanPercent");
-        let value = 10;
-        label.textContent = "10%";
-        const timer = setInterval(() => {
-          value += 7;
-          label.textContent = `${Math.min(value, 100)}%`;
-          if (value >= 100) {
-            clearInterval(timer);
-            label.textContent = "完成";
-          }
-        }, 120);
-      });
 
       const ms = [["开始记录", "5/1"], ["坚持 3 天", "5/4"], ["完成第一个任务", "5/7"], ["连续 7 天", "5/12"], ["头皮健康改善", "5/18"], ["解锁新发型", "5/24"]];
       document.querySelector("#milestones").innerHTML = ms.map((m, i) => `<div class="milestone"><div class="dot">${["⚑","🌱","⭐","7","💧","✂"][i]}</div>${m[0]}<br><small>${m[1]}</small></div>`).join("");

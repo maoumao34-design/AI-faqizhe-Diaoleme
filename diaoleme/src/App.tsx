@@ -97,11 +97,16 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const viewReportBtn = target.closest<HTMLElement>('[data-view-report]')
     const viewDayBtn = target.closest<HTMLElement>('[data-view-day]')
     const shareReportBtn = target.closest<HTMLElement>('[data-share-report]')
+    const navBtn = target.closest<HTMLElement>('[data-go]')
     const resetBtn = target.closest<HTMLElement>('[data-action="reset-progress"]')
+    const scanPageBtn = target.closest<HTMLElement>('[data-scan-record-page]')
     const journeyShareBtn = target.closest<HTMLElement>('[data-action="journey-share"]')
     const openJourneyBtn = target.closest<HTMLElement>('[data-action="open-journey"]')
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
 
+    if (navBtn?.dataset.go === 'scan' && !viewReportBtn) {
+      clearAnalysisCard(root)
+    }
     if (categoryBtn?.dataset.questCategory && isQuestCategory(categoryBtn.dataset.questCategory)) {
       activeQuestCategory = categoryBtn.dataset.questCategory
       render()
@@ -139,12 +144,17 @@ function attachPrototypeFeatures(root: HTMLElement) {
       downloadShareCard()
       showToast(root, '已生成这份报告的分享卡')
     }
+    if (scanPageBtn?.dataset.scanRecordPage) {
+      root.dataset.scanRecordPage = scanPageBtn.dataset.scanRecordPage
+      renderHistory(root)
+    }
     if (resetBtn) {
       if (confirm('重置所有进度、积分、打卡和历史记录？')) {
         useUserStore.getState().resetAll()
         localStorage.removeItem(taskKey())
         localStorage.removeItem(taskBonusKey())
         QUEST_CATEGORIES.forEach((category) => localStorage.removeItem(questProgressKey(category)))
+        clearAnalysisCard(root)
         render()
       }
     }
@@ -172,17 +182,26 @@ function attachPrototypeFeatures(root: HTMLElement) {
 function attachPrototypeAnalysis(root: HTMLElement) {
   const scanSection = root.querySelector<HTMLElement>('[data-page="scan"]')
   const scanBtn = root.querySelector<HTMLButtonElement>('#scanBtn')
-  const uploadBtn = scanSection?.querySelector<HTMLButtonElement>('.cta.ghost')
+  const uploadBtn = root.querySelector<HTMLButtonElement>('#uploadBtn')
+  const completeBtn = root.querySelector<HTMLButtonElement>('#scanCompleteBtn')
   const percent = root.querySelector<HTMLElement>('#scanPercent')
   const scanCard = scanSection?.querySelector<HTMLElement>('.card[style*="text-align:center"]')
-  const input = document.createElement('input')
+  const cameraInput = document.createElement('input')
+  const galleryInput = document.createElement('input')
   let selectedFile: File | null = null
   let previewUrl: string | null = null
+  let cameraStream: MediaStream | null = null
 
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.style.display = 'none'
-  document.body.appendChild(input)
+  const prepareInput = (input: HTMLInputElement, capture = false) => {
+    input.type = 'file'
+    input.accept = 'image/*'
+    if (capture) input.setAttribute('capture', 'environment')
+    input.style.display = 'none'
+    document.body.appendChild(input)
+  }
+
+  prepareInput(cameraInput, true)
+  prepareInput(galleryInput)
 
   const setStatus = (message: string, tone: 'idle' | 'error' | 'success' = 'idle') => {
     const existing = scanCard?.querySelector<HTMLElement>('[data-analysis-status]')
@@ -218,12 +237,74 @@ function attachPrototypeAnalysis(root: HTMLElement) {
       percent.textContent = '已选'
       percent.style.zIndex = '4'
     }
-    setStatus(`已选择：${file.name}，点击“拍照扫描”开始 AI 分析。`)
+    if (completeBtn) completeBtn.style.display = ''
+    setStatus(`已选择：${file.name}，点击“完成”确认并开始 AI 分析。`)
   }
 
-  const chooseFile = () => input.click()
+  const stopCamera = () => {
+    cameraStream?.getTracks().forEach((track) => track.stop())
+    cameraStream = null
+    root.querySelector('[data-camera-modal]')?.remove()
+  }
 
-  const onFileChange = () => {
+  const useCapturedPhoto = (blob: Blob) => {
+    const file = new File([blob], `diaoleme-camera-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    selectedFile = file
+    showPreview(file)
+    setStatus('已自动上传刚拍的照片，点击“完成”确认并开始 AI 分析。')
+    stopCamera()
+  }
+
+  const requestCameraStream = async () => {
+    const constraints: MediaStreamConstraints = { video: { facingMode: { ideal: 'environment' } }, audio: false }
+    if (navigator.mediaDevices?.getUserMedia) {
+      return navigator.mediaDevices.getUserMedia(constraints)
+    }
+    const legacyGetUserMedia = (navigator as any).getUserMedia || (navigator as any).webkitGetUserMedia || (navigator as any).mozGetUserMedia
+    if (legacyGetUserMedia) {
+      return new Promise<MediaStream>((resolve, reject) => legacyGetUserMedia.call(navigator, constraints, resolve, reject))
+    }
+    return null
+  }
+
+  const openCamera = async () => {
+    try {
+      cameraStream = await requestCameraStream()
+      if (!cameraStream) {
+        setStatus('此页面无相机权限，请检查吧。', 'error')
+        return
+      }
+      const modal = document.createElement('div')
+      modal.dataset.cameraModal = 'true'
+      modal.className = 'camera-capture-modal'
+      modal.innerHTML = '<div class="camera-capture-box"><video autoplay playsinline></video><div class="hero-buttons" style="justify-content:center"><button class="cta primary" data-camera-capture>拍照并上传</button><button class="cta ghost" data-camera-cancel>取消</button></div></div>'
+      root.appendChild(modal)
+      const video = modal.querySelector('video') as HTMLVideoElement | null
+      if (video) video.srcObject = cameraStream
+      modal.querySelector('[data-camera-cancel]')?.addEventListener('click', stopCamera)
+      modal.querySelector('[data-camera-capture]')?.addEventListener('click', () => {
+        if (!video || video.videoWidth === 0) return
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        canvas.getContext('2d')?.drawImage(video, 0, 0)
+        canvas.toBlob((blob) => {
+          if (blob) useCapturedPhoto(blob)
+        }, 'image/jpeg', 0.92)
+      })
+      setStatus('相机已打开，请拍照后自动上传。')
+    } catch (error) {
+      console.error('[prototype] camera failed:', error)
+      stopCamera()
+      setStatus('此页面无相机权限，请检查吧。', 'error')
+    }
+  }
+
+  const takePhoto = () => openCamera()
+  const chooseFile = () => galleryInput.click()
+
+  const onFileChange = (event: Event) => {
+    const input = event.currentTarget as HTMLInputElement
     const file = input.files?.[0]
     input.value = ''
     if (!file) return
@@ -250,6 +331,7 @@ function attachPrototypeAnalysis(root: HTMLElement) {
     }
     scanBtn && (scanBtn.disabled = true)
     uploadBtn && (uploadBtn.disabled = true)
+    completeBtn && (completeBtn.disabled = true)
     setStatus('分析中，正在调用后端 AI 代理...')
     let value = 10
     if (percent) percent.textContent = '10%'
@@ -272,24 +354,30 @@ function attachPrototypeAnalysis(root: HTMLElement) {
     } finally {
       scanBtn && (scanBtn.disabled = false)
       uploadBtn && (uploadBtn.disabled = false)
+      completeBtn && (completeBtn.disabled = false)
     }
   }
 
-  input.addEventListener('change', onFileChange)
+  cameraInput.addEventListener('change', onFileChange)
+  galleryInput.addEventListener('change', onFileChange)
+  scanBtn?.addEventListener('click', takePhoto)
   uploadBtn?.addEventListener('click', chooseFile)
-  scanBtn?.addEventListener('click', runAnalysis)
+  completeBtn?.addEventListener('click', runAnalysis)
 
   return () => {
-    input.removeEventListener('change', onFileChange)
+    cameraInput.removeEventListener('change', onFileChange)
+    galleryInput.removeEventListener('change', onFileChange)
+    scanBtn?.removeEventListener('click', takePhoto)
     uploadBtn?.removeEventListener('click', chooseFile)
-    scanBtn?.removeEventListener('click', runAnalysis)
-    input.remove()
+    completeBtn?.removeEventListener('click', runAnalysis)
+    stopCamera()
+    cameraInput.remove()
+    galleryInput.remove()
     if (previewUrl) URL.revokeObjectURL(previewUrl)
   }
 }
 
 function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily') {
-  renderAnalysisCard(root, currentAnalysisFromStore())
   renderHome(root)
   renderTasks(root, activeQuestCategory)
   renderHistory(root)
@@ -345,6 +433,12 @@ function currentAnalysisFromStore(): AnalysisResult {
   }
 }
 
+function clearAnalysisCard(root: HTMLElement) {
+  const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
+  scanCard?.querySelector('[data-analysis-result]')?.remove()
+  scanCard?.classList.remove('has-analysis-result')
+}
+
 function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
   const percent = root.querySelector<HTMLElement>('#scanPercent')
   const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
@@ -353,28 +447,34 @@ function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
 
   const old = scanCard.querySelector('[data-analysis-result]')
   old?.remove()
-  const fallback = result.fallback_code
-    ? `<div class="badge" style="background:rgba(255,154,61,.18);color:#ff7a2f">fallback: ${escapeHtml(result.fallback_code)}</div>`
-    : ''
-  scanCard.insertAdjacentHTML('beforeend', `
-    <div class="card soft" data-analysis-result style="margin-top:18px;text-align:left">
-      <div class="row" style="justify-content:space-between">
-        <h3 style="margin:0">${escapeHtml(result.title)}</h3>
-        <span class="badge">${escapeHtml(result.source_label)}</span>
+  scanCard.classList.add('has-analysis-result')
+  const sourceLabel = result.fallback_code ? '演示结果' : 'AI 结果'
+  const sourceDetail = result.fallback_code ? `fallback: ${result.fallback_code}` : result.source_label
+  const orbit = scanCard.querySelector<HTMLElement>('.scan-orbit')
+  const resultHtml = `
+    <div class="card soft scan-result-card" data-analysis-result>
+      <div class="scan-result-head">
+        <h3>${escapeHtml(result.title)}</h3>
+        <span class="badge analysis-source-badge">${escapeHtml(sourceLabel)}</span>
       </div>
-      ${fallback}
+      <p class="analysis-source-detail">${escapeHtml(sourceDetail)}</p>
       <p>${escapeHtml(result.summary)}</p>
-      <div class="three grid" style="text-align:center">
-        <div><span class="big-number">${result.score}</span><br>趣味状态分</div>
-        <div><span class="big-number">${escapeHtml(result.count)}</span><br>掉发量</div>
-        <div><span class="big-number">${escapeHtml(result.thickness)}</span><br>发质观感</div>
+      <div class="analysis-metrics">
+        <div class="analysis-metric"><span class="big-number">${result.score}</span><small>趣味状态分</small></div>
+        <div class="analysis-metric"><span class="big-number">${escapeHtml(result.count)}</span><small>掉发量</small></div>
+        <div class="analysis-metric"><span class="big-number">${escapeHtml(result.thickness)}</span><small>发质观感</small></div>
       </div>
       <p><b>温柔吐槽：</b>${escapeHtml(result.roast)}</p>
       <p><b>今日任务：</b>${escapeHtml(result.daily_task)}</p>
-      <div class="row">${result.tags.map((tag) => `<span class="badge">${escapeHtml(tag)}</span>`).join('')}</div>
+      <div class="analysis-tags">${result.tags.map((tag) => `<span class="badge">${escapeHtml(tag)}</span>`).join('')}</div>
       <small>${escapeHtml(result.disclaimer)}</small>
     </div>
-  `)
+  `
+  if (orbit) {
+    orbit.insertAdjacentHTML('afterend', resultHtml)
+  } else {
+    scanCard.insertAdjacentHTML('beforeend', resultHtml)
+  }
 }
 
 function renderHome(root: HTMLElement) {
@@ -440,8 +540,18 @@ function questTip(category: QuestCategory) {
 function renderHistory(root: HTMLElement) {
   const history = useUserStore.getState().reportHistory
   const latest = history.slice(0, 5)
-  setHtml(root.querySelector('[data-page="scan"] .grid .card:nth-child(2)'), `<h3>本周扫描数据</h3><div class="three grid"><div><span class="big-number">${history.length}</span><br>扫描次数</div><div><span class="big-number">${avgScore(history) || '--'}</span><br>平均状态分</div><div><span class="badge">${history[0]?.source_label || '等待分析'}</span><br>最新来源</div></div>`)
-  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3>${renderRecordItems(latest)}`)
+  const scanPageSize = 3
+  const totalPages = Math.max(1, Math.ceil(history.length / scanPageSize))
+  const currentPage = Math.min(Math.max(Number(root.dataset.scanRecordPage || 0), 0), totalPages - 1)
+  root.dataset.scanRecordPage = String(currentPage)
+  const pageRecords = history.slice(currentPage * scanPageSize, currentPage * scanPageSize + scanPageSize)
+  const pager = history.length > scanPageSize
+    ? `<div class="scan-record-pager"><button class="pill" data-scan-record-page="${Math.max(0, currentPage - 1)}" ${currentPage === 0 ? 'disabled' : ''}>上一页</button><small>${currentPage + 1} / ${totalPages}</small><button class="pill" data-scan-record-page="${Math.min(totalPages - 1, currentPage + 1)}" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>下一页</button></div>`
+    : ''
+  const latestSource = history[0]?.source_label || '等待分析'
+  const latestSourceText = escapeHtml(latestSource)
+  setHtml(root.querySelector('[data-page="scan"] .grid .card:nth-child(2)'), `<h3>本周扫描数据</h3><div class="three grid scan-stat-grid"><div class="scan-stat-item"><span class="big-number">${history.length}</span><small>扫描次数</small></div><div class="scan-stat-item"><span class="big-number">${avgScore(history) || '--'}</span><small>平均状态分</small></div><div class="scan-stat-item scan-source-stat"><span class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceText}</span><small>最新来源</small></div></div>`)
+  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords)}</div>${pager}`)
   renderJourney(root, history)
   setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
 }
@@ -598,7 +708,11 @@ function buildLeaders() {
 
 function renderRecordItems(records: ReportRecord[], timeline = false) {
   if (!records.length) return `<div class="item"><span>📷</span><b>暂无记录<small>上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
-  return records.map((r) => `<div class="item"><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="status" data-view-report="${escapeHtml(r.id)}">${r.score} 分</button></div>`).join('')
+  return records.map((r) => {
+    const recordId = escapeHtml(r.id)
+    const itemAttrs = timeline ? '' : ` data-view-report="${recordId}" role="button" tabindex="0"`
+    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
+  }).join('')
 }
 
 function groupReportsByDay(records: ReportRecord[]) {
@@ -747,7 +861,206 @@ const integrationStyle = `
     box-shadow: 0 18px 45px rgba(19,32,95,.24);
     font-weight: 800;
   }
-  [data-analysis-result] .badge,
+  [data-page="scan"] .scan-wrap {
+    align-items: stretch;
+    grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
+  }
+  [data-page="scan"] .feature-stack,
+  [data-page="scan"] .scan-wrap > .card,
+  [data-page="scan"] .scan-wrap > .grid {
+    min-width: 0;
+  }
+  [data-page="scan"] .scan-wrap > .card,
+  [data-page="scan"] .scan-side-panel {
+    min-height: min(74vh, 860px);
+  }
+  [data-page="scan"] .scan-side-panel {
+    align-content: start;
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  [data-page="scan"] .scan-history-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  [data-page="scan"] .feature,
+  [data-page="scan"] .scan-wrap > .grid .card,
+  [data-page="scan"] .scan-wrap small,
+  [data-page="scan"] .scan-wrap p,
+  [data-page="scan"] .scan-wrap b {
+    overflow-wrap: anywhere;
+  }
+  [data-page="scan"] .scan-wrap > .grid .three {
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  [data-page="scan"] .scan-stat-grid {
+    align-items: start;
+  }
+  [data-page="scan"] .scan-stat-item {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  [data-page="scan"] .scan-stat-grid .big-number {
+    display: inline-block;
+    font-size: clamp(28px, 2.6vw, 42px);
+    line-height: 1;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  [data-page="scan"] .scan-stat-item small {
+    color: var(--ink);
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  [data-page="scan"] .scan-source-stat {
+    margin-top: 8px;
+    position: relative;
+  }
+  [data-page="scan"] .scan-source-value {
+    display: block;
+    height: 34px;
+    line-height: 34px;
+    max-width: 112px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-page="scan"] .scan-source-value:hover::after {
+    content: attr(data-full-source);
+    position: absolute;
+    right: 0;
+    top: -42px;
+    z-index: 30;
+    max-width: 360px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: rgba(19,32,95,.94);
+    color: #fff;
+    box-shadow: 0 14px 34px rgba(19,32,95,.22);
+    font-size: 12px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  [data-page="scan"] .scan-history-card .item {
+    gap: 10px;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    padding: 12px;
+  }
+  [data-page="scan"] .scan-history-card .status {
+    white-space: nowrap;
+  }
+  [data-page="scan"] .scan-record-list {
+    display: grid;
+    gap: 12px;
+  }
+  [data-page="scan"] .scan-record-pager {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 14px;
+  }
+  [data-page="scan"] .scan-record-pager .pill {
+    min-height: 36px;
+    padding: 0 14px;
+  }
+  [data-page="scan"] .scan-record-pager .pill:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+  }
+  [data-page="scan"] .has-analysis-result {
+    padding: 18px;
+  }
+  [data-page="scan"] .has-analysis-result .scan-orbit {
+    aspect-ratio: 1 / 1;
+    height: min(28vw, 340px);
+    margin-bottom: 12px;
+    overflow: visible;
+    width: min(28vw, 340px);
+  }
+  [data-page="scan"] .has-analysis-result .scan-orbit::before {
+    border-width: 5px;
+    inset: 10px;
+  }
+  [data-page="scan"] .has-analysis-result .scan-orbit .buddy {
+    transform: scale(.43) !important;
+    transform-origin: center center;
+  }
+  [data-page="scan"] .has-analysis-result .scan-percent {
+    bottom: 18px;
+    font-size: 18px;
+    padding: 6px 18px;
+  }
+  [data-page="scan"] .has-analysis-result > h3 {
+    margin-top: 12px;
+  }
+  .scan-result-card {
+    margin: 0 auto 12px;
+    max-width: 620px;
+    padding: 16px;
+    text-align: left;
+    overflow: hidden;
+  }
+  .scan-result-head {
+    align-items: flex-start;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+  }
+  .scan-result-head h3 {
+    margin: 0;
+    min-width: 0;
+  }
+  .analysis-source-badge {
+    flex: 0 0 auto;
+    max-width: 104px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .analysis-source-detail {
+    color: #65709e;
+    font-size: 12px;
+    font-weight: 800;
+    margin: 8px 0 0;
+    overflow-wrap: anywhere;
+  }
+  .analysis-metrics {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    text-align: center;
+  }
+  .analysis-metric {
+    border-radius: 18px;
+    background: rgba(255,255,255,.65);
+    padding: 12px 8px;
+  }
+  .analysis-metric .big-number {
+    display: block;
+    font-size: clamp(26px, 4vw, 44px);
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+  .analysis-metric small {
+    color: #65709e;
+    display: block;
+    font-weight: 800;
+    margin-top: 6px;
+  }
+  .analysis-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
   #checkin .pill,
   #shop .pill,
   #timeline .pill,
@@ -773,11 +1086,50 @@ const integrationStyle = `
   #timeline .journey-empty {
     grid-template-columns: 48px minmax(180px, 1fr) auto;
   }
+  .camera-capture-modal {
+    align-items: center;
+    background: rgba(19, 32, 95, .58);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 24px;
+    position: fixed;
+    z-index: 60;
+  }
+  .camera-capture-box {
+    background: rgba(255, 255, 255, .92);
+    border-radius: 18px;
+    box-shadow: 0 24px 70px rgba(19, 32, 95, .28);
+    max-width: 720px;
+    padding: 18px;
+    width: min(100%, 720px);
+  }
+  .camera-capture-box video {
+    background: #13205f;
+    border-radius: 14px;
+    display: block;
+    margin-bottom: 14px;
+    max-height: 62vh;
+    object-fit: cover;
+    width: 100%;
+  }
   @media (max-width: 720px) {
+    .analysis-metrics {
+      grid-template-columns: 1fr;
+    }
+    .scan-result-head {
+      display: block;
+    }
+    .analysis-source-badge {
+      display: inline-block;
+      margin-top: 8px;
+    }
     #timeline .journey-record,
     #timeline .journey-empty {
       grid-template-columns: 1fr;
       justify-items: start;
+    }
+  }
     }
   }
 `
