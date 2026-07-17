@@ -849,6 +849,26 @@ function escapeHtml(value: unknown) {
 }
 
 const integrationStyle = `
+  .main {
+    padding-top: 8px;
+  }
+
+  .topbar {
+    margin-bottom: 14px;
+  }
+
+  .page-title h2 {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: bolder;
+  }
+
+  .page-title p {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
   .prototype-toast {
     position: fixed;
     right: 28px;
