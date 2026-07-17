@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import PetAgentFloat from '../components/PetAgentFloat'
 import TabBar from './TabBar'
 
 export default function TabLayout() {
@@ -10,6 +11,7 @@ export default function TabLayout() {
       >
         <Outlet />
       </motion.div>
+      <PetAgentFloat />
       <TabBar />
     </div>
   )

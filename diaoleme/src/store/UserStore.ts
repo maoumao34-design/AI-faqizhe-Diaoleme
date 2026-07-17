@@ -37,6 +37,8 @@ interface UserState {
   unlockedHairStyles: string[]
   checkinDays: string[]
   points: number
+  agentExp: number
+  agentMood: string
   reportHistory: ReportRecord[]
   setAnalysis: (r: AnalysisResult) => void
   viewReport: (id: string) => void
@@ -45,6 +47,7 @@ interface UserState {
   markCheckinToday: () => void
   unlockHairStyle: (id: string, cost: number) => boolean
   addPoints: (n: number) => void
+  interactWithAgent: (n?: number) => void
   resetAll: () => void
 }
 
@@ -70,6 +73,8 @@ export const useUserStore = create<UserState>()(
       unlockedHairStyles: ['none'],
       checkinDays: [],
       points: 500,
+      agentExp: 40,
+      agentMood: '在线陪伴中',
       reportHistory: [],
 
       setAnalysis: (r) =>
@@ -157,6 +162,12 @@ export const useUserStore = create<UserState>()(
 
       addPoints: (n) => set((s) => ({ points: s.points + n })),
 
+      interactWithAgent: (n = 10) => set((s) => {
+        const nextExp = s.agentExp + n
+        const mood = nextExp >= 220 ? '白银陪伴员冲刺中' : nextExp >= 120 ? '青铜守护已点亮' : '正在熟悉你的节奏'
+        return { agentExp: nextExp, points: s.points + 1, agentMood: mood }
+      }),
+
       resetAll: () => {
         set({
           dropScore: null,
@@ -175,6 +186,8 @@ export const useUserStore = create<UserState>()(
           unlockedHairStyles: ['none'],
           checkinDays: [],
           points: 500,
+          agentExp: 40,
+          agentMood: '在线陪伴中',
           reportHistory: [],
         })
         if (typeof window !== 'undefined') {
