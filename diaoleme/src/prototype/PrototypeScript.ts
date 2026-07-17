@@ -88,55 +88,70 @@ const skinNames = [
   "Coming Soon",
   "Coming Soon"
 ];
-document.querySelector("#skins").innerHTML = skinNames
-  .map(
-    (name, i) =>
-      \`<button class="skin \${i === 0 ? "active" : ""}"><div class="mini-buddy" style="\${i > 2 ? "opacity:.45" : ""}"></div><b>\${name}</b><small>Lv.\${[5, 8, 10, 12, 14, 18][i]}</small></button>\`
-  )
-  .join("");
-document.querySelector("#skins").addEventListener("click", (event) => {
-  const skin = event.target.closest(".skin");
-  if (!skin) return;
-  document.querySelectorAll(".skin").forEach((item) =>
-    item.classList.remove("active")
-  );
-  skin.classList.add("active");
-});
-
-document.querySelector("#questList").innerHTML =
-  quests
+const skinsRoot = document.querySelector("#skins");
+if (skinsRoot) {
+  skinsRoot.innerHTML = skinNames
     .map(
-      (q, i) =>
-        \`<div class="item"><span style="font-size:26px">\${q[0]}</span><b>\${q[1]}<small>\${q[2]}</small></b><span>\${q[3]}</span><button class="quest-btn \${q[4] === "已完成" ? "done" : ""}">\${q[4] === "已完成" ? "✓ 已完成" : "去完成"}</button></div>\`
+      (name, i) =>
+        \`<button class="skin \${i === 0 ? "active" : ""}"><div class="mini-buddy" style="\${i > 2 ? "opacity:.45" : ""}"></div><b>\${name}</b><small>Lv.\${[5, 8, 10, 12, 14, 18][i]}</small></button>\`
     )
-    .join("") +
-  \`<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>完成所有每日任务可获得额外奖励！</b><span>+100 XP</span><button class="quest-btn done">未完成</button></div>\`;
+    .join("");
+  skinsRoot.addEventListener("click", (event) => {
+    const skin = event.target.closest(".skin");
+    if (!skin) return;
+    document.querySelectorAll(".skin").forEach((item) =>
+      item.classList.remove("active")
+    );
+    skin.classList.add("active");
+  });
+}
 
-document.querySelector("#questList").addEventListener("click", (event) => {
-  const btn = event.target.closest(".quest-btn");
-  if (!btn || btn.classList.contains("done")) return;
-  btn.classList.add("done");
-  btn.textContent = "✓ 已完成";
-});
+const questListRoot = document.querySelector("#questList");
+if (questListRoot) {
+  questListRoot.innerHTML =
+    quests
+      .map(
+        (q, i) =>
+          \`<div class="item"><span style="font-size:26px">\${q[0]}</span><b>\${q[1]}<small>\${q[2]}</small></b><span>\${q[3]}</span><button class="quest-btn \${q[4] === "已完成" ? "done" : ""}">\${q[4] === "已完成" ? "✓ 已完成" : "去完成"}</button></div>\`
+      )
+      .join("") +
+    \`<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>完成所有每日任务可获得额外奖励！</b><span>+100 XP</span><button class="quest-btn done">未完成</button></div>\`;
 
-document.querySelector("#weekRewards").innerHTML = ["一", "二", "三", "四", "五", "六", "日"]
-  .map(
-    (d, i) =>
-      \`<span class="badge">\${i < 2 ? "✓" : d}<br><small>+\${i < 5 ? 10 + i * 5 : 25} XP</small></span>\`
-  )
-  .join("");
-document.querySelector("#streak").innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
-  .map(
-    (d, i) =>
-      \`<span class="badge">\${i < 6 ? "✓" : "🎁"}<br><small>\${d}</small></span>\`
-  )
-  .join("");
-document.querySelector("#checkin").innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
-  .map(
-    (d, i) =>
-      \`<span class="badge">\${i < 6 ? "✓" : "🎁"}<br><small>\${d}</small></span>\`
-  )
-  .join("");
+  questListRoot.addEventListener("click", (event) => {
+    const btn = event.target.closest(".quest-btn");
+    if (!btn || btn.classList.contains("done")) return;
+    btn.classList.add("done");
+    btn.textContent = "✓ 已完成";
+  });
+}
+
+const weekRewardsRoot = document.querySelector("#weekRewards");
+if (weekRewardsRoot) {
+  weekRewardsRoot.innerHTML = ["一", "二", "三", "四", "五", "六", "日"]
+    .map(
+      (d, i) =>
+        \`<span class="badge">\${i < 2 ? "✓" : d}<br><small>+\${i < 5 ? 10 + i * 5 : 25} XP</small></span>\`
+    )
+    .join("");
+}
+const streakRoot = document.querySelector("#streak");
+if (streakRoot) {
+  streakRoot.innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
+    .map(
+      (d, i) =>
+        \`<span class="badge">\${i < 6 ? "✓" : "🎁"}<br><small>\${d}</small></span>\`
+    )
+    .join("");
+}
+const checkinRoot = document.querySelector("#checkin");
+if (checkinRoot) {
+  checkinRoot.innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
+    .map(
+      (d, i) =>
+        \`<span class="badge">\${i < 6 ? "✓" : "🎁"}<br><small>\${d}</small></span>\`
+    )
+    .join("");
+}
 
 const ms = [
   [" 开始记录 ", "5/1"],
@@ -165,31 +180,15 @@ document.querySelector("#timeline").innerHTML = [
   )
   .join("");
 
-document.querySelector("#leaders").innerHTML = leaders
-  .map(
-    (l) =>
-      \`<div class="leader \${l[0] === "12" ? "you" : ""}"><span class="badge">\${l[0]}</span><b>\${l[1]}<small>\${l[2]}</small></b><span>\${l[3]}</span><span>\${l[4]}</span></div>\`
-  )
-  .join("");
-
-const rewards = [
-  ["🎀", " 樱花发箍 ", "2,000 XP"],
-  ["🫧", " 星光泡泡发型 ", "3,500 XP"],
-  ["🧴", " 生发精华液 30ml", "4,800 XP"],
-  ["💜", " 治愈蘑菇帽 ", "2,800 XP"],
-  ["🎁", " 护发礼包套装 ", "6,500 XP"],
-  ["🌿", " 蒲公英小夜灯 ", "3,200 XP"],
-  ["🌱", " 嫩芽发型 ", "2,500 XP"],
-  ["🪮", " 头皮按摩梳 ", "4,200 XP"],
-  ["🧥", " 微羽披风 ", "5,000 XP"],
-  ["🎫", "7 天特权卡 ", "8,000 XP"]
-];
-document.querySelector("#shop").innerHTML = rewards
-  .map(
-    (r) =>
-      \`<div class="reward"><div class="reward-art">\${r[0]}</div><b>\${r[1]}</b><small>Lv.5 解锁</small><b style="color:var(--purple)">\${r[2]}</b></div>\`
-  )
-  .join("");
+const leadersRoot = document.querySelector("#leaders");
+if (leadersRoot) {
+  leadersRoot.innerHTML = leaders
+    .map(
+      (l) =>
+        \`<div class="leader \${l[0] === "12" ? "you" : ""}"><span class="badge">\${l[0]}</span><b>\${l[1]}<small>\${l[2]}</small></b><span>\${l[3]}</span><span>\${l[4]}</span></div>\`
+    )
+    .join("");
+}
 
 document.querySelector("#calendar").innerHTML = [
   "Sun",
