@@ -1,19 +1,73 @@
-import { Buddy } from './BuddyCharacter'
-
 export const rewardsSection = `<section class="page" data-page="rewards">
-          <div class="grid two-col">
-            <div class="grid">
-              <div class="card hero" style="min-height:230px">
-                <div><h3>我的积分</h3><div><span class="big-number">12,360</span> XP</div><p>距离下一级级还需 2,640 XP</p><div class="meter"><div class="fill" style="--w:68%"></div></div></div>
-                <div class="buddy-stage" style="min-height:190px">${Buddy({ scale: 0.42 })}</div>
-              </div>
-              <div class="tabs"><button class="pill primary">全部</button><button class="pill">发型装扮</button><button class="pill">护发好物</button><button class="pill">陪伴道具</button></div>
-              <div class="shop" id="shop"><div class="reward"><div class="reward-art">🎀</div><b>樱花发箍</b><small>Lv.5 解锁</small><b style="color:var(--purple)">2,000 XP</b></div><div class="reward"><div class="reward-art">🫧</div><b>星光泡泡发型</b><small>Lv.5 解锁</small><b style="color:var(--purple)">3,500 XP</b></div><div class="reward"><div class="reward-art">🧴</div><b>生发精华液 30ml</b><small>Lv.5 解锁</small><b style="color:var(--purple)">4,800 XP</b></div><div class="reward"><div class="reward-art">💜</div><b>治愈蘑菇帽</b><small>Lv.5 解锁</small><b style="color:var(--purple)">2,800 XP</b></div><div class="reward"><div class="reward-art">🎁</div><b>护发礼包套装</b><small>Lv.5 解锁</small><b style="color:var(--purple)">6,500 XP</b></div><div class="reward"><div class="reward-art">🌿</div><b>蒲公英小夜灯</b><small>Lv.5 解锁</small><b style="color:var(--purple)">3,200 XP</b></div><div class="reward"><div class="reward-art">🌱</div><b>嫩芽发型</b><small>Lv.5 解锁</small><b style="color:var(--purple)">2,500 XP</b></div><div class="reward"><div class="reward-art">🪮</div><b>头皮按摩梳</b><small>Lv.5 解锁</small><b style="color:var(--purple)">4,200 XP</b></div><div class="reward"><div class="reward-art">🧥</div><b>微羽披风</b><small>Lv.5 解锁</small><b style="color:var(--purple)">5,000 XP</b></div><div class="reward"><div class="reward-art">🎫</div><b>7天特权卡</b><small>Lv.5 解锁</small><b style="color:var(--purple)">8,000 XP</b></div></div>
-            </div>
-            <aside class="grid">
-              <div class="card"><h3>积分总览</h3><div class="donut" data-label="12,360\A 总积分"></div></div>
-              <div class="card"><h3>每日签到 <span class="badge">已连续 7 天</span></h3><div class="row" id="checkin"><span class="badge">✓<br><small>一</small></span><span class="badge">✓<br><small>二</small></span><span class="badge">✓<br><small>三</small></span><span class="badge">✓<br><small>四</small></span><span class="badge">✓<br><small>五</small></span><span class="badge">✓<br><small>六</small></span><span class="badge">🎁<br><small>日</small></span></div></div>
-              <div class="card item-list"><h3>兑换记录</h3><div class="item"><span>🧴</span><b>生发精华液 30ml</b><span>-4,800 XP</span></div><div class="item"><span>💜</span><b>星光泡泡发型</b><span>-3,500 XP</span></div><div class="item"><span>🪮</span><b>头皮按摩梳</b><span>-4,200 XP</span></div></div>
+          <div class="rewards-dashboard">
+            <main class="rewards-main">
+              <section class="rewards-points-hero">
+                <div class="rewards-points-copy">
+                  <span>我的积分</span>
+                  <h2><span data-rewards-points></span><small>XP</small></h2>
+                  <p>距离下一等级还需 2,640 XP</p>
+                  <div class="rewards-level-progress"><i style="width:82%"></i></div>
+                </div>
+                <img class="rewards-hero-character" src="/rewards-assets/hero-character.png" alt="蒲公英角色">
+                <div class="rewards-earn-card">
+                  <h3>积分获取方式</h3>
+                  <ul>
+                    <li><span class="earn-icon amber">★</span><b>完成任务</b><strong>+10 ~ 200 XP</strong></li>
+                    <li><span class="earn-icon green">✓</span><b>连续打卡</b><strong>+50 XP</strong></li>
+                    <li><span class="earn-icon blue">●</span><b>成长里程碑</b><strong>+300 XP</strong></li>
+                    <li><span class="earn-icon violet">⚑</span><b>参与联盟活动</b><strong>+100 ~ 500 XP</strong></li>
+                  </ul>
+                </div>
+              </section>
+
+              <section class="reward-market">
+                <div class="market-toolbar">
+                  <div class="category-tabs">
+                    <button class="active" type="button">全部</button>
+                    <button type="button">发型装扮</button>
+                    <button type="button">护发好物</button>
+                    <button type="button">陪伴道具</button>
+                    <button type="button">成长特权</button>
+                    <button type="button">定制周边</button>
+                  </div>
+                  <label class="sort-select"><select aria-label="奖励排序"><option>默认排序</option><option>积分从低到高</option><option>积分从高到低</option></select><span>⌄</span></label>
+                </div>
+                <div class="reward-grid" id="shop"></div>
+              </section>
+
+              <section class="growth-panel">
+                <div class="growth-heading"><strong>成长等级奖励</strong><span>达到相应等级即可领取专属奖励</span></div>
+                <button type="button" class="round-arrow" aria-label="上一页">‹</button>
+                <div class="growth-track" id="rewardsGrowth"></div>
+                <button type="button" class="round-arrow" aria-label="下一页">›</button>
+              </section>
+            </main>
+
+            <aside class="rewards-right-rail">
+              <section class="rewards-side-panel overview-panel">
+                <div class="rewards-panel-heading"><strong>积分总览</strong><button type="button">更多详情 ›</button></div>
+                <div class="overview-content">
+                  <div class="points-donut"><div><strong data-rewards-points>12,360</strong><span>总积分</span></div></div>
+                  <ul class="legend"><li><i class="purple"></i><span>任务奖励</span><b>67%</b></li><li><i class="blue"></i><span>打卡奖励</span><b>18%</b></li><li><i class="orange"></i><span>活动奖励</span><b>10%</b></li><li><i class="gray"></i><span>其他</span><b>5%</b></li></ul>
+                </div>
+              </section>
+
+              <section class="rewards-side-panel checkin-panel">
+                <div class="rewards-panel-heading"><div><strong>每日签到</strong><span>连续打卡可获得额外分哦！</span></div><b>已连续 7 天</b></div>
+                <div class="checkin-week" id="rewardsCheckin"><div><span class="check-circle">✓</span><small>一</small></div><div><span class="check-circle">✓</span><small>二</small></div><div><span class="check-circle">✓</span><small>三</small></div><div><span class="check-circle">✓</span><small>四</small></div><div><span class="check-circle">✓</span><small>五</small></div><div><span class="check-circle">✓</span><small>六</small></div><button type="button"><span class="gift-circle">🎁</span><small>日</small></button></div>
+                <p>明日签到可得 <b>+50 XP</b></p>
+              </section>
+
+              <section class="rewards-side-panel event-panel">
+                <div class="rewards-panel-heading"><strong>限时活动</strong><button type="button">更多活动 ›</button></div>
+                <button type="button" class="event-banner"><img src="/rewards-assets/event-banner.png" alt="夏日养发计划"></button>
+              </section>
+
+              <section class="rewards-side-panel records-panel">
+                <div class="rewards-panel-heading"><strong>兑换记录</strong><button type="button">全部记录 ›</button></div>
+                <div class="record-list" id="rewardsRecords"></div>
+                <button type="button" class="records-link">查看全部记录 ›</button>
+              </section>
             </aside>
           </div>
         </section>`
