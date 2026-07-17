@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { analyzePhoto, HAIRSTYLE_CATALOG, MAX_IMAGE_SIZE_BYTES, validateImageFile } from './services/model'
+import { analyzePhoto, chatWithAssistant, HAIRSTYLE_CATALOG, MAX_IMAGE_SIZE_BYTES, validateImageFile } from './services/model'
 import { useUserStore, type ReportRecord } from './store/UserStore'
+import type { ChatMessage } from './services/model'
 import type { AnalysisResult } from './types'
 import { prototypeBody } from './prototype/PrototypeBody'
 import { prototypeScript } from './prototype/PrototypeScript'
@@ -100,6 +101,7 @@ export default function App() {
 
 function attachPrototypeFeatures(root: HTMLElement) {
   const scanCleanup = attachPrototypeAnalysis(root)
+  const chatCleanup = attachChatAssistant(root)
   let activeQuestCategory: QuestCategory = 'daily'
   let activeLeagueTab: LeagueTab = '排行榜'
   const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab)
@@ -122,6 +124,8 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const journeyShareBtn = target.closest<HTMLElement>('[data-action="journey-share"]')
     const openJourneyBtn = target.closest<HTMLElement>('[data-action="open-journey"]')
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
+    const likeBtn = target.closest<HTMLElement>('[data-post-like]')
+    const commentBtn = target.closest<HTMLElement>('[data-post-comments]')
 
     if (navBtn?.dataset.go === 'scan' && !viewReportBtn) {
       clearAnalysisCard(root)
@@ -192,12 +196,21 @@ function attachPrototypeFeatures(root: HTMLElement) {
     if (openJourneyBtn) {
       showPage(root, 'journey')
     }
+    if (likeBtn?.dataset.postLike) {
+      toggleCommunityLike(likeBtn.dataset.postLike)
+      renderCommunity(root)
+    }
+    if (commentBtn?.dataset.postComments) {
+      const comments = root.querySelector<HTMLElement>(`[data-comments-for="${commentBtn.dataset.postComments}"]`)
+      comments?.classList.toggle('collapsed')
+    }
   }
 
   document.addEventListener('click', onClick)
 
   return () => {
     scanCleanup()
+    chatCleanup()
     unsubscribe()
     document.removeEventListener('click', onClick)
   }
@@ -405,6 +418,8 @@ function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCat
   renderHome(root)
   renderTasks(root, activeQuestCategory)
   renderHistory(root)
+  renderDiary(root)
+  renderCommunity(root)
   renderRewards(root)
   renderLeague(root, activeLeagueTab)
   renderProfile(root)
@@ -580,6 +595,120 @@ function renderHistory(root: HTMLElement) {
   setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
 }
 
+function renderDiary(root: HTMLElement) {
+  const history = useUserStore.getState().reportHistory
+  const latest = history.slice(0, 7)
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date))
+  const last = sorted[sorted.length - 1]
+  const prev = sorted[sorted.length - 2]
+  const delta = last && prev ? last.score - prev.score : 0
+  const trendText = !last ? '还没有记录，先完成一次 Scan。' : delta > 0 ? `比上次提升 ${delta} 分，状态在向上走。` : delta < 0 ? `比上次低 ${Math.abs(delta)} 分，今天适合轻量观察。` : '和上次基本持平，记录节奏稳定。'
+  const suggestion = buildLocalDiaryAdvice(history)
+  const hero = root.querySelector<HTMLElement>('[data-page="diary"] .card.hero')
+  setHtml(hero, `
+    <div>
+      <h2 style="font-size:36px">历史记录与变化趋势 ✨</h2>
+      <p>${escapeHtml(trendText)}</p>
+      <div class="three grid diary-summary">
+        <div><span class="big-number">${history.length}</span><br>累计记录</div>
+        <div><span class="big-number">${avgScore(history) || '--'}</span><br>平均状态分</div>
+        <div><span class="badge">${escapeHtml(last?.count || '等待')}</span><br>最近掉发量</div>
+      </div>
+      <p><b>智能建议：</b>${escapeHtml(suggestion)}</p>
+    </div>
+    <div class="buddy-stage" style="min-height:220px"><div class="ground"></div><div class="buddy" style="transform:scale(.5)"><div class="fluff"></div><div class="sprout"></div><div class="face"><span class="eye left"></span><span class="eye right"></span><span class="nose"></span><span class="blush left"></span><span class="blush right"></span></div><div class="body"></div><div class="shoe left"></div><div class="shoe right"></div></div></div>
+  `)
+  setHtml(root.querySelector('#calendar'), buildDiaryCalendar(history))
+  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${escapeHtml(r.date.slice(8))}</b><br>${escapeHtml(r.date.slice(5, 7))}月</span><b>${scoreMood(r.score)} ${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有历史记录<small>从 Scan 上传图片后，这里会自动沉淀记录、分数和智能建议。</small></b><span class="status">等待</span></div>`)
+  const bars = scoreBars(history)
+  setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(1)'), `<h3>变化趋势</h3><p>${escapeHtml(trendText)}</p><div class="chart">${bars.map((v) => `<span class="bar" style="height:${v}%"></span>`).join('')}</div>`)
+  setHtml(root.querySelector('[data-page="diary"] .word-cloud'), `<h3>关键词统计</h3>${buildWordCloud(history)}`)
+  setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(3)'), `<h3>回忆精选</h3><div class="reward-art">${last ? '📈' : '🌄'}</div><b>${escapeHtml(last?.title || '第一篇日记 ✨')}</b><p>${escapeHtml(last?.encouragement || '完成第一次 Scan 后，这里会展示最近一次记录的鼓励语。')}</p>`)
+}
+
+function buildLocalDiaryAdvice(records: ReportRecord[]) {
+  const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date))
+  const last = sorted[sorted.length - 1]
+  const prev = sorted[sorted.length - 2]
+  if (!last) return '先完成一次 Scan，让小发球有第一条记录可以陪你观察变化。'
+  const delta = prev ? last.score - prev.score : 0
+  const countHint = last.count === '偏多' ? '今天先把目标放轻一点，选一个早睡或放松任务就够了' : last.count === '少量' ? '状态看起来比较轻松，可以继续保持记录节奏' : '保持温和观察，不需要给自己额外压力'
+  const tagHint = last.tags[0] ? `这次标签是“${last.tags[0]}”，` : ''
+  const fallbackTask = last.suggestions[0] || last.daily_task || '睡前做 2 分钟放松呼吸'
+  if (delta >= 8) return `${tagHint}比上次提升明显，建议延续今天的做法：${fallbackTask}。${countHint}。`
+  if (delta <= -8) return `${tagHint}这次分数有点回落，建议先不做判断，只保留一条轻量动作：${fallbackTask}。${countHint}。`
+  if (last.score >= 75) return `${tagHint}整体比较稳定，今天适合做“巩固局”：${fallbackTask}，然后明天继续对比趋势。`
+  if (last.score < 55) return `${tagHint}今天先走温柔路线，不追求立刻变好；完成“${fallbackTask}”就算达标。`
+  return `${tagHint}变化不大就是好信号，建议继续轻量打卡：${fallbackTask}。${countHint}。`
+}
+
+const COMMUNITY_POSTS = [
+  { id: 'checkin7', name: '小蒲公英', level: 'Lv.6', body: '今天终于连续打卡第 7 天啦！虽然掉发还是有，但头皮状态明显舒服多了～', media: '📋', likes: 128, comments: ['我也在做 7 天挑战，一起坚持！', '这种轻松记录真的比焦虑刷帖舒服。'] },
+  { id: 'massage', name: '爱吃草莓', level: 'Lv.4', body: '分享一个我最近超喜欢的头皮按摩方法！每天睡前按 5 分钟，放松又助眠。', media: '🪮', likes: 96, comments: ['求一个手法教程！', '睡前按摩 + 早睡，感觉小发球都开心了。'] },
+  { id: 'slowday', name: '薄荷味的风', level: 'Lv.6', body: '最近压力有点大，掉发也跟着严重了。深呼吸、运动、喝水，给自己一些温柔的时间。', media: '🌿', likes: 76, comments: ['抱抱，先把记录坚持下来就很棒。', '今天也给自己一点松弛感。'] },
+  { id: 'rewardhair', name: '向日葵', level: 'Lv.3', body: '新发型解锁啦！看着宝宝一点点长出来的花发，成就感满满！', media: '🌱', likes: 143, comments: ['这个发型也太可爱了！', '奖励机制好有动力，我也要攒 XP。'] },
+]
+
+function renderCommunity(root: HTMLElement) {
+  const liked = loadLikedPosts()
+  setHtml(root.querySelector('#posts'), COMMUNITY_POSTS.map((post) => {
+    const isLiked = liked.has(post.id)
+    const comments = post.comments.map((text, index) => `<div class="comment"><b>${index === 0 ? '发友' : '小发球'}：</b>${escapeHtml(text)}</div>`).join('')
+    return `<div class="post community-post"><div class="mini-buddy"></div><div><b>${escapeHtml(post.name)} <span class="badge">${escapeHtml(post.level)}</span></b><p>${escapeHtml(post.body)}</p><span class="badge"># 头皮护理</span><div class="community-actions"><button class="pill ${isLiked ? 'primary' : ''}" data-post-like="${escapeHtml(post.id)}">💜 ${post.likes + (isLiked ? 1 : 0)}</button><button class="pill" data-post-comments="${escapeHtml(post.id)}">💬 ${post.comments.length}</button><button class="pill">☆ 收藏</button></div><div class="comments" data-comments-for="${escapeHtml(post.id)}">${comments}</div></div><div class="post-media">${escapeHtml(post.media)}</div></div>`
+  }).join(''))
+}
+
+function loadLikedPosts() {
+  try { return new Set<string>(JSON.parse(localStorage.getItem('diaoleme-community-likes') || '[]')) } catch { return new Set<string>() }
+}
+
+function toggleCommunityLike(id: string) {
+  const liked = loadLikedPosts()
+  if (liked.has(id)) liked.delete(id)
+  else liked.add(id)
+  localStorage.setItem('diaoleme-community-likes', JSON.stringify([...liked]))
+}
+
+function buildDiaryCalendar(records: ReportRecord[]) {
+  const marked = new Map(records.map((r) => [r.date, r]))
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const offset = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => `<span>${d}</span>`)
+  for (let i = 0; i < offset; i += 1) cells.push('<span></span>')
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const rec = marked.get(date)
+    const cls = rec ? 'selected diary-record-day' : date === todayKey() ? 'today' : ''
+    cells.push(`<span class="${cls}" title="${rec ? `${rec.score} 分 ${escapeHtml(rec.title)}` : ''}">${day}${rec ? '<small>•</small>' : ''}</span>`)
+  }
+  return cells.join('')
+}
+
+function scoreMood(score: number) {
+  if (score >= 75) return '😊 稳定'
+  if (score >= 55) return '😌 观察'
+  return '🌧 轻放松'
+}
+
+function scoreBars(records: ReportRecord[]) {
+  const source = records.slice(0, 9).reverse().map((r) => r.score)
+  return source.length ? source.map((score) => Math.max(18, Math.min(100, score))) : [36, 42, 52, 46, 60, 55, 66]
+}
+
+function buildWordCloud(records: ReportRecord[]) {
+  const tags = records.flatMap((r) => r.tags).slice(0, 8)
+  const words = tags.length ? tags : ['护理', '轻松记录', '睡眠', '心情', '头皮按摩', '坚持']
+  return words.map((word, index) => {
+    const x = [28, 14, 58, 42, 66, 24, 50, 72][index % 8]
+    const y = [36, 58, 34, 70, 60, 42, 50, 76][index % 8]
+    const size = [34, 26, 20, 18, 16, 22, 15, 17][index % 8]
+    return `<span style="left:${x}%;top:${y}%;font-size:${size}px">${escapeHtml(word)}</span>`
+  }).join('')
+}
+
 function renderJourney(root: HTMLElement, history: ReportRecord[]) {
   const latest = history.slice(0, 6)
   const groupedDays = groupReportsByDay(history)
@@ -707,6 +836,103 @@ function renderProfile(root: HTMLElement) {
   const checked = s.checkinDays.includes(todayKey())
   setHtml(root.querySelector('#streak'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join(''))
   setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
+}
+
+function attachChatAssistant(root: HTMLElement) {
+  const widget = document.createElement('div')
+  widget.className = 'ai-chat-widget'
+  widget.innerHTML = `
+    <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手">🌱<span>AI 助手</span></button>
+    <section class="ai-chat-panel" aria-label="AI 助手对话">
+      <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" data-chat-close>×</button></header>
+      <div class="ai-chat-messages" data-chat-messages></div>
+      <form class="ai-chat-form" data-chat-form>
+        <input data-chat-input placeholder="问问护发习惯、记录建议或今天怎么坚持..." maxlength="300" />
+        <button type="submit">发送</button>
+      </form>
+    </section>
+  `
+  root.appendChild(widget)
+  const bubble = widget.querySelector<HTMLButtonElement>('.ai-chat-bubble')!
+  const form = widget.querySelector<HTMLFormElement>('[data-chat-form]')!
+  const input = widget.querySelector<HTMLInputElement>('[data-chat-input]')!
+  const messagesEl = widget.querySelector<HTMLElement>('[data-chat-messages]')!
+  const closeBtn = widget.querySelector<HTMLButtonElement>('[data-chat-close]')!
+  const messages: ChatMessage[] = [{ role: 'assistant', content: '你好呀，我是掉了么 AI 助手。可以陪你聊记录、任务和轻松护发习惯，但不会做医疗诊断。' }]
+  let dragging = false
+  let moved = false
+  let startX = 0
+  let startY = 0
+  let startLeft = 0
+  let startTop = 0
+  const renderMessages = () => {
+    messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
+    messagesEl.scrollTop = messagesEl.scrollHeight
+  }
+  const togglePanel = (open?: boolean) => {
+    widget.classList.toggle('open', open ?? !widget.classList.contains('open'))
+    if (widget.classList.contains('open')) input.focus()
+  }
+  const onPointerDown = (event: PointerEvent) => {
+    if (widget.classList.contains('open')) return
+    dragging = true
+    moved = false
+    startX = event.clientX
+    startY = event.clientY
+    const rect = widget.getBoundingClientRect()
+    startLeft = rect.left
+    startTop = rect.top
+    bubble.setPointerCapture(event.pointerId)
+  }
+  const onPointerMove = (event: PointerEvent) => {
+    if (!dragging) return
+    const dx = event.clientX - startX
+    const dy = event.clientY - startY
+    if (Math.abs(dx) + Math.abs(dy) > 6) moved = true
+    const nextLeft = Math.max(12, Math.min(window.innerWidth - widget.offsetWidth - 12, startLeft + dx))
+    const nextTop = Math.max(12, Math.min(window.innerHeight - widget.offsetHeight - 12, startTop + dy))
+    widget.style.left = `${nextLeft}px`
+    widget.style.top = `${nextTop}px`
+    widget.style.right = 'auto'
+    widget.style.bottom = 'auto'
+  }
+  const onPointerUp = (event: PointerEvent) => {
+    dragging = false
+    bubble.releasePointerCapture(event.pointerId)
+  }
+  const onBubbleClick = () => {
+    if (!moved) togglePanel(true)
+  }
+  const onSubmit = async (event: SubmitEvent) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    input.value = ''
+    messages.push({ role: 'user', content: text }, { role: 'assistant', content: '正在思考一个轻松、不焦虑的回答...' })
+    renderMessages()
+    try {
+      const result = await chatWithAssistant(messages.filter((m) => !m.content.includes('正在思考')).slice(-8))
+      messages[messages.length - 1] = { role: 'assistant', content: result.reply }
+    } catch {
+      messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }
+    }
+    renderMessages()
+  }
+  renderMessages()
+  bubble.addEventListener('pointerdown', onPointerDown)
+  bubble.addEventListener('pointermove', onPointerMove)
+  bubble.addEventListener('pointerup', onPointerUp)
+  bubble.addEventListener('click', onBubbleClick)
+  closeBtn.addEventListener('click', () => togglePanel(false))
+  form.addEventListener('submit', onSubmit)
+  return () => {
+    bubble.removeEventListener('pointerdown', onPointerDown)
+    bubble.removeEventListener('pointermove', onPointerMove)
+    bubble.removeEventListener('pointerup', onPointerUp)
+    bubble.removeEventListener('click', onBubbleClick)
+    form.removeEventListener('submit', onSubmit)
+    widget.remove()
+  }
 }
 
 function completeQuest(category: QuestCategory, questId: string, root: HTMLElement) {
@@ -3442,4 +3668,29 @@ const integrationStyle = `
   }
     }
   }
+
+  .diary-summary { margin: 16px 0; text-align: center; }
+  .calendar .diary-record-day { position: relative; box-shadow: inset 0 0 0 2px rgba(139,92,246,.45); }
+  .calendar .diary-record-day small { color: #65c982; font-size: 18px; line-height: 0; }
+  .community-post { align-items: flex-start; grid-template-columns: 56px 1fr 90px; }
+  .community-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .comments { display: grid; gap: 8px; margin-top: 12px; }
+  .comments.collapsed { display: none; }
+  .comment { border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,.68); color: #65709e; font-size: 14px; }
+  .ai-chat-widget { position: fixed; right: 28px; bottom: 28px; z-index: 40; font-family: inherit; }
+  .ai-chat-bubble { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 14px 18px; background: linear-gradient(135deg,#8b5cf6,#65c982); color: #fff; box-shadow: 0 20px 55px rgba(99,75,168,.32); cursor: grab; font-weight: 900; }
+  .ai-chat-bubble:active { cursor: grabbing; }
+  .ai-chat-panel { display: none; width: min(360px, calc(100vw - 32px)); height: 520px; overflow: hidden; border: 1px solid rgba(255,255,255,.75); border-radius: 28px; background: rgba(255,250,255,.96); box-shadow: 0 26px 80px rgba(19,32,95,.22); }
+  .ai-chat-widget.open .ai-chat-bubble { display: none; }
+  .ai-chat-widget.open .ai-chat-panel { display: grid; grid-template-rows: auto 1fr auto; }
+  .ai-chat-header { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 16px 18px; background: linear-gradient(135deg,rgba(139,92,246,.18),rgba(101,201,130,.18)); }
+  .ai-chat-header small { color: #65709e; }
+  .ai-chat-header button { grid-row: 1 / span 2; grid-column: 2; border: 0; border-radius: 50%; width: 30px; height: 30px; background: #fff; color: #13205f; cursor: pointer; }
+  .ai-chat-messages { display: flex; flex-direction: column; gap: 10px; overflow: auto; padding: 16px; }
+  .ai-chat-msg { max-width: 82%; border-radius: 18px; padding: 10px 12px; line-height: 1.5; white-space: pre-wrap; }
+  .ai-chat-msg.assistant { align-self: flex-start; background: #fff; color: #13205f; }
+  .ai-chat-msg.user { align-self: flex-end; background: #8b5cf6; color: #fff; }
+  .ai-chat-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 14px; border-top: 1px solid rgba(101,112,158,.14); }
+  .ai-chat-form input { min-width: 0; border: 1px solid rgba(101,112,158,.2); border-radius: 999px; padding: 12px 14px; outline: none; }
+  .ai-chat-form button { border: 0; border-radius: 999px; padding: 0 16px; background: #65c982; color: #fff; font-weight: 900; cursor: pointer; }
 `
