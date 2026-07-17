@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react'
 import { analyzePhoto, HAIRSTYLE_CATALOG, MAX_IMAGE_SIZE_BYTES, validateImageFile } from './services/model'
 import { useUserStore, type ReportRecord } from './store/UserStore'
 import type { AnalysisResult } from './types'
-import { prototypeBody, prototypeScript, prototypeStyle } from './prototypeHtml'
+import { prototypeBody } from './prototype/PrototypeBody'
+import { prototypeScript } from './prototype/PrototypeScript'
+import { prototypeStyle } from './prototype/PrototypeStyle'
 
 const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
 const todayKey = () => new Date().toISOString().slice(0, 10)
