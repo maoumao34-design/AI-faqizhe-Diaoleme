@@ -70,6 +70,7 @@ export default function App() {
     let cleanup = () => {}
     if (rootRef.current) {
       rootRef.current.innerHTML = prototypeBody
+      rootRef.current.insertAdjacentHTML('beforeend', petAgentMarkup())
       new Function(prototypeScript)()
       cleanup = attachPrototypeFeatures(rootRef.current)
     }
@@ -104,6 +105,10 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const scanPageBtn = target.closest<HTMLElement>('[data-scan-record-page]')
     const journeyShareBtn = target.closest<HTMLElement>('[data-action="journey-share"]')
     const openJourneyBtn = target.closest<HTMLElement>('[data-action="open-journey"]')
+    const petToggleBtn = target.closest<HTMLElement>('[data-action="pet-agent-toggle"]')
+    const petCloseBtn = target.closest<HTMLElement>('[data-action="pet-agent-close"]')
+    const petQuickBtn = target.closest<HTMLElement>('[data-pet-message]')
+    const leagueBoostBtn = target.closest<HTMLElement>('[data-action="league-boost"]')
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
 
     if (navBtn?.dataset.go === 'scan' && !viewReportBtn) {
@@ -169,6 +174,21 @@ function attachPrototypeFeatures(root: HTMLElement) {
     }
     if (openJourneyBtn) {
       showPage(root, 'journey')
+    }
+    if (petToggleBtn) {
+      togglePetAgent(root)
+    }
+    if (petCloseBtn) {
+      closePetAgent(root)
+    }
+    if (petQuickBtn?.dataset.petMessage) {
+      interactWithPetAgent(root, petQuickBtn.dataset.petMessage)
+      render()
+    }
+    if (leagueBoostBtn) {
+      useUserStore.getState().interactWithAgent(28)
+      showToast(root, '+28 EXP · 陪伴 Agent 段位成长')
+      render()
     }
   }
 
@@ -624,7 +644,107 @@ function renderRewards(root: HTMLElement) {
 }
 
 function renderLeague(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const { current, next, progress } = leagueState(s.agentExp)
   setHtml(root.querySelector('#leaders'), buildLeaders().map((l) => `<div class="leader ${l.isMe ? 'you' : ''}"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}<small>${escapeHtml(l.note)}</small></b><span>${l.points} XP</span><span>${l.trend}</span></div>`).join(''))
+  const leagueAside = root.querySelector('[data-page="league"] aside')
+  if (leagueAside) {
+    leagueAside.insertAdjacentHTML('afterbegin', `
+      <div class="card agent-league-card" data-agent-league-card>
+        <h3>陪伴 Agent League</h3>
+        <h2>${escapeHtml(current.name)} <span class="badge">${s.agentExp} EXP</span></h2>
+        <p>${escapeHtml(current.desc)}</p>
+        <div class="meter"><div class="fill" style="--w:${next ? progress : 100}%"></div></div>
+        <small>${next ? `距 ${escapeHtml(next.name)} 还差 ${Math.max(0, next.threshold - s.agentExp)} EXP` : '已到当前 demo 最高段位'}</small>
+        <div class="league-steps">${LEAGUE_STEPS.map((step, index) => `<div class="league-step ${s.agentExp >= step.threshold ? 'done' : ''}"><span>${s.agentExp >= step.threshold ? '✓' : index + 1}</span><b>${escapeHtml(step.name)}</b><small>${escapeHtml(step.short)}</small></div>`).join('')}</div>
+        <button class="pill primary" data-action="league-boost">模拟互动 +EXP</button>
+      </div>
+    `)
+  }
+  root.querySelectorAll('[data-agent-league-card]').forEach((item, index) => {
+    if (index > 0) item.remove()
+  })
+  renderPetAgent(root)
+}
+
+const LEAGUE_STEPS = [
+  { name: '青铜陪伴员', threshold: 0, desc: '完成首次互动，宠物 Agent 开始记住你的记录节奏。', short: '首次互动' },
+  { name: '白银守护员', threshold: 160, desc: '互动越多，Agent 会解锁更积极的任务提醒和鼓励。', short: '任务提醒' },
+  { name: '黄金发友队长', threshold: 320, desc: '进入高段位，排行榜和联盟页会展示更强的陪伴徽章。', short: '联盟徽章' },
+]
+
+function leagueState(agentExp: number) {
+  const currentIndex = LEAGUE_STEPS.reduce((idx, step, index) => (agentExp >= step.threshold ? index : idx), 0)
+  const current = LEAGUE_STEPS[currentIndex]
+  const next = LEAGUE_STEPS[currentIndex + 1]
+  const base = current.threshold
+  const target = next?.threshold ?? current.threshold + 160
+  const progress = Math.min(100, Math.max(0, Math.round(((agentExp - base) / (target - base)) * 100)))
+  return { current, next, progress }
+}
+
+function petAgentMarkup() {
+  return `
+    <div class="pet-agent" data-pet-agent>
+      <div class="pet-panel" data-pet-panel>
+        <div class="pet-panel-head">
+          <div class="mini-buddy"></div>
+          <div><b>头毛陪伴 Agent</b><small data-pet-level>在线陪伴中</small></div>
+          <button data-action="pet-agent-close" aria-label="关闭陪伴 Agent">×</button>
+        </div>
+        <div class="pet-chat" data-pet-chat>
+          <p class="bot">嗨，我是你的陪伴型宠物 Agent。今天也一起守护头毛小队吧。</p>
+        </div>
+        <div class="pet-exp"><span data-pet-exp-label>互动经验 0/160</span><div class="meter"><div class="fill" data-pet-exp-fill style="--w:0%"></div></div></div>
+        <div class="pet-replies">
+          <button data-pet-message="今天掉发有点慌">今天有点慌</button>
+          <button data-pet-message="给我一个任务">给我任务</button>
+          <button data-pet-message="我想看段位">看段位</button>
+        </div>
+      </div>
+      <button class="pet-bubble" data-action="pet-agent-toggle" aria-label="打开陪伴型宠物 Agent"><span class="mini-buddy"></span><i>💬</i></button>
+    </div>
+  `
+}
+
+function renderPetAgent(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const { current, next, progress } = leagueState(s.agentExp)
+  const level = root.querySelector<HTMLElement>('[data-pet-level]')
+  const expLabel = root.querySelector<HTMLElement>('[data-pet-exp-label]')
+  const expFill = root.querySelector<HTMLElement>('[data-pet-exp-fill]')
+  if (level) level.textContent = `${current.name} · ${s.agentMood}`
+  if (expLabel) expLabel.textContent = next ? `互动经验 ${s.agentExp - current.threshold}/${next.threshold - current.threshold}` : `互动经验 ${s.agentExp}`
+  if (expFill) expFill.style.setProperty('--w', `${next ? progress : 100}%`)
+}
+
+function togglePetAgent(root: HTMLElement) {
+  const agent = root.querySelector<HTMLElement>('[data-pet-agent]')
+  agent?.classList.toggle('open')
+  if (agent?.classList.contains('open')) {
+    useUserStore.getState().interactWithAgent(8)
+    renderPetAgent(root)
+  }
+}
+
+function closePetAgent(root: HTMLElement) {
+  root.querySelector<HTMLElement>('[data-pet-agent]')?.classList.remove('open')
+}
+
+function interactWithPetAgent(root: HTMLElement, message: string) {
+  useUserStore.getState().interactWithAgent(16)
+  const chat = root.querySelector<HTMLElement>('[data-pet-chat]')
+  const replies = [
+    '收到，我会陪你轻松记录，不做医学判断，只帮你把习惯养起来。',
+    '今天的小目标：完成一次记录，再给自己一个早睡奖励。',
+    '互动经验已增加，去 League 页面可以看到段位变化。',
+  ]
+  const answer = replies[useUserStore.getState().agentExp % replies.length]
+  if (chat) {
+    chat.insertAdjacentHTML('beforeend', `<p class="user">${escapeHtml(message)}</p><p class="bot">${escapeHtml(answer)}</p>`)
+    chat.scrollTop = chat.scrollHeight
+  }
+  renderPetAgent(root)
 }
 
 function renderProfile(root: HTMLElement) {
@@ -875,13 +995,199 @@ const integrationStyle = `
     position: fixed;
     right: 28px;
     bottom: 28px;
-    z-index: 20;
+    z-index: 80;
     border-radius: 999px;
     padding: 14px 20px;
     background: rgba(19,32,95,.92);
     color: #fff;
     box-shadow: 0 18px 45px rgba(19,32,95,.24);
     font-weight: 800;
+  }
+  .pet-agent {
+    bottom: 28px;
+    pointer-events: none;
+    position: fixed;
+    right: 28px;
+    z-index: 70;
+  }
+  .pet-bubble {
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,228,238,.92));
+    border: 4px solid rgba(255,255,255,.92);
+    border-radius: 999px;
+    box-shadow: 0 22px 54px rgba(99,75,168,.24);
+    cursor: pointer;
+    display: grid;
+    height: 76px;
+    justify-items: center;
+    overflow: hidden;
+    pointer-events: auto;
+    position: relative;
+    width: 76px;
+  }
+  .pet-bubble .mini-buddy {
+    transform: scale(1.22);
+  }
+  .pet-bubble i {
+    background: var(--purple);
+    border-radius: 999px;
+    bottom: 2px;
+    color: #fff;
+    display: grid;
+    font-style: normal;
+    height: 26px;
+    place-items: center;
+    position: absolute;
+    right: 0;
+    width: 26px;
+  }
+  .pet-panel {
+    background: rgba(255,255,255,.9);
+    border: 1px solid rgba(255,255,255,.8);
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(19,32,95,.2);
+    margin-bottom: 14px;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateY(12px) scale(.96);
+    transition: opacity .2s ease, transform .2s ease;
+    width: min(340px, calc(100vw - 32px));
+  }
+  .pet-agent.open .pet-panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+  .pet-panel-head {
+    align-items: center;
+    background: rgba(101,201,130,.16);
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 54px 1fr auto;
+    padding: 14px;
+  }
+  .pet-panel-head .mini-buddy {
+    transform: scale(.9);
+  }
+  .pet-panel-head b,
+  .pet-panel-head small {
+    display: block;
+  }
+  .pet-panel-head small {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 3px;
+  }
+  .pet-panel-head button {
+    background: rgba(255,255,255,.7);
+    border: 0;
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 22px;
+    height: 32px;
+    width: 32px;
+  }
+  .pet-chat {
+    display: grid;
+    gap: 8px;
+    max-height: 210px;
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .pet-chat p {
+    border-radius: 18px;
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 0;
+    max-width: 86%;
+    padding: 10px 12px;
+  }
+  .pet-chat .bot {
+    background: rgba(255,255,255,.78);
+    color: var(--ink);
+    justify-self: start;
+  }
+  .pet-chat .user {
+    background: var(--ink);
+    color: #fff;
+    justify-self: end;
+  }
+  .pet-exp {
+    padding: 0 14px 12px;
+  }
+  .pet-exp span {
+    color: var(--muted);
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .pet-replies {
+    border-top: 1px solid rgba(122,99,196,.12);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px 14px;
+  }
+  .pet-replies button {
+    background: rgba(255,255,255,.75);
+    border: 0;
+    border-radius: 999px;
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 800;
+    padding: 8px 11px;
+  }
+  .agent-league-card {
+    overflow: hidden;
+    position: relative;
+  }
+  .agent-league-card::after {
+    background: radial-gradient(circle, rgba(139,92,246,.2), transparent 62%);
+    content: '';
+    height: 160px;
+    position: absolute;
+    right: -58px;
+    top: -58px;
+    width: 160px;
+  }
+  .league-steps {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .league-step {
+    align-items: center;
+    background: rgba(255,255,255,.55);
+    border-radius: 18px;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 34px 1fr;
+    padding: 10px;
+  }
+  .league-step span {
+    background: rgba(101,201,130,.18);
+    border-radius: 999px;
+    display: grid;
+    font-weight: 950;
+    height: 34px;
+    place-items: center;
+    width: 34px;
+  }
+  .league-step.done span {
+    background: var(--green);
+    color: #fff;
+  }
+  .league-step b,
+  .league-step small {
+    display: block;
+  }
+  .league-step small {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
   }
   [data-page="scan"] .scan-wrap {
     align-items: stretch;
@@ -1136,6 +1442,14 @@ const integrationStyle = `
     width: 100%;
   }
   @media (max-width: 720px) {
+    .pet-agent {
+      bottom: 94px;
+      right: 16px;
+    }
+    .pet-bubble {
+      height: 64px;
+      width: 64px;
+    }
     .analysis-metrics {
       grid-template-columns: 1fr;
     }
