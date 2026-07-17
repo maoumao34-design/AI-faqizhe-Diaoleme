@@ -11,8 +11,17 @@ const todayKey = () => new Date().toISOString().slice(0, 10)
 const taskKey = () => `diaoleme-prototype-tasks-${todayKey()}`
 const taskBonusKey = () => `diaoleme-prototype-task-bonus-${todayKey()}`
 const questProgressKey = (category: QuestCategory) => `diaoleme-prototype-quest-progress-${category}-${todayKey()}`
+const selectedHairStyleKey = () => 'diaoleme-prototype-selected-hair-style'
+const buddyCareKey = () => 'diaoleme-prototype-buddy-care'
 
 type QuestCategory = 'daily' | 'weekly' | 'growth' | 'special'
+
+type BuddyCareState = {
+  energy: number
+  love: number
+  feedCount: number
+  lastFed: string | null
+}
 
 type QuestDefinition = {
   id: string
@@ -104,6 +113,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const scanPageBtn = target.closest<HTMLElement>('[data-scan-record-page]')
     const journeyShareBtn = target.closest<HTMLElement>('[data-action="journey-share"]')
     const openJourneyBtn = target.closest<HTMLElement>('[data-action="open-journey"]')
+    const buddyActionBtn = target.closest<HTMLElement>('[data-buddy-action]')
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
 
     if (navBtn?.dataset.go === 'scan' && !viewReportBtn) {
@@ -124,8 +134,12 @@ function attachPrototypeFeatures(root: HTMLElement) {
     if (unlockBtn) {
       const item = HAIRSTYLE_CATALOG.find((h) => h.id === unlockBtn.dataset.unlockId)
       if (item) {
+        const alreadyOwned = useUserStore.getState().unlockedHairStyles.includes(item.id)
         const ok = useUserStore.getState().unlockHairStyle(item.id, item.cost)
-        showToast(root, ok ? `已解锁 ${item.name}` : `积分还差 ${item.cost - useUserStore.getState().points}`)
+        if (ok) {
+          selectHairStyle(item.id)
+        }
+        showToast(root, ok ? `${alreadyOwned ? '已换上' : '已解锁并换上'} ${item.name}` : `积分还差 ${item.cost - useUserStore.getState().points}`)
         render()
       }
     }
@@ -169,6 +183,10 @@ function attachPrototypeFeatures(root: HTMLElement) {
     }
     if (openJourneyBtn) {
       showPage(root, 'journey')
+    }
+    if (buddyActionBtn?.dataset.buddyAction) {
+      handleBuddyAction(buddyActionBtn.dataset.buddyAction, root)
+      render()
     }
   }
 
@@ -381,6 +399,7 @@ function attachPrototypeAnalysis(root: HTMLElement) {
 
 function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily') {
   renderHome(root)
+  renderBuddy(root)
   renderTasks(root, activeQuestCategory)
   renderHistory(root)
   renderRewards(root)
@@ -485,6 +504,111 @@ function renderHome(root: HTMLElement) {
   setHtml(root.querySelector('.small-leaders'), buildLeaders().slice(0, 4).map((l) => `<div class="leader ${l.isMe ? 'you' : ''}" style="grid-template-columns:34px 1fr auto"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}</b><span>${l.points} XP</span></div>`).join(''))
   const heroBadges = root.querySelectorAll<HTMLElement>('[data-page="home"] .stats .badge, [data-page="home"] .badge')
   if (heroBadges[0]) heroBadges[0].textContent = `${s.points} XP`
+}
+
+function renderBuddy(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const care = loadBuddyCare()
+  const latestReport = s.reportHistory[0]
+  const health = Math.max(62, Math.min(98, Math.round((s.dropScore ?? 82) + Math.min(s.reportHistory.length, 6))))
+  const moodScore = Math.max(56, Math.min(96, Math.round((care.energy + care.love) / 2)))
+  const mood = moodScore >= 78 ? 'Happy' : moodScore >= 64 ? 'Calm' : 'Need Care'
+  const selectedHair = currentHairStyle(s.unlockedHairStyles)
+  const ownedHairStyles = HAIRSTYLE_CATALOG.filter((h) => s.unlockedHairStyles.includes(h.id)).length
+  const questDone = QUEST_CATEGORIES.reduce((sum, category) => sum + loadDoneQuests(category).size, 0)
+
+  setHtml(root.querySelector('[data-page="buddy"] .metric'), `
+    <div class="metric-row"><span style="font-size:32px">💗</span><b>生命值</b><div class="meter"><div class="fill" style="--w:${health}%;--c:#ff77a8"></div></div><b>${health}/100</b></div>
+    <div class="metric-row"><span style="font-size:32px">⚡</span><b>能量值</b><div class="meter"><div class="fill" style="--w:${care.energy}%;--c:#ffad2f"></div></div><b>${care.energy}/100</b></div>
+    <div class="metric-row"><span style="font-size:32px">😊</span><b>心情值</b><div class="meter"><div class="fill" style="--w:${moodScore}%;--c:#8b5cf6"></div></div><b>${mood}</b></div>
+  `)
+
+  setHtml(root.querySelector('[data-page="buddy"] .section-title'), `解锁发型 <span class="badge">${ownedHairStyles} / ${HAIRSTYLE_CATALOG.length} 已解锁</span>`)
+  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.map((h) => {
+    const owned = s.unlockedHairStyles.includes(h.id)
+    const active = h.id === selectedHair
+    const label = owned ? (active ? '使用中' : '点击换上') : `${h.cost} XP 解锁`
+    return `<button class="skin ${active ? 'active' : ''}" data-unlock-id="${escapeHtml(h.id)}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(label)}</small>${owned ? '' : '<span class="buddy-lock">🔒</span>'}</button>`
+  }).join(''))
+
+  setHtml(root.querySelector('[data-page="buddy"] .card.item-list'), `
+    <button class="item buddy-action dress" data-buddy-action="dress"><span>👗</span><b>Dress Up<small>装扮你的伙伴，选择或解锁造型</small></b><span>›</span></button>
+    <button class="item buddy-action feed" data-buddy-action="feed"><span>🍚</span><b>Feed<small>喂养伙伴，补充爱与能量</small></b><span>›</span></button>
+    <button class="item buddy-action diary" data-buddy-action="diary"><span>📖</span><b>Buddy Diary<small>记录我们一起成长的每一天</small></b><span>›</span></button>
+    <button class="item buddy-action growth" data-buddy-action="growth"><span>📈</span><b>成长记录<small>查看伙伴的成长轨迹</small></b><span>›</span></button>
+  `)
+
+  setHtml(root.querySelector('[data-page="buddy"] .grid:nth-child(2) .card:first-child'), `
+    <h3>今日头发报告</h3>
+    <div><span class="big-number">${s.dropScore ?? '--'}</span> ${s.dropScore == null ? '' : '分'}</div>
+    <p>${escapeHtml(latestReport?.summary || '还没有今日报告，完成一次 Scan 后会同步到 Buddy。')}</p>
+    <div class="chart">${buildTrendBars(s.reportHistory)}</div>
+  `)
+
+  const buddyPage = root.querySelector<HTMLElement>('[data-page="buddy"]')
+  if (buddyPage && !buddyPage.querySelector('.buddy-extra-grid')) {
+    buddyPage.insertAdjacentHTML('beforeend', '<div class="buddy-extra-grid"><div class="card" data-buddy-summary></div><div class="card" data-buddy-cheers></div></div>')
+  }
+  setHtml(root.querySelector('[data-buddy-summary]'), `
+    <h3>💗 本周成长小结</h3>
+    <p>你的护理表现超过了 ${Math.min(96, 60 + questDone * 4 + s.checkinDays.length)}% 的用户，继续保持哦！</p>
+    <div class="buddy-summary-stats">
+      <span><b>${s.checkinDays.length || 0} 天</b><small>护理天数</small></span>
+      <span><b>${questDone}/${QUEST_CATEGORIES.flatMap(getQuests).length}</b><small>任务完成</small></span>
+      <span><b>${avgScore(s.reportHistory) || '--'}</b><small>平均状态分</small></span>
+      <span><b>${care.energy >= 78 ? '良好' : '待补充'}</b><small>充足睡眠</small></span>
+    </div>
+  `)
+  setHtml(root.querySelector('[data-buddy-cheers]'), `
+    <h3>💗 来自大家的鼓励</h3>
+    <div class="buddy-cheers">
+      ${['Luna|你的新发型超可爱！我们一起加油呀 🌞', 'Mia|头发也在慢慢变强大呢，你一定可以的！💪', 'Ray|看到你的变化啦，好棒！！✨'].map((item) => {
+        const [name, msg] = item.split('|')
+        return `<div class="buddy-cheer"><span class="avatar">${name[0]}</span><b>${name}</b><p>${escapeHtml(msg)}</p><small>${name === 'Ray' ? '1 天前' : name === 'Mia' ? '5 小时前' : '2 小时前'}</small></div>`
+      }).join('')}
+    </div>
+  `)
+}
+
+function handleBuddyAction(action: string, root: HTMLElement) {
+  if (action === 'dress') {
+    showToast(root, '已打开造型选择，点击卡片可使用或解锁')
+    root.querySelector('#skins')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
+  if (action === 'feed') {
+    const care = loadBuddyCare()
+    saveBuddyCare({
+      energy: Math.min(100, care.energy + 12),
+      love: Math.min(100, care.love + 6),
+      feedCount: care.feedCount + 1,
+      lastFed: todayKey(),
+    })
+    useUserStore.getState().addPoints(3)
+    showToast(root, '小发球吃饱啦：能量 +12，爱心 +6，XP +3')
+    return
+  }
+  if (action === 'diary') {
+    showPage(root, 'diary')
+    showToast(root, '已打开 Buddy Diary')
+    return
+  }
+  if (action === 'growth') {
+    showPage(root, 'journey')
+    showToast(root, '已打开成长记录')
+  }
+}
+
+function loadBuddyCare(): BuddyCareState {
+  try {
+    return { energy: 68, love: 86, feedCount: 0, lastFed: null, ...JSON.parse(localStorage.getItem(buddyCareKey()) || '{}') }
+  } catch {
+    return { energy: 68, love: 86, feedCount: 0, lastFed: null }
+  }
+}
+
+function saveBuddyCare(care: BuddyCareState) {
+  localStorage.setItem(buddyCareKey(), JSON.stringify(care))
 }
 
 function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
@@ -612,15 +736,33 @@ function renderJourney(root: HTMLElement, history: ReportRecord[]) {
 
 function renderRewards(root: HTMLElement) {
   const s = useUserStore.getState()
-  const latestHair = s.unlockedHairStyles[s.unlockedHairStyles.length - 1]
-  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.slice(0, 6).map((h) => {
+  const selectedHair = currentHairStyle(s.unlockedHairStyles)
+  const totalHairStyles = HAIRSTYLE_CATALOG.length
+  const ownedHairStyles = HAIRSTYLE_CATALOG.filter((h) => s.unlockedHairStyles.includes(h.id)).length
+  setHtml(root.querySelector('[data-page="buddy"] .section-title'), `解锁发型 <span class="badge">${ownedHairStyles} / ${totalHairStyles} 已解锁</span>`)
+  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.map((h) => {
     const owned = s.unlockedHairStyles.includes(h.id)
-    return `<button class="skin ${h.id === latestHair ? 'active' : ''}" data-unlock-id="${h.id}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${owned ? '已拥有' : `${h.cost} XP`}</small></button>`
+    const active = h.id === selectedHair
+    const label = owned ? (active ? '使用中' : '点击换上') : `${h.cost} XP 解锁`
+    return `<button class="skin ${active ? 'active' : ''}" data-unlock-id="${escapeHtml(h.id)}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(label)}</small></button>`
   }).join(''))
   setHtml(root.querySelector('#shop'), HAIRSTYLE_CATALOG.map((h) => {
     const owned = s.unlockedHairStyles.includes(h.id)
-    return `<div class="reward"><div class="reward-art">${escapeHtml(h.emoji)}</div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.description)}</small><b style="color:var(--purple)">${owned ? '已拥有' : `${h.cost} XP`}</b><button class="pill ${owned ? '' : 'primary'}" data-unlock-id="${h.id}">${owned ? '使用' : '解锁'}</button></div>`
+    const active = h.id === selectedHair
+    return `<div class="reward"><div class="reward-art">${escapeHtml(h.emoji)}</div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.description)}</small><b style="color:var(--purple)">${owned ? (active ? '使用中' : '已拥有') : `${h.cost} XP`}</b><button class="pill ${owned && !active ? 'primary' : owned ? '' : 'primary'}" data-unlock-id="${escapeHtml(h.id)}">${owned ? (active ? '使用中' : '使用') : '解锁并使用'}</button></div>`
   }).join(''))
+}
+
+function selectHairStyle(id: string) {
+  localStorage.setItem(selectedHairStyleKey(), id)
+}
+
+function currentHairStyle(unlocked: string[]) {
+  const saved = localStorage.getItem(selectedHairStyleKey())
+  if (saved && unlocked.includes(saved)) return saved
+  const fallback = unlocked[unlocked.length - 1] || HAIRSTYLE_CATALOG[0]?.id || 'none'
+  selectHairStyle(fallback)
+  return fallback
 }
 
 function renderLeague(root: HTMLElement) {
@@ -1082,6 +1224,65 @@ const integrationStyle = `
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  [data-page="buddy"] .metric-row {
+    grid-template-columns: 42px 72px minmax(120px, 1fr) 72px;
+  }
+  [data-page="buddy"] .skin {
+    position: relative;
+  }
+  [data-page="buddy"] .buddy-lock {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+  }
+  [data-page="buddy"] .buddy-action {
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  [data-page="buddy"] .buddy-action:hover {
+    box-shadow: 0 14px 34px rgba(99, 75, 168, .12);
+    transform: translateY(-2px);
+  }
+  [data-page="buddy"] .buddy-action.dress { background: rgba(139, 92, 246, .10); }
+  [data-page="buddy"] .buddy-action.feed { background: rgba(255, 122, 47, .10); }
+  [data-page="buddy"] .buddy-action.diary { background: rgba(99, 102, 241, .10); }
+  [data-page="buddy"] .buddy-action.growth { background: rgba(101, 201, 130, .12); }
+  .buddy-extra-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    margin-top: 20px;
+  }
+  .buddy-summary-stats,
+  .buddy-cheers {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .buddy-summary-stats span,
+  .buddy-cheer {
+    border-radius: 18px;
+    background: rgba(255,255,255,.58);
+    padding: 14px;
+  }
+  .buddy-summary-stats b,
+  .buddy-summary-stats small {
+    display: block;
+  }
+  .buddy-cheers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .buddy-cheer .avatar {
+    align-items: center;
+    background: linear-gradient(135deg, #ffe4ee, #e8ddff);
+    border-radius: 999px;
+    display: inline-flex;
+    font-weight: 900;
+    height: 36px;
+    justify-content: center;
+    margin-right: 8px;
+    width: 36px;
   }
   #checkin .pill,
   #shop .pill,
