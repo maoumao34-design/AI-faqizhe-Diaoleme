@@ -17,6 +17,25 @@ const buddyCareKey = () => 'diaoleme-prototype-buddy-care'
 
 type QuestCategory = 'daily' | 'weekly' | 'growth' | 'special'
 type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
+type CommunityTab = '关注' | '最新' | '热门' | '精华'
+type CommunityPost = {
+  id: string
+  name: string
+  level: string
+  body: string
+  media: string
+  likes: number
+  comments: string[]
+  tag: string
+  createdAt: number
+  featured?: boolean
+  following?: boolean
+  fromJourney?: boolean
+  reportId?: string
+}
+const COMMUNITY_TABS: CommunityTab[] = ['关注', '最新', '热门', '精华']
+const isCommunityTab = (value: string): value is CommunityTab => COMMUNITY_TABS.includes(value as CommunityTab)
+const COMMUNITY_POSTS_KEY = 'diaoleme-community-user-posts'
 type LeagueLeader = {
   rank: number
   name: string
@@ -113,7 +132,8 @@ function attachPrototypeFeatures(root: HTMLElement) {
   const chatCleanup = attachChatAssistant(root)
   let activeQuestCategory: QuestCategory = 'daily'
   let activeLeagueTab: LeagueTab = '排行榜'
-  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab)
+  let activeCommunityTab: CommunityTab = '最新'
+  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeCommunityTab)
   render()
   const unsubscribe = useUserStore.subscribe(render)
 
@@ -121,6 +141,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const target = event.target as HTMLElement
     const categoryBtn = target.closest<HTMLElement>('[data-quest-category]')
     const leagueTabBtn = target.closest<HTMLElement>('[data-league-tab]')
+    const communityTabBtn = target.closest<HTMLElement>('[data-community-tab]')
     const questBtn = target.closest<HTMLElement>('[data-quest-id]')
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
@@ -131,6 +152,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const resetBtn = target.closest<HTMLElement>('[data-action="reset-progress"]')
     const scanPageBtn = target.closest<HTMLElement>('[data-scan-record-page]')
     const journeyShareBtn = target.closest<HTMLElement>('[data-action="journey-share"]')
+    const shareToCommunityBtn = target.closest<HTMLElement>('[data-action="share-to-community"]')
     const openJourneyBtn = target.closest<HTMLElement>('[data-action="open-journey"]')
     const buddyActionBtn = target.closest<HTMLElement>('[data-buddy-action]')
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
@@ -148,6 +170,11 @@ function attachPrototypeFeatures(root: HTMLElement) {
       activeLeagueTab = leagueTabBtn.dataset.leagueTab
       render()
       showToast(root, `已切换至${activeLeagueTab}`)
+    }
+    if (communityTabBtn?.dataset.communityTab && isCommunityTab(communityTabBtn.dataset.communityTab)) {
+      activeCommunityTab = communityTabBtn.dataset.communityTab
+      render()
+      showToast(root, `已切换至${activeCommunityTab}`)
     }
     if (questBtn?.dataset.questId && questBtn.dataset.questCategory && isQuestCategory(questBtn.dataset.questCategory)) {
       completeQuest(questBtn.dataset.questCategory, questBtn.dataset.questId, root)
@@ -182,9 +209,15 @@ function attachPrototypeFeatures(root: HTMLElement) {
       showToast(root, '已打开当天最新报告')
     }
     if (shareReportBtn?.dataset.shareReport) {
-      useUserStore.getState().viewReport(shareReportBtn.dataset.shareReport)
-      downloadShareCard()
-      showToast(root, '已生成这份报告的分享卡')
+      const shared = shareJourneyToCommunity({ reportId: shareReportBtn.dataset.shareReport })
+      if (!shared.ok) {
+        showToast(root, shared.message)
+        return
+      }
+      activeCommunityTab = '最新'
+      showPage(root, 'community')
+      render()
+      showToast(root, shared.message)
     }
     if (scanPageBtn?.dataset.scanRecordPage) {
       root.dataset.scanRecordPage = scanPageBtn.dataset.scanRecordPage
@@ -200,23 +233,32 @@ function attachPrototypeFeatures(root: HTMLElement) {
         render()
       }
     }
-    if (shareBtn) {
-      downloadShareCard()
-    }
-    if (journeyShareBtn) {
-      downloadShareCard()
-      showToast(root, '已生成 Journey 分享卡')
+    if (shareBtn || journeyShareBtn || shareToCommunityBtn) {
+      const shared = shareJourneyToCommunity()
+      if (!shared.ok) {
+        showToast(root, shared.message)
+        return
+      }
+      activeCommunityTab = '最新'
+      showPage(root, 'community')
+      render()
+      showToast(root, shared.message)
     }
     if (openJourneyBtn) {
       showPage(root, 'journey')
     }
     if (likeBtn?.dataset.postLike) {
       toggleCommunityLike(likeBtn.dataset.postLike)
-      renderCommunity(root)
+      renderCommunity(root, activeCommunityTab)
     }
     if (commentBtn?.dataset.postComments) {
-      const comments = root.querySelector<HTMLElement>(`[data-comments-for="${commentBtn.dataset.postComments}"]`)
-      comments?.classList.toggle('collapsed')
+      const extra = root.querySelector<HTMLElement>(`[data-comments-extra-for="${commentBtn.dataset.postComments}"]`)
+      if (extra) {
+        const expanded = !extra.classList.contains('collapsed')
+        extra.classList.toggle('collapsed', expanded)
+        const count = Number(commentBtn.textContent?.match(/\d+/)?.[0] || 0)
+        commentBtn.textContent = expanded ? `💬 ${count} · 展开` : `💬 ${count} · 收起`
+      }
     }
     if (buddyActionBtn?.dataset.buddyAction) {
       handleBuddyAction(buddyActionBtn.dataset.buddyAction, root)
@@ -432,13 +474,13 @@ function attachPrototypeAnalysis(root: HTMLElement) {
   }
 }
 
-function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily', activeLeagueTab: LeagueTab = '排行榜') {
+function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily', activeLeagueTab: LeagueTab = '排行榜', activeCommunityTab: CommunityTab = '最新') {
   renderHome(root)
   renderBuddy(root)
   renderTasks(root, activeQuestCategory)
   renderHistory(root)
   renderDiary(root)
-  renderCommunity(root)
+  renderCommunity(root, activeCommunityTab)
   renderRewards(root)
   renderLeague(root, activeLeagueTab)
   renderProfile(root)
@@ -764,20 +806,150 @@ function buildLocalDiaryAdvice(records: ReportRecord[]) {
   return `${tagHint}变化不大就是好信号，建议继续轻量打卡：${fallbackTask}。${countHint}。`
 }
 
-const COMMUNITY_POSTS = [
-  { id: 'checkin7', name: '小蒲公英', level: 'Lv.6', body: '今天终于连续打卡第 7 天啦！虽然掉发还是有，但头皮状态明显舒服多了～', media: '📋', likes: 128, comments: ['我也在做 7 天挑战，一起坚持！', '这种轻松记录真的比焦虑刷帖舒服。'] },
-  { id: 'massage', name: '爱吃草莓', level: 'Lv.4', body: '分享一个我最近超喜欢的头皮按摩方法！每天睡前按 5 分钟，放松又助眠。', media: '🪮', likes: 96, comments: ['求一个手法教程！', '睡前按摩 + 早睡，感觉小发球都开心了。'] },
-  { id: 'slowday', name: '薄荷味的风', level: 'Lv.6', body: '最近压力有点大，掉发也跟着严重了。深呼吸、运动、喝水，给自己一些温柔的时间。', media: '🌿', likes: 76, comments: ['抱抱，先把记录坚持下来就很棒。', '今天也给自己一点松弛感。'] },
-  { id: 'rewardhair', name: '向日葵', level: 'Lv.3', body: '新发型解锁啦！看着宝宝一点点长出来的花发，成就感满满！', media: '🌱', likes: 143, comments: ['这个发型也太可爱了！', '奖励机制好有动力，我也要攒 XP。'] },
+const COMMUNITY_SEED_POSTS: CommunityPost[] = [
+  {
+    id: 'checkin7',
+    name: '小蒲公英',
+    level: 'Lv.6',
+    body: '今天终于连续打卡第 7 天啦！虽然掉发还是有，但头皮状态明显舒服多了～',
+    media: '📋',
+    likes: 128,
+    comments: ['我也在做 7 天挑战，一起坚持！', '这种轻松记录真的比焦虑刷帖舒服。', '打卡第七天太有成就感了！'],
+    tag: '连续打卡',
+    createdAt: Date.now() - 1000 * 60 * 60 * 26,
+    featured: true,
+    following: true,
+  },
+  {
+    id: 'massage',
+    name: '爱吃草莓',
+    level: 'Lv.4',
+    body: '分享一个我最近超喜欢的头皮按摩方法！每天睡前按 5 分钟，放松又助眠。',
+    media: '🪮',
+    likes: 96,
+    comments: ['求一个手法教程！', '睡前按摩 + 早睡，感觉小发球都开心了。'],
+    tag: '头皮护理',
+    createdAt: Date.now() - 1000 * 60 * 60 * 8,
+    featured: false,
+    following: true,
+  },
+  {
+    id: 'slowday',
+    name: '薄荷味的风',
+    level: 'Lv.6',
+    body: '最近压力有点大，掉发也跟着严重了。深呼吸、运动、喝水，给自己一些温柔的时间。',
+    media: '🌿',
+    likes: 76,
+    comments: ['抱抱，先把记录坚持下来就很棒。', '今天也给自己一点松弛感。'],
+    tag: '情绪放松',
+    createdAt: Date.now() - 1000 * 60 * 60 * 3,
+    featured: true,
+    following: false,
+  },
+  {
+    id: 'rewardhair',
+    name: '向日葵',
+    level: 'Lv.3',
+    body: '新发型解锁啦！看着宝宝一点点长出来的花发，成就感满满！',
+    media: '🌱',
+    likes: 143,
+    comments: ['这个发型也太可爱了！', '奖励机制好有动力，我也要攒 XP。'],
+    tag: '成长奖励',
+    createdAt: Date.now() - 1000 * 60 * 60 * 50,
+    featured: true,
+    following: false,
+  },
 ]
 
-function renderCommunity(root: HTMLElement) {
+function userLevelLabel(points: number) {
+  if (points >= 4000) return 'Lv.7'
+  if (points >= 3000) return 'Lv.6'
+  if (points >= 2000) return 'Lv.5'
+  if (points >= 1200) return 'Lv.4'
+  if (points >= 600) return 'Lv.3'
+  if (points >= 200) return 'Lv.2'
+  return 'Lv.1'
+}
+
+function loadUserCommunityPosts(): CommunityPost[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COMMUNITY_POSTS_KEY) || '[]')
+    return Array.isArray(raw) ? raw.filter((item) => item && typeof item.id === 'string' && typeof item.body === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveUserCommunityPosts(posts: CommunityPost[]) {
+  localStorage.setItem(COMMUNITY_POSTS_KEY, JSON.stringify(posts.slice(0, 40)))
+}
+
+function allCommunityPosts(): CommunityPost[] {
+  return [...loadUserCommunityPosts(), ...COMMUNITY_SEED_POSTS]
+}
+
+function postsForCommunityTab(tab: CommunityTab): CommunityPost[] {
+  const posts = allCommunityPosts()
+  if (tab === '关注') return posts.filter((post) => post.following || post.fromJourney).sort((a, b) => b.createdAt - a.createdAt)
+  if (tab === '热门') return [...posts].sort((a, b) => b.likes - a.likes || b.createdAt - a.createdAt)
+  if (tab === '精华') return posts.filter((post) => post.featured).sort((a, b) => b.likes - a.likes)
+  return [...posts].sort((a, b) => b.createdAt - a.createdAt)
+}
+
+function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean; message: string } {
+  const s = useUserStore.getState()
+  const report = options?.reportId
+    ? s.reportHistory.find((item) => item.id === options.reportId)
+    : s.reportHistory[0]
+
+  if (!report) {
+    return { ok: false, message: '还没有 Journey 记录，先去 Scan 完成一次上传吧' }
+  }
+
+  const existing = loadUserCommunityPosts()
+  if (existing.some((post) => post.reportId === report.id)) {
+    return { ok: true, message: '这份旅程已经分享过啦，已帮你打开社区最新流' }
+  }
+
+  const post: CommunityPost = {
+    id: `journey-${Date.now().toString(36)}`,
+    name: '我',
+    level: userLevelLabel(s.points),
+    body: options?.reportId
+      ? `从 Journey 分享：${report.title}（${report.score} 分）。${report.summary}`
+      : `分享我的护发旅程：打卡 ${s.checkinDays.length} 天，累计 ${s.reportHistory.length} 次记录。最近一次是「${report.title}」${report.score} 分，${report.summary}`,
+    media: '✨',
+    likes: 0,
+    comments: ['欢迎分享旅程，我们一起轻松记录～'],
+    tag: report.tags[0] || '旅程分享',
+    createdAt: Date.now(),
+    featured: false,
+    following: true,
+    fromJourney: true,
+    reportId: report.id,
+  }
+  saveUserCommunityPosts([post, ...existing])
+  return { ok: true, message: '已分享到 Community，可以在「最新 / 关注」里看到' }
+}
+
+function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') {
   const liked = loadLikedPosts()
-  setHtml(root.querySelector('#posts'), COMMUNITY_POSTS.map((post) => {
+  setHtml(
+    root.querySelector('#communityTabs') || root.querySelector('[data-page="community"] .tabs'),
+    COMMUNITY_TABS.map((tab) => `<button class="pill ${tab === activeTab ? 'primary' : ''}" data-community-tab="${tab}">${tab}</button>`).join(''),
+  )
+
+  const posts = postsForCommunityTab(activeTab)
+  setHtml(root.querySelector('#posts'), posts.length ? posts.map((post) => {
     const isLiked = liked.has(post.id)
-    const comments = post.comments.map((text, index) => `<div class="comment"><b>${index === 0 ? '发友' : '小发球'}：</b>${escapeHtml(text)}</div>`).join('')
-    return `<div class="post community-post"><div class="mini-buddy"></div><div><b>${escapeHtml(post.name)} <span class="badge">${escapeHtml(post.level)}</span></b><p>${escapeHtml(post.body)}</p><span class="badge"># 头皮护理</span><div class="community-actions"><button class="pill ${isLiked ? 'primary' : ''}" data-post-like="${escapeHtml(post.id)}">💜 ${post.likes + (isLiked ? 1 : 0)}</button><button class="pill" data-post-comments="${escapeHtml(post.id)}">💬 ${post.comments.length}</button><button class="pill">☆ 收藏</button></div><div class="comments collapsed" data-comments-for="${escapeHtml(post.id)}">${comments}</div></div><div class="post-media">${escapeHtml(post.media)}</div></div>`
-  }).join(''))
+    const likeCount = post.likes + (isLiked ? 1 : 0)
+    const firstComment = post.comments[0]
+    const extraComments = post.comments.slice(1)
+    const commentsHtml = firstComment
+      ? `<div class="comments" data-comments-for="${escapeHtml(post.id)}"><div class="comment"><b>${post.fromJourney ? '小发球' : '发友'}：</b>${escapeHtml(firstComment)}</div>${extraComments.length ? `<div class="comments-extra collapsed" data-comments-extra-for="${escapeHtml(post.id)}">${extraComments.map((text, index) => `<div class="comment"><b>${index % 2 === 0 ? '发友' : '小发球'}：</b>${escapeHtml(text)}</div>`).join('')}</div>` : ''}</div>`
+      : ''
+    return `<div class="post community-post"><div class="mini-buddy"></div><div><b>${escapeHtml(post.name)} <span class="badge">${escapeHtml(post.level)}</span>${post.fromJourney ? '<span class="badge">Journey</span>' : ''}</b><p>${escapeHtml(post.body)}</p><span class="badge"># ${escapeHtml(post.tag)}</span><div class="community-actions"><button class="pill ${isLiked ? 'primary' : ''}" data-post-like="${escapeHtml(post.id)}">💜 ${likeCount}</button><button class="pill" data-post-comments="${escapeHtml(post.id)}">💬 ${post.comments.length}${extraComments.length ? ' · 展开' : ''}</button><button class="pill">☆ 收藏</button></div>${commentsHtml}</div><div class="post-media">${escapeHtml(post.media)}</div></div>`
+  }).join('') : `<div class="item journey-empty"><span>🌱</span><b>${activeTab}还没有内容<small>去 Journey 分享一次旅程，或切换其他 Tab 看看。</small></b><button class="pill primary" data-action="share-to-community">分享我的旅程</button></div>`)
 }
 
 function loadLikedPosts() {
@@ -852,7 +1024,7 @@ function renderJourney(root: HTMLElement, history: ReportRecord[]) {
       <b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b>
       <span class="status">${r.score} 分</span>
       <button class="pill primary" data-view-report="${escapeHtml(r.id)}">查看报告</button>
-      <button class="pill" data-share-report="${escapeHtml(r.id)}">分享</button>
+      <button class="pill" data-share-report="${escapeHtml(r.id)}">分享到社区</button>
       ${index === 0 ? '<span class="badge">最新</span>' : ''}
     </div>
   `).join('') : `
@@ -882,7 +1054,7 @@ function renderJourney(root: HTMLElement, history: ReportRecord[]) {
     <div class="item-list">
       ${buildJourneyHighlights(history, groupedDays)}
     </div>
-    <button class="pill" data-action="journey-share">分享我的旅程</button>
+    <button class="pill" data-action="journey-share">分享到 Community</button>
   `)
 }
 
@@ -3887,6 +4059,8 @@ const integrationStyle = `
   .community-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .comments { display: grid; gap: 8px; margin-top: 12px; }
   .comments.collapsed { display: none; }
+  .comments-extra { display: grid; gap: 8px; }
+  .comments-extra.collapsed { display: none; }
   .comment { border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,.68); color: #65709e; font-size: 14px; }
   .ai-chat-widget { position: fixed; right: 28px; bottom: 28px; z-index: 40; font-family: inherit; }
   .ai-chat-bubble { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 14px 18px; background: linear-gradient(135deg,#8b5cf6,#65c982); color: #fff; box-shadow: 0 20px 55px rgba(99,75,168,.32); cursor: grab; font-weight: 900; }
