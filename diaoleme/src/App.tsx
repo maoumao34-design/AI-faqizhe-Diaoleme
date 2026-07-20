@@ -993,10 +993,10 @@ function attachChatAssistant(root: HTMLElement) {
   widget.innerHTML = `
     <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手">🌱<span>AI 助手</span></button>
     <section class="ai-chat-panel" aria-label="AI 助手对话">
-      <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" aria-label="关闭 AI 助手" data-chat-close>×</button></header>
+      <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" data-chat-close aria-label="关闭 AI 助手">×</button></header>
       <div class="ai-chat-messages" data-chat-messages></div>
       <form class="ai-chat-form" data-chat-form>
-        <input data-chat-input aria-label="输入消息" placeholder="问问护发习惯、记录建议或今天怎么坚持..." maxlength="300" />
+        <input data-chat-input aria-label="输入对 AI 助手的问题" placeholder="问问护发习惯、记录建议或今天怎么坚持..." maxlength="300" />
         <button type="submit">发送</button>
       </form>
     </section>
@@ -1014,6 +1014,7 @@ function attachChatAssistant(root: HTMLElement) {
   let startY = 0
   let startLeft = 0
   let startTop = 0
+  const thinkingPlaceholder = '正在思考一个轻松、不焦虑的回答...'
   const renderMessages = () => {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
@@ -1047,7 +1048,9 @@ function attachChatAssistant(root: HTMLElement) {
   }
   const onPointerUp = (event: PointerEvent) => {
     dragging = false
-    if (bubble.hasPointerCapture(event.pointerId)) bubble.releasePointerCapture(event.pointerId)
+    if (bubble.hasPointerCapture(event.pointerId)) {
+      bubble.releasePointerCapture(event.pointerId)
+    }
   }
   const onBubbleClick = () => {
     if (!moved) togglePanel(true)
@@ -1057,10 +1060,10 @@ function attachChatAssistant(root: HTMLElement) {
     const text = input.value.trim()
     if (!text) return
     input.value = ''
-    messages.push({ role: 'user', content: text }, { role: 'assistant', content: '正在思考一个轻松、不焦虑的回答...' })
+    messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
     try {
-      const result = await chatWithAssistant(messages.filter((m) => !(m.role === 'assistant' && m.content === '正在思考一个轻松、不焦虑的回答...')).slice(-8))
+      const result = await chatWithAssistant(messages.filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder)).slice(-8))
       messages[messages.length - 1] = { role: 'assistant', content: result.reply }
     } catch {
       messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }
