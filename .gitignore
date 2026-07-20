@@ -28,5 +28,6 @@ Thumbs.db
 .claude/
 .agents/
 
-# Local demo uploads
+# Local demo uploads / records
 backend/uploads/
+backend/data/

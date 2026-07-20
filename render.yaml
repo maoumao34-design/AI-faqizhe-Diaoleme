@@ -1,12 +1,26 @@
+# Render Blueprint — Diaoleme public HTTPS API (AIFA-27)
+# Docs: https://render.com/docs/blueprint-spec
 services:
   - type: web
-    name: diaoleme-mock-api
+    name: diaoleme-ai-proxy
     runtime: node
     plan: free
+    region: oregon
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm install --omit=dev
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      # Optional: leave unset for mock_scenario / fallback demo path
+      - key: AI_PROVIDER
+        value: openai_compatible
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        sync: false
+      - key: OPENAI_MODEL
+        sync: false
+      - key: SILICONFLOW_API_KEY
+        sync: false
