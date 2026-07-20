@@ -1,7 +1,7 @@
-built_at=2026-07-20T12:35:45Z
-api_base=https://d1aad285f58557.lhr.life
+built_at=2026-07-20T12:36:53Z
+api_base=https://2687ae88e517f5.lhr.life
 bundle=assets/index-B09UZxIM.js
+gh_pages_commit_pending=after-push
 public_page=https://aihpj.github.io/AI-faqizhe-Diaoleme/
-upstream_official=https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/ (push denied for AIhpJ; needs sync)
+upstream_blocked=https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/ (AIhpJ 无 push 权限)
 pr=https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/28
-issue=AIFA-26
