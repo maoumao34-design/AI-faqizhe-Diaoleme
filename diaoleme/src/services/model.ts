@@ -1,8 +1,49 @@
 import axios from 'axios'
 import type { AnalysisResult, AnalysisSource } from '../types'
-import { MODEL_API_CONFIG } from './config'
+import { CHAT_API_CONFIG, MODEL_API_CONFIG } from './config'
 
 export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
+
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatResult {
+  reply: string
+  source: AnalysisSource
+  source_label: string
+  fallback_code: string | null
+}
+
+export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatResult> {
+  try {
+    const resp = await axios.post(CHAT_API_CONFIG.url, { messages }, { timeout: CHAT_API_CONFIG.timeout })
+    return normalizeChatResponse(resp.data)
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.data) {
+      return normalizeChatResponse(err.response.data)
+    }
+    console.warn('[model] 聊天接口不可达，返回本地客服兜底。', err)
+    return {
+      reply: '我现在暂时连不上后端 AI，但可以先陪你记录：今天先完成一次轻量 Scan，再根据结果选择一个小任务就好。',
+      source: 'fallback',
+      source_label: '本地聊天 fallback（非真实 AI）',
+      fallback_code: 'CHAT_BACKEND_UNREACHABLE',
+    }
+  }
+}
+
+function normalizeChatResponse(payload: any): ChatResult {
+  const source = normalizeSource(payload?.source, payload?.ai_source, payload?.success)
+  return {
+    reply: safeText(payload?.reply, '我收到啦。今天先保持轻松记录，不做医学判断，只陪你养成一点点好习惯。'),
+    source,
+    source_label: safeText(payload?.source_label, sourceLabel(source)),
+    fallback_code: safeNullableText(payload?.fallback_code ?? payload?.fallbackCode),
+  }
+}
 
 const DEFAULT_DISCLAIMER = '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途；接入分析接口时，图片仅用于本次分析请求。'
 export const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024

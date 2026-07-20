@@ -17,6 +17,7 @@ const RECORDS_FILE = process.env.RECORDS_FILE
 const PORT = Number(process.env.PORT || 8787)
 const PRIMARY_ANALYSIS_PATH = '/api/analyze'
 const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
+const CHAT_PATH = '/api/chat'
 const SILICONFLOW_URL = 'https://api.siliconflow.cn/v1/chat/completions'
 const SILICONFLOW_MODEL = process.env.SILICONFLOW_MODEL || 'Qwen/Qwen3-VL-32B-Instruct'
 const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 30000)
@@ -41,6 +42,11 @@ const SYSTEM_PROMPT =
   '{"score":0-100,"title":"今日称号","summary":"轻松摘要","roast":"温和吐槽","encouragement":"鼓励",' +
   '"tags":["趣味标签"],"daily_task":"今日小任务","count":"少量|中等|偏多","thickness":"粗硬|正常|细软",' +
   '"suggestions":["建议1","建议2","建议3"],"disclaimer":"本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。"}'
+
+const CHAT_SYSTEM_PROMPT =
+  '你是“掉了么”的网页客服式 AI 助手，面向健康年轻人的娱乐/社交/养发习惯养成 demo。' +
+  '请用温柔、轻松、简洁的中文回答，帮助用户理解记录、任务、积分、伙伴成长和非医学的生活习惯建议。' +
+  '不要做医疗诊断，不要提疾病风险、治疗、用药、就医建议，不要制造脱发焦虑。无法确定时，引导用户做轻量记录或完成一个小任务。'
 
 const SCENARIOS = {
   success: {
@@ -420,6 +426,16 @@ function buildResponsesInput(imageContent, note) {
   ]
 }
 
+function buildChatResponsesInput(messages) {
+  return [
+    { role: 'system', content: [{ type: 'input_text', text: CHAT_SYSTEM_PROMPT }] },
+    ...messages.map((message) => ({
+      role: message.role,
+      content: [{ type: 'input_text', text: message.content }],
+    })),
+  ]
+}
+
 async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extractResponse }) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -469,6 +485,59 @@ async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extrac
 async function callAiProvider(args) {
   if (AI_PROVIDER === 'openai_compatible') return callOpenAICompatible(args)
   return callSiliconFlow(args)
+}
+
+async function callChatProvider(messages) {
+  if (AI_PROVIDER === 'openai_compatible') return callOpenAICompatibleChat(messages)
+  return callSiliconFlowChat(messages)
+}
+
+async function callOpenAICompatibleChat(messages) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) {
+    const err = new Error('Missing OPENAI_API_KEY')
+    err.code = 'MISSING_API_KEY'
+    err.provider = 'openai_compatible'
+    throw err
+  }
+
+  return postModelRequest({
+    url: OPENAI_RESPONSES_URL,
+    apiKey,
+    body: {
+      model: OPENAI_MODEL,
+      input: buildChatResponsesInput(messages),
+    },
+    timeoutMs: OPENAI_TIMEOUT_MS,
+    provider: 'openai_compatible_chat',
+    extractResponse: extractResponsesText,
+  })
+}
+
+async function callSiliconFlowChat(messages) {
+  const apiKey = process.env.SILICONFLOW_API_KEY?.trim()
+  if (!apiKey) {
+    const err = new Error('Missing SILICONFLOW_API_KEY')
+    err.code = 'MISSING_API_KEY'
+    err.provider = 'siliconflow'
+    throw err
+  }
+
+  return postModelRequest({
+    url: SILICONFLOW_URL,
+    apiKey,
+    body: {
+      model: SILICONFLOW_MODEL,
+      messages: [
+        { role: 'system', content: CHAT_SYSTEM_PROMPT },
+        ...messages,
+      ],
+      temperature: 0.7,
+    },
+    timeoutMs: SILICONFLOW_TIMEOUT_MS,
+    provider: 'siliconflow_chat',
+    extractResponse: extractChatCompletionText,
+  })
 }
 
 async function callOpenAICompatible({ imageUrl, uploadedFile, note }) {
@@ -564,6 +633,27 @@ function extractResponsesModelJson(data) {
     : []
   const output = content.find((item) => item?.type === 'output_text' && typeof item.text === 'string')
   return parseModelJson(output?.text, 'OpenAI Responses')
+}
+
+function extractChatCompletionText(data) {
+  const text = data?.choices?.[0]?.message?.content
+  if (typeof text === 'string' && text.trim()) return text.trim()
+  const err = new Error('chat completion response missing text')
+  err.code = 'UPSTREAM_BAD_SHAPE'
+  throw err
+}
+
+function extractResponsesText(data) {
+  if (typeof data?.output_text === 'string' && data.output_text.trim()) return data.output_text.trim()
+
+  const content = Array.isArray(data?.output)
+    ? data.output.flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+    : []
+  const output = content.find((item) => item?.type === 'output_text' && typeof item.text === 'string')
+  if (typeof output?.text === 'string' && output.text.trim()) return output.text.trim()
+  const err = new Error('responses output missing text')
+  err.code = 'UPSTREAM_BAD_SHAPE'
+  throw err
 }
 
 function containsUnsafeAiContent(modelData) {
@@ -770,6 +860,74 @@ async function handleHairAnalysis(req, res) {
   }
 }
 
+
+function normalizeChatMessages(value) {
+  const raw = Array.isArray(value) ? value : []
+  return raw
+    .map((item) => ({
+      role: item?.role === 'assistant' ? 'assistant' : 'user',
+      content: safeText(item?.content, '').slice(0, 800),
+    }))
+    .filter((item) => item.content)
+    .slice(-10)
+}
+
+function chatFallbackResponse(code, message) {
+  return {
+    success: false,
+    ai_source: 'fallback',
+    source: 'fallback',
+    source_label: 'AI 聊天兜底结果',
+    fallback_code: code,
+    reply: message || 'AI 助手暂时开小差了。先轻松完成一次记录，再选一个小任务坚持一下就很好。',
+    disclaimer: SAFE_DISCLAIMER,
+  }
+}
+
+function sanitizeChatReply(text) {
+  const reply = safeText(text, '')
+  if (!reply || UNSAFE_AI_CONTENT.some((pattern) => pattern.test(reply))) {
+    return '我不能做医学判断，但可以陪你做轻松记录：先完成一次 Scan，看看最近趋势，再选择早睡、喝水或头皮放松中的一个小任务。'
+  }
+  return reply.slice(0, 1200)
+}
+
+async function handleChat(req, res) {
+  try {
+    const payload = parseJsonBody(await readBody(req))
+    const messages = normalizeChatMessages(payload.messages)
+    const userText = safeText(payload.message, '')
+    if (userText) messages.push({ role: 'user', content: userText.slice(0, 800) })
+    if (!messages.length) {
+      return jsonResponse(res, 400, chatFallbackResponse('EMPTY_MESSAGE', '请先输入一句想聊的内容。'))
+    }
+
+    try {
+      const reply = await callChatProvider(messages)
+      return jsonResponse(res, 200, {
+        success: true,
+        ai_source: AI_PROVIDER,
+        source: 'api',
+        source_label: `${activeProviderLabel()} AI 聊天结果`,
+        fallback_code: null,
+        reply: sanitizeChatReply(reply),
+        disclaimer: SAFE_DISCLAIMER,
+      })
+    } catch (error) {
+      console.warn('[chat] upstream failed, returning fallback:', error?.code || error?.message)
+      const code = error?.code || 'CHAT_UPSTREAM_FAILED'
+      const message = code === 'MISSING_API_KEY'
+        ? `后端还没有配置 ${AI_PROVIDER === 'openai_compatible' ? 'OPENAI_API_KEY' : 'SILICONFLOW_API_KEY'}，当前返回 demo 兜底聊天。`
+        : 'AI 聊天服务暂时不可用，当前返回 demo 兜底聊天。'
+      return jsonResponse(res, 200, chatFallbackResponse(code, message))
+    }
+  } catch (error) {
+    const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'
+    const status = code === 'BODY_TOO_LARGE' ? 413 : 400
+    return jsonResponse(res, status, chatFallbackResponse(code, code === 'BODY_TOO_LARGE' ? '消息太长了，请缩短后再发送。' : '聊天请求解析失败，请检查 JSON。'))
+  }
+}
+
 export function createApp() {
   return createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
@@ -792,6 +950,10 @@ export function createApp() {
       return handleHairAnalysis(req, res)
     }
 
+    if (req.method === 'POST' && url.pathname === CHAT_PATH) {
+      return handleChat(req, res)
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/records') {
       return handleCreateRecord(req, res)
     }
@@ -807,7 +969,7 @@ export function createApp() {
     return jsonResponse(res, 404, {
       success: false,
       fallbackCode: 'NOT_FOUND',
-      error: { code: 'NOT_FOUND', message: `接口不存在，请检查 /api/analyze 或 /api/records。` },
+      error: { code: 'NOT_FOUND', message: `接口不存在，请检查 /api/analyze、/api/chat 或 /api/records。` },
     })
   })
 }
