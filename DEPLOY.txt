@@ -1,7 +1,7 @@
-source_commit=5b495a57049720750a52b9eb2446298d5a5336f7
-gh_pages_commit_will_update=yes
-built_at=2026-07-20T12:35:16Z
-api_base=https://d3270573891f82.lhr.life
-frontend_url=https://aihpj.github.io/AI-faqizhe-Diaoleme/
+built_at=2026-07-20T12:35:45Z
+api_base=https://d1aad285f58557.lhr.life
+bundle=assets/index-B09UZxIM.js
+public_page=https://aihpj.github.io/AI-faqizhe-Diaoleme/
+upstream_official=https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/ (push denied for AIhpJ; needs sync)
+pr=https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/28
 issue=AIFA-26
-note=Official maoumao34-design Pages needs write access; fork Pages is the verifiable deploy.
