@@ -750,9 +750,8 @@ function renderDiary(root: HTMLElement) {
 }
 
 function buildLocalDiaryAdvice(records: ReportRecord[]) {
-  const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date))
-  const last = sorted[sorted.length - 1]
-  const prev = sorted[sorted.length - 2]
+  const last = records[0]
+  const prev = records[1]
   if (!last) return '先完成一次 Scan，让小发球有第一条记录可以陪你观察变化。'
   const delta = prev ? last.score - prev.score : 0
   const countHint = last.count === '偏多' ? '今天先把目标放轻一点，选一个早睡或放松任务就够了' : last.count === '少量' ? '状态看起来比较轻松，可以继续保持记录节奏' : '保持温和观察，不需要给自己额外压力'
