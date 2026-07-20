@@ -1,84 +1,25 @@
 import { useEffect, useRef } from 'react'
-import { analyzePhoto, chatWithAssistant, HAIRSTYLE_CATALOG, MAX_IMAGE_SIZE_BYTES, validateImageFile } from './services/model'
+import { chatWithAssistant, HAIRSTYLE_CATALOG } from './services/model'
 import { useUserStore, type ReportRecord } from './store/UserStore'
 import type { ChatMessage } from './services/model'
-import type { AnalysisResult } from './types'
 import { prototypeBody } from './prototype/PrototypeBody'
 import { prototypeScript } from './prototype/PrototypeScript'
 import { prototypeStyle } from './prototype/PrototypeStyle'
+import { renderBuddy, handleBuddyAction, selectHairStyle } from './prototype/controllers/buddyController'
+import { showPage } from './prototype/controllers/navigation'
+import { escapeHtml, setHtml, showToast } from './prototype/controllers/ui'
+import { buildTrendBars, renderHistory, renderJourney } from './prototype/controllers/journeyController'
+import { attachPrototypeAnalysis, clearAnalysisCard, currentAnalysisFromStore, renderAnalysisCard } from './prototype/controllers/scanController'
+import { configureQuestController, renderTasks, completeQuest, clearQuestProgress, getQuestCount, isQuestCategory, type QuestCategory } from './prototype/controllers/questsController'
+import { renderRewards } from './prototype/controllers/rewardsController'
+import { buildLeaders, renderLeague, LEAGUE_TABS, type LeagueTab } from './prototype/controllers/leagueController'
 
-const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
 const todayKey = () => new Date().toISOString().slice(0, 10)
 const taskKey = () => `diaoleme-prototype-tasks-${todayKey()}`
 const taskBonusKey = () => `diaoleme-prototype-task-bonus-${todayKey()}`
 const questProgressKey = (category: QuestCategory) => `diaoleme-prototype-quest-progress-${category}-${todayKey()}`
-const selectedHairStyleKey = () => 'diaoleme-prototype-selected-hair-style'
-const buddyCareKey = () => 'diaoleme-prototype-buddy-care'
 
-type QuestCategory = 'daily' | 'weekly' | 'growth' | 'special'
-type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
-type LeagueLeader = {
-  rank: number
-  name: string
-  level: string
-  note: string
-  points: number
-  tier: string
-  tierTone: 'gold' | 'purple' | 'blue'
-  trend: string
-  trendTone: 'up' | 'down' | 'flat'
-  avatarSrc: string
-  isMe: boolean
-}
 
-type BuddyCareState = {
-  energy: number
-  love: number
-  feedCount: number
-  lastFed: string | null
-}
-
-type QuestDefinition = {
-  id: string
-  category: QuestCategory
-  icon: string
-  title: string
-  description: string
-  target: string
-  reward: number
-  actionLabel: string
-}
-
-const QUEST_CATEGORIES: QuestCategory[] = ['daily', 'weekly', 'growth', 'special']
-const LEAGUE_TABS: LeagueTab[] = ['排行榜', '我的联盟', '好友排行', '段位晋升']
-
-const CATEGORY_LABELS: Record<QuestCategory, string> = {
-  daily: '每日任务',
-  weekly: '每周任务',
-  growth: '成长任务',
-  special: '特别任务',
-}
-
-const QUEST_CONFIG: Record<Exclude<QuestCategory, 'daily'>, QuestDefinition[]> = {
-  weekly: [
-    { id: 'weekly-scan-3', category: 'weekly', icon: '📷', title: '完成 3 次记录', description: '给小发球攒一组本周观察素材。', target: '0/3', reward: 35, actionLabel: '记录本周' },
-    { id: 'weekly-sleep-4', category: 'weekly', icon: '🌙', title: '4 天温柔早睡', description: '不卷到深夜，给头皮也放个小假。', target: '0/4', reward: 40, actionLabel: '打卡早睡' },
-    { id: 'weekly-share', category: 'weekly', icon: '💬', title: '分享一次发球周报', description: '把本周小进步发给朋友，轻松晒一下。', target: '0/1', reward: 25, actionLabel: '去分享' },
-    { id: 'weekly-massage', category: 'weekly', icon: '🪮', title: '完成 3 次头皮放松', description: '睡前 5 分钟，给自己按下暂停键。', target: '0/3', reward: 30, actionLabel: '开始放松' },
-  ],
-  growth: [
-    { id: 'growth-first-report', category: 'growth', icon: '🌱', title: '生成第一份种子报告', description: '上传照片后获得你的第一枚趣味称号。', target: '0/1', reward: 45, actionLabel: '去扫描' },
-    { id: 'growth-7-day', category: 'growth', icon: '🔥', title: '连续记录 7 天', description: '把小习惯养成小成就，不求完美只求坚持。', target: '0/7', reward: 80, actionLabel: '点亮进度' },
-    { id: 'growth-unlock-style', category: 'growth', icon: '🎀', title: '解锁一个新造型', description: '给小发球换套新皮肤，奖励认真生活的你。', target: '0/1', reward: 60, actionLabel: '去解锁' },
-    { id: 'growth-history', category: 'growth', icon: '📒', title: '查看一次历史趋势', description: '回头看看，最近的自己已经很棒啦。', target: '0/1', reward: 25, actionLabel: '看趋势' },
-  ],
-  special: [
-    { id: 'special-spring', category: 'special', icon: '🌸', title: '春风吹发季签到', description: '参与限时季节活动，领取春日能量。', target: '0/1', reward: 50, actionLabel: '领取能量' },
-    { id: 'special-mood', category: 'special', icon: '😊', title: '写下今日心情弹幕', description: '把压力吐槽给小发球听，轻轻放过自己。', target: '0/1', reward: 30, actionLabel: '写一句' },
-    { id: 'special-buddy', category: 'special', icon: '☁️', title: '和 Buddy 互动一次', description: '摸摸小发球，让陪伴感上线。', target: '0/1', reward: 35, actionLabel: '去互动' },
-    { id: 'special-community', category: 'special', icon: '✨', title: '逛逛社区治愈帖', description: '看看大家的小妙招，找到一点轻松感。', target: '0/1', reward: 25, actionLabel: '去看看' },
-  ],
-}
 
 export default function App() {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -109,11 +50,19 @@ export default function App() {
 }
 
 function attachPrototypeFeatures(root: HTMLElement) {
-  const scanCleanup = attachPrototypeAnalysis(root)
-  const chatCleanup = attachChatAssistant(root)
+  configureQuestController({
+    getSuggestions,
+    taskKey,
+    taskBonusKey,
+    questProgressKey,
+  })
   let activeQuestCategory: QuestCategory = 'daily'
   let activeLeagueTab: LeagueTab = '排行榜'
   const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab)
+  const scanCleanup = attachPrototypeAnalysis(root, {
+    renderStatefulSections: render,
+  })
+  const chatCleanup = attachChatAssistant(root)
   render()
   const unsubscribe = useUserStore.subscribe(render)
 
@@ -144,8 +93,8 @@ function attachPrototypeFeatures(root: HTMLElement) {
       activeQuestCategory = categoryBtn.dataset.questCategory
       render()
     }
-    if (leagueTabBtn?.dataset.leagueTab && isLeagueTab(leagueTabBtn.dataset.leagueTab)) {
-      activeLeagueTab = leagueTabBtn.dataset.leagueTab
+    if (leagueTabBtn?.dataset.leagueTab && LEAGUE_TABS.includes(leagueTabBtn.dataset.leagueTab as LeagueTab)) {
+      activeLeagueTab = leagueTabBtn.dataset.leagueTab as LeagueTab
       render()
       showToast(root, `已切换至${activeLeagueTab}`)
     }
@@ -193,9 +142,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     if (resetBtn) {
       if (confirm('重置所有进度、积分、打卡和历史记录？')) {
         useUserStore.getState().resetAll()
-        localStorage.removeItem(taskKey())
-        localStorage.removeItem(taskBonusKey())
-        QUEST_CATEGORIES.forEach((category) => localStorage.removeItem(questProgressKey(category)))
+        clearQuestProgress()
         clearAnalysisCard(root)
         render()
       }
@@ -219,7 +166,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
       comments?.classList.toggle('collapsed')
     }
     if (buddyActionBtn?.dataset.buddyAction) {
-      handleBuddyAction(buddyActionBtn.dataset.buddyAction, root)
+      handleBuddyAction(buddyActionBtn.dataset.buddyAction, root, todayKey)
       render()
     }
   }
@@ -234,207 +181,14 @@ function attachPrototypeFeatures(root: HTMLElement) {
   }
 }
 
-function attachPrototypeAnalysis(root: HTMLElement) {
-  const scanSection = root.querySelector<HTMLElement>('[data-page="scan"]')
-  const scanBtn = root.querySelector<HTMLButtonElement>('#scanBtn')
-  const uploadBtn = root.querySelector<HTMLButtonElement>('#uploadBtn')
-  const completeBtn = root.querySelector<HTMLButtonElement>('#scanCompleteBtn')
-  const percent = root.querySelector<HTMLElement>('#scanPercent')
-  const scanCard = scanSection?.querySelector<HTMLElement>('.card[style*="text-align:center"]')
-  const cameraInput = document.createElement('input')
-  const galleryInput = document.createElement('input')
-  let selectedFile: File | null = null
-  let previewUrl: string | null = null
-  let cameraStream: MediaStream | null = null
-
-  const prepareInput = (input: HTMLInputElement, capture = false) => {
-    input.type = 'file'
-    input.accept = 'image/*'
-    if (capture) input.setAttribute('capture', 'environment')
-    input.style.display = 'none'
-    document.body.appendChild(input)
-  }
-
-  prepareInput(cameraInput, true)
-  prepareInput(galleryInput)
-
-  const setStatus = (message: string, tone: 'idle' | 'error' | 'success' = 'idle') => {
-    const existing = scanCard?.querySelector<HTMLElement>('[data-analysis-status]')
-    const status = existing || document.createElement('p')
-    status.dataset.analysisStatus = 'true'
-    status.textContent = message
-    status.style.color = tone === 'error' ? '#ff7a2f' : tone === 'success' ? '#65c982' : '#65709e'
-    status.style.fontWeight = '800'
-    if (!existing) scanCard?.appendChild(status)
-  }
-
-  const showPreview = (file: File) => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-    previewUrl = URL.createObjectURL(file)
-    const orbit = root.querySelector<HTMLElement>('.scan-orbit')
-    const existing = orbit?.querySelector<HTMLImageElement>('[data-upload-preview]')
-    const img = existing || document.createElement('img')
-    img.dataset.uploadPreview = 'true'
-    img.src = previewUrl
-    img.alt = '上传预览'
-    Object.assign(img.style, {
-      position: 'absolute',
-      inset: '22px',
-      width: 'calc(100% - 44px)',
-      height: 'calc(100% - 44px)',
-      objectFit: 'cover',
-      borderRadius: '50%',
-      boxShadow: '0 18px 45px rgba(99, 75, 168, 0.22)',
-      zIndex: '3',
-    })
-    if (!existing) orbit?.appendChild(img)
-    if (percent) {
-      percent.textContent = '已选'
-      percent.style.zIndex = '4'
-    }
-    if (completeBtn) completeBtn.style.display = ''
-    setStatus(`已选择：${file.name}，点击“完成”确认并开始 AI 分析。`)
-  }
-
-  const stopCamera = () => {
-    cameraStream?.getTracks().forEach((track) => track.stop())
-    cameraStream = null
-    root.querySelector('[data-camera-modal]')?.remove()
-  }
-
-  const useCapturedPhoto = (blob: Blob) => {
-    const file = new File([blob], `diaoleme-camera-${Date.now()}.jpg`, { type: 'image/jpeg' })
-    selectedFile = file
-    showPreview(file)
-    setStatus('已自动上传刚拍的照片，点击“完成”确认并开始 AI 分析。')
-    stopCamera()
-  }
-
-  const requestCameraStream = async () => {
-    const constraints: MediaStreamConstraints = { video: { facingMode: { ideal: 'environment' } }, audio: false }
-    if (navigator.mediaDevices?.getUserMedia) {
-      return navigator.mediaDevices.getUserMedia(constraints)
-    }
-    const legacyGetUserMedia = (navigator as any).getUserMedia || (navigator as any).webkitGetUserMedia || (navigator as any).mozGetUserMedia
-    if (legacyGetUserMedia) {
-      return new Promise<MediaStream>((resolve, reject) => legacyGetUserMedia.call(navigator, constraints, resolve, reject))
-    }
-    return null
-  }
-
-  const openCamera = async () => {
-    try {
-      cameraStream = await requestCameraStream()
-      if (!cameraStream) {
-        setStatus('此页面无相机权限，请检查吧。', 'error')
-        return
-      }
-      const modal = document.createElement('div')
-      modal.dataset.cameraModal = 'true'
-      modal.className = 'camera-capture-modal'
-      modal.innerHTML = '<div class="camera-capture-box"><video autoplay playsinline></video><div class="hero-buttons" style="justify-content:center"><button class="cta primary" data-camera-capture>拍照并上传</button><button class="cta ghost" data-camera-cancel>取消</button></div></div>'
-      root.appendChild(modal)
-      const video = modal.querySelector('video') as HTMLVideoElement | null
-      if (video) video.srcObject = cameraStream
-      modal.querySelector('[data-camera-cancel]')?.addEventListener('click', stopCamera)
-      modal.querySelector('[data-camera-capture]')?.addEventListener('click', () => {
-        if (!video || video.videoWidth === 0) return
-        const canvas = document.createElement('canvas')
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        canvas.getContext('2d')?.drawImage(video, 0, 0)
-        canvas.toBlob((blob) => {
-          if (blob) useCapturedPhoto(blob)
-        }, 'image/jpeg', 0.92)
-      })
-      setStatus('相机已打开，请拍照后自动上传。')
-    } catch (error) {
-      console.error('[prototype] camera failed:', error)
-      stopCamera()
-      setStatus('此页面无相机权限，请检查吧。', 'error')
-    }
-  }
-
-  const takePhoto = () => openCamera()
-  const chooseFile = () => galleryInput.click()
-
-  const onFileChange = (event: Event) => {
-    const input = event.currentTarget as HTMLInputElement
-    const file = input.files?.[0]
-    input.value = ''
-    if (!file) return
-    try {
-      validateImageFile(file)
-      selectedFile = file
-      showPreview(file)
-    } catch (error: any) {
-      selectedFile = null
-      const messages: Record<string, string> = {
-        not_image: '这个文件不是图片，请选择 JPG、PNG 等图片文件。',
-        empty_file: '图片文件为空，请重新选择。',
-        file_too_large: `图片有点大啦，请选择 ${MAX_IMAGE_SIZE_MB}MB 以内的照片再试。`,
-      }
-      setStatus(messages[error?.message] || '图片暂时读不出来，请换一张再试。', 'error')
-    }
-  }
-
-  const runAnalysis = async () => {
-    if (!selectedFile) {
-      chooseFile()
-      setStatus('请先选择或拍摄一张图片。')
-      return
-    }
-    scanBtn && (scanBtn.disabled = true)
-    uploadBtn && (uploadBtn.disabled = true)
-    completeBtn && (completeBtn.disabled = true)
-    setStatus('分析中，正在调用后端 AI 代理...')
-    let value = 10
-    if (percent) percent.textContent = '10%'
-    const timer = window.setInterval(() => {
-      value = Math.min(value + 8, 96)
-      if (percent) percent.textContent = `${value}%`
-    }, 140)
-    try {
-      const result = await analyzePhoto(selectedFile)
-      saveAnalysisResult(result)
-      window.clearInterval(timer)
-      renderAnalysisCard(root, result)
-      renderStatefulSections(root)
-      setStatus(result.fallback_code ? '已生成 fallback 结果，可继续演示完整流程。' : 'AI 分析完成，结果已写入报告和历史记录。', 'success')
-    } catch (error) {
-      console.error('[prototype] analyze failed:', error)
-      window.clearInterval(timer)
-      if (percent) percent.textContent = '失败'
-      setStatus('分析接口暂时不可用，请稍后重试。', 'error')
-    } finally {
-      scanBtn && (scanBtn.disabled = false)
-      uploadBtn && (uploadBtn.disabled = false)
-      completeBtn && (completeBtn.disabled = false)
-    }
-  }
-
-  cameraInput.addEventListener('change', onFileChange)
-  galleryInput.addEventListener('change', onFileChange)
-  scanBtn?.addEventListener('click', takePhoto)
-  uploadBtn?.addEventListener('click', chooseFile)
-  completeBtn?.addEventListener('click', runAnalysis)
-
-  return () => {
-    cameraInput.removeEventListener('change', onFileChange)
-    galleryInput.removeEventListener('change', onFileChange)
-    scanBtn?.removeEventListener('click', takePhoto)
-    uploadBtn?.removeEventListener('click', chooseFile)
-    completeBtn?.removeEventListener('click', runAnalysis)
-    stopCamera()
-    cameraInput.remove()
-    galleryInput.remove()
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-  }
-}
-
 function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily', activeLeagueTab: LeagueTab = '排行榜') {
   renderHome(root)
-  renderBuddy(root)
+  renderBuddy(root, {
+    avgScore,
+    buildTrendBars,
+    getQuestCount,
+    todayKey,
+  })
   renderTasks(root, activeQuestCategory)
   renderHistory(root)
   renderDiary(root)
@@ -444,279 +198,12 @@ function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCat
   renderProfile(root)
 }
 
-function saveAnalysisResult(result: AnalysisResult) {
-  const store = useUserStore.getState()
-  store.setAnalysis(result)
-  store.addReport({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-    date: todayKey(),
-    score: result.score,
-    title: result.title,
-    summary: result.summary,
-    roast: result.roast,
-    encouragement: result.encouragement,
-    tags: result.tags,
-    daily_task: result.daily_task,
-    disclaimer: result.disclaimer,
-    source: result.source,
-    source_label: result.source_label,
-    fallback_code: result.fallback_code,
-    record_status: result.record_status,
-    record_id: result.record_id,
-    count: result.count,
-    thickness: result.thickness,
-    suggestions: result.suggestions,
-  })
-}
-
-function currentAnalysisFromStore(): AnalysisResult {
-  const s = useUserStore.getState()
-  return {
-    score: s.dropScore ?? 66,
-    title: s.title,
-    summary: s.summary,
-    roast: s.roast,
-    encouragement: s.encouragement,
-    tags: s.tags.length ? s.tags : ['等待记录'],
-    daily_task: s.dailyTask,
-    disclaimer: s.disclaimer,
-    source: s.source,
-    source_label: s.sourceLabel,
-    fallback_code: s.fallbackCode,
-    record_status: s.recordStatus,
-    record_id: s.recordId,
-    count: s.count,
-    thickness: s.thickness,
-    suggestions: s.suggestions,
-  }
-}
-
-function clearAnalysisCard(root: HTMLElement) {
-  const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
-  scanCard?.querySelector('[data-analysis-result]')?.remove()
-  scanCard?.classList.remove('has-analysis-result')
-}
-
-function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
-  const percent = root.querySelector<HTMLElement>('#scanPercent')
-  const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
-  if (percent && useUserStore.getState().dropScore != null) percent.textContent = `${result.score}`
-  if (!scanCard || useUserStore.getState().dropScore == null) return
-
-  const old = scanCard.querySelector('[data-analysis-result]')
-  old?.remove()
-  scanCard.classList.add('has-analysis-result')
-  const sourceLabel = result.fallback_code ? '演示结果' : 'AI 结果'
-  const sourceDetail = result.fallback_code ? `fallback: ${result.fallback_code}` : result.source_label
-  const orbit = scanCard.querySelector<HTMLElement>('.scan-orbit')
-  const resultHtml = `
-    <div class="card soft scan-result-card" data-analysis-result>
-      <div class="scan-result-head">
-        <h3>${escapeHtml(result.title)}</h3>
-        <span class="badge analysis-source-badge">${escapeHtml(sourceLabel)}</span>
-      </div>
-      <p class="analysis-source-detail">${escapeHtml(sourceDetail)}</p>
-      <p>${escapeHtml(result.summary)}</p>
-      <div class="analysis-metrics">
-        <div class="analysis-metric"><span class="big-number">${result.score}</span><small>趣味状态分</small></div>
-        <div class="analysis-metric"><span class="big-number">${escapeHtml(result.count)}</span><small>掉发量</small></div>
-        <div class="analysis-metric"><span class="big-number">${escapeHtml(result.thickness)}</span><small>发质观感</small></div>
-      </div>
-      <p><b>温柔吐槽：</b>${escapeHtml(result.roast)}</p>
-      <p><b>今日任务：</b>${escapeHtml(result.daily_task)}</p>
-      <div class="analysis-tags">${result.tags.map((tag) => `<span class="badge">${escapeHtml(tag)}</span>`).join('')}</div>
-      <small>${escapeHtml(result.disclaimer)}</small>
-    </div>
-  `
-  if (orbit) {
-    orbit.insertAdjacentHTML('afterend', resultHtml)
-  } else {
-    scanCard.insertAdjacentHTML('beforeend', resultHtml)
-  }
-}
-
 function renderHome(root: HTMLElement) {
   const s = useUserStore.getState()
   setHtml(root.querySelector('.compact-quests'), getSuggestions().slice(0, 4).map((q, i) => `<div class="item" style="grid-template-columns:34px 1fr auto"><span>${['💧', '🌙', '🥗', '🖐'][i] || '✨'}</span><b>${escapeHtml(q)}</b><span class="status">+${i === 0 ? 5 : 2} XP</span></div>`).join(''))
   setHtml(root.querySelector('.small-leaders'), buildLeaders().slice(0, 4).map((l) => `<div class="leader ${l.isMe ? 'you' : ''}" style="grid-template-columns:34px 1fr auto"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}</b><span>${l.points} XP</span></div>`).join(''))
   const heroBadges = root.querySelectorAll<HTMLElement>('[data-page="home"] .stats .badge, [data-page="home"] .badge')
   if (heroBadges[0]) heroBadges[0].textContent = `${s.points} XP`
-}
-
-function renderBuddy(root: HTMLElement) {
-  const s = useUserStore.getState()
-  const care = loadBuddyCare()
-  const latestReport = s.reportHistory[0]
-  const health = Math.max(62, Math.min(98, Math.round((s.dropScore ?? 82) + Math.min(s.reportHistory.length, 6))))
-  const moodScore = Math.max(56, Math.min(96, Math.round((care.energy + care.love) / 2)))
-  const mood = moodScore >= 78 ? 'Happy' : moodScore >= 64 ? 'Calm' : 'Need Care'
-  const selectedHair = currentHairStyle(s.unlockedHairStyles)
-  const ownedHairStyles = HAIRSTYLE_CATALOG.filter((h) => s.unlockedHairStyles.includes(h.id)).length
-  const questDone = QUEST_CATEGORIES.reduce((sum, category) => sum + loadDoneQuests(category).size, 0)
-
-  setHtml(root.querySelector('[data-page="buddy"] .metric'), `
-    <div class="metric-row"><span style="font-size:32px">💗</span><b>生命值</b><div class="meter"><div class="fill" style="--w:${health}%;--c:#ff77a8"></div></div><b>${health}/100</b></div>
-    <div class="metric-row"><span style="font-size:32px">⚡</span><b>能量值</b><div class="meter"><div class="fill" style="--w:${care.energy}%;--c:#ffad2f"></div></div><b>${care.energy}/100</b></div>
-    <div class="metric-row"><span style="font-size:32px">😊</span><b>心情值</b><div class="meter"><div class="fill" style="--w:${moodScore}%;--c:#8b5cf6"></div></div><b>${mood}</b></div>
-  `)
-
-  setHtml(root.querySelector('[data-page="buddy"] .section-title'), `解锁发型 <span class="badge">${ownedHairStyles} / ${HAIRSTYLE_CATALOG.length} 已解锁</span>`)
-  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.map((h) => {
-    const owned = s.unlockedHairStyles.includes(h.id)
-    const active = h.id === selectedHair
-    const label = owned ? (active ? '使用中' : '点击换上') : `${h.cost} XP 解锁`
-    return `<button class="skin ${active ? 'active' : ''}" data-unlock-id="${escapeHtml(h.id)}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(label)}</small>${owned ? '' : '<span class="buddy-lock">🔒</span>'}</button>`
-  }).join(''))
-
-  setHtml(root.querySelector('[data-page="buddy"] .card.item-list'), `
-    <button class="item buddy-action dress" data-buddy-action="dress"><span>👗</span><b>Dress Up<small>装扮你的伙伴，选择或解锁造型</small></b><span>›</span></button>
-    <button class="item buddy-action feed" data-buddy-action="feed"><span>🍚</span><b>Feed<small>喂养伙伴，补充爱与能量</small></b><span>›</span></button>
-    <button class="item buddy-action diary" data-buddy-action="diary"><span>📖</span><b>Buddy Diary<small>记录我们一起成长的每一天</small></b><span>›</span></button>
-    <button class="item buddy-action growth" data-buddy-action="growth"><span>📈</span><b>成长记录<small>查看伙伴的成长轨迹</small></b><span>›</span></button>
-  `)
-
-  setHtml(root.querySelector('[data-page="buddy"] .grid:nth-child(2) .card:first-child'), `
-    <h3>今日头发报告</h3>
-    <div><span class="big-number">${s.dropScore ?? '--'}</span> ${s.dropScore == null ? '' : '分'}</div>
-    <p>${escapeHtml(latestReport?.summary || '还没有今日报告，完成一次 Scan 后会同步到 Buddy。')}</p>
-    <div class="chart">${buildTrendBars(s.reportHistory)}</div>
-  `)
-
-  const buddyPage = root.querySelector<HTMLElement>('[data-page="buddy"]')
-  if (buddyPage && !buddyPage.querySelector('.buddy-extra-grid')) {
-    buddyPage.insertAdjacentHTML('beforeend', '<div class="buddy-extra-grid"><div class="card" data-buddy-summary></div><div class="card" data-buddy-cheers></div></div>')
-  }
-  setHtml(root.querySelector('[data-buddy-summary]'), `
-    <h3>💗 本周成长小结</h3>
-    <p>你的护理表现超过了 ${Math.min(96, 60 + questDone * 4 + s.checkinDays.length)}% 的用户，继续保持哦！</p>
-    <div class="buddy-summary-stats">
-      <span><b>${s.checkinDays.length || 0} 天</b><small>护理天数</small></span>
-      <span><b>${questDone}/${QUEST_CATEGORIES.flatMap(getQuests).length}</b><small>任务完成</small></span>
-      <span><b>${avgScore(s.reportHistory) || '--'}</b><small>平均状态分</small></span>
-      <span><b>${care.energy >= 78 ? '良好' : '待补充'}</b><small>充足睡眠</small></span>
-    </div>
-  `)
-  setHtml(root.querySelector('[data-buddy-cheers]'), `
-    <h3>💗 来自大家的鼓励</h3>
-    <div class="buddy-cheers">
-      ${['Luna|你的新发型超可爱！我们一起加油呀 🌞', 'Mia|头发也在慢慢变强大呢，你一定可以的！💪', 'Ray|看到你的变化啦，好棒！！✨'].map((item) => {
-        const [name, msg] = item.split('|')
-        return `<div class="buddy-cheer"><span class="avatar">${name[0]}</span><b>${name}</b><p>${escapeHtml(msg)}</p><small>${name === 'Ray' ? '1 天前' : name === 'Mia' ? '5 小时前' : '2 小时前'}</small></div>`
-      }).join('')}
-    </div>
-  `)
-}
-
-function handleBuddyAction(action: string, root: HTMLElement) {
-  if (action === 'dress') {
-    showToast(root, '已打开造型选择，点击卡片可使用或解锁')
-    root.querySelector('#skins')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    return
-  }
-  if (action === 'feed') {
-    const care = loadBuddyCare()
-    saveBuddyCare({
-      energy: Math.min(100, care.energy + 12),
-      love: Math.min(100, care.love + 6),
-      feedCount: care.feedCount + 1,
-      lastFed: todayKey(),
-    })
-    useUserStore.getState().addPoints(3)
-    showToast(root, '小发球吃饱啦：能量 +12，爱心 +6，XP +3')
-    return
-  }
-  if (action === 'diary') {
-    showPage(root, 'diary')
-    showToast(root, '已打开 Buddy Diary')
-    return
-  }
-  if (action === 'growth') {
-    showPage(root, 'journey')
-    showToast(root, '已打开成长记录')
-  }
-}
-
-function loadBuddyCare(): BuddyCareState {
-  try {
-    return { energy: 68, love: 86, feedCount: 0, lastFed: null, ...JSON.parse(localStorage.getItem(buddyCareKey()) || '{}') }
-  } catch {
-    return { energy: 68, love: 86, feedCount: 0, lastFed: null }
-  }
-}
-
-function saveBuddyCare(care: BuddyCareState) {
-  localStorage.setItem(buddyCareKey(), JSON.stringify(care))
-}
-
-function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
-  const s = useUserStore.getState()
-  const quests = getQuests(activeCategory)
-  const done = loadDoneQuests(activeCategory)
-  const categoryDone = quests.filter((quest) => done.has(quest.id)).length
-  const totalQuests = QUEST_CATEGORIES.flatMap(getQuests)
-  const totalDone = QUEST_CATEGORIES.reduce((sum, category) => sum + loadDoneQuests(category).size, 0)
-  const overallPercent = totalQuests.length ? Math.round((totalDone / totalQuests.length) * 100) : 0
-  const allDailyDone = getQuests('daily').every((quest) => loadDoneQuests('daily').has(quest.id))
-
-  setHtml(root.querySelector('[data-page="quests"] .tabs'), QUEST_CATEGORIES.map((category) => `<button class="pill ${category === activeCategory ? 'primary' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`).join(''))
-  setHtml(root.querySelector('#questList'), quests.map((quest) => renderQuestItem(quest, done.has(quest.id))).join('') + renderQuestSummary(activeCategory, categoryDone, quests.length, allDailyDone))
-  setHtml(root.querySelector('#weekRewards'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < s.checkinDays.length ? '✓' : d}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`).join(''))
-  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(1)'), `<h3>我的任务进度</h3><div class="big-number">${overallPercent}%</div><div class="meter"><div class="fill" style="--w:${overallPercent}%"></div></div><p>完成 ${totalDone}/${totalQuests.length} 个任务</p><small>${CATEGORY_LABELS[activeCategory]}：${categoryDone}/${quests.length}</small>`)
-  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(3)'), `<h3>任务小贴士</h3><p>${questTip(activeCategory)}</p><div class="mini-buddy"></div>`)
-  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(4)'), `<h3>本周任务总览</h3><div class="donut" data-label="${totalDone}/${totalQuests.length}\\A 已完成"></div><p>${allDailyDone ? '每日建议已全部点亮，额外奖励已入账。' : '今天再点亮一个小任务，就很不错啦。'}</p>`)
-}
-
-function renderQuestItem(quest: QuestDefinition, isDone: boolean) {
-  return `<div class="item"><span style="font-size:26px">${quest.icon}</span><b>${escapeHtml(quest.title)}<small>${escapeHtml(quest.description)}</small></b><span>${isDone ? '1/1' : escapeHtml(quest.target)}</span><button data-quest-category="${quest.category}" data-quest-id="${quest.id}" class="quest-btn ${isDone ? 'done' : ''}">${isDone ? '✓ 已领取' : escapeHtml(quest.actionLabel)}</button></div>`
-}
-
-function renderQuestSummary(category: QuestCategory, doneCount: number, total: number, allDailyDone: boolean) {
-  const reward = category === 'daily' ? 10 : Math.max(20, total * 10)
-  const complete = doneCount >= total
-  return `<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${category === 'daily' ? (allDailyDone ? '今日建议全部完成！' : '完成所有每日任务可获得额外奖励！') : `${CATEGORY_LABELS[category]}完成度 ${doneCount}/${total}`}<small>${complete ? '小发球已经收到这份能量。' : '慢慢来，完成一个也算数。'}</small></b><span>+${reward} XP</span><button class="quest-btn done">${complete ? '已点亮' : '未完成'}</button></div>`
-}
-
-function getQuests(category: QuestCategory): QuestDefinition[] {
-  if (category !== 'daily') return QUEST_CONFIG[category]
-  return getSuggestions().map((task, index) => ({
-    id: `daily-${index}`,
-    category: 'daily',
-    icon: ['💧', '🌙', '🥗', '🖐', '🚶'][index] || '✨',
-    title: task,
-    description: index === 0 ? '来自 AI 的轻量建议' : '完成后给小发球增加一点能量',
-    target: '0/1',
-    reward: index === 0 ? 5 : 2,
-    actionLabel: '去完成',
-  }))
-}
-
-function questTip(category: QuestCategory) {
-  const tips: Record<QuestCategory, string> = {
-    daily: '今天不用做到满分，挑一个最容易的小任务开始就很好。',
-    weekly: '周任务适合拆成几天完成，记录、休息和放松都算成长。',
-    growth: '成长任务会长期保留，像养小发球一样一点点解锁。',
-    special: '特别任务偏活动和社交，主打轻松参与，不制造压力。',
-  }
-  return tips[category]
-}
-
-function renderHistory(root: HTMLElement) {
-  const history = useUserStore.getState().reportHistory
-  const latest = history.slice(0, 5)
-  const scanPageSize = 3
-  const totalPages = Math.max(1, Math.ceil(history.length / scanPageSize))
-  const currentPage = Math.min(Math.max(Number(root.dataset.scanRecordPage || 0), 0), totalPages - 1)
-  root.dataset.scanRecordPage = String(currentPage)
-  const pageRecords = history.slice(currentPage * scanPageSize, currentPage * scanPageSize + scanPageSize)
-  const pager = history.length > scanPageSize
-    ? `<div class="scan-record-pager"><button class="pill" data-scan-record-page="${Math.max(0, currentPage - 1)}" ${currentPage === 0 ? 'disabled' : ''}>上一页</button><small>${currentPage + 1} / ${totalPages}</small><button class="pill" data-scan-record-page="${Math.min(totalPages - 1, currentPage + 1)}" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>下一页</button></div>`
-    : ''
-  const latestSource = history[0]?.source_label || '等待分析'
-  const latestSourceText = escapeHtml(latestSource)
-  setHtml(root.querySelector('[data-page="scan"] .grid .card:nth-child(2)'), `<h3>本周扫描数据</h3><div class="three grid scan-stat-grid"><div class="scan-stat-item"><span class="big-number">${history.length}</span><small>扫描次数</small></div><div class="scan-stat-item"><span class="big-number">${avgScore(history) || '--'}</span><small>平均状态分</small></div><div class="scan-stat-item scan-source-stat"><span class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceText}</span><small>最新来源</small></div></div>`)
-  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords)}</div>${pager}`)
-  renderJourney(root, history)
-  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
 }
 
 function renderDiary(root: HTMLElement) {
@@ -834,159 +321,6 @@ function buildWordCloud(records: ReportRecord[]) {
   }).join('')
 }
 
-function renderJourney(root: HTMLElement, history: ReportRecord[]) {
-  const latest = history.slice(0, 6)
-  const groupedDays = groupReportsByDay(history)
-  const avg = avgScore(history)
-  const streak = useUserStore.getState().checkinDays.length
-
-  setHtml(root.querySelector('#milestones'), buildJourneyMilestones(history, groupedDays).map((m) => `
-    <button class="milestone" ${m.date ? `data-view-day="${escapeHtml(m.date)}"` : 'data-go="scan"'}>
-      <div class="dot">${m.icon}</div>${escapeHtml(m.title)}<br><small>${escapeHtml(m.note)}</small>
-    </button>
-  `).join(''))
-
-  setHtml(root.querySelector('#timeline'), latest.length ? latest.map((r, index) => `
-    <div class="item journey-record">
-      <span>${escapeHtml(formatShortDate(r.date))}</span>
-      <b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b>
-      <span class="status">${r.score} 分</span>
-      <button class="pill primary" data-view-report="${escapeHtml(r.id)}">查看报告</button>
-      <button class="pill" data-share-report="${escapeHtml(r.id)}">分享</button>
-      ${index === 0 ? '<span class="badge">最新</span>' : ''}
-    </div>
-  `).join('') : `
-    <div class="item journey-empty">
-      <span>📷</span>
-      <b>还没有旅程记录<small>完成一次 Scan 上传后，你的趣味报告和历史对比会自动出现在这里。</small></b>
-      <button class="pill primary" data-go="scan">去上传第一张</button>
-    </div>
-  `)
-
-  setHtml(root.querySelector('[data-page="journey"] aside .card:nth-child(1)'), `
-    <h3>旅程总览</h3>
-    <div class="three grid">
-      <div><span class="big-number">${history.length}</span><br>历史报告</div>
-      <div><span class="big-number">${avg || '--'}</span><br>平均状态分</div>
-      <div><span class="big-number">${streak}</span><br>打卡天数</div>
-    </div>
-    <button class="pill primary" data-go="scan">新增扫描</button>
-  `)
-  setHtml(root.querySelector('[data-page="journey"] aside .card:nth-child(2)'), `
-    <h3>状态趋势</h3>
-    <div class="chart">${buildTrendBars(history)}</div>
-    <p>${history.length ? '根据最近扫描报告生成，只做轻松记录参考。' : '完成一次 Scan 后，这里会显示报告趋势。'}</p>
-  `)
-  setHtml(root.querySelector('[data-page="journey"] aside .card:nth-child(3)'), `
-    <h3>本月高光时刻</h3>
-    <div class="item-list">
-      ${buildJourneyHighlights(history, groupedDays)}
-    </div>
-    <button class="pill" data-action="journey-share">分享我的旅程</button>
-  `)
-}
-
-const REWARD_ASSET_BASE = '/rewards-assets/'
-const REWARD_MARKET_ITEMS = [
-  { name: '樱花发箍', subtitle: 'Lv.3 解锁', points: 2000, image: `${REWARD_ASSET_BASE}reward-flower.png`, locked: true, unlockId: 'sakura' },
-  { name: '星光泡泡发型', subtitle: 'Lv.5 解锁', points: 3500, image: `${REWARD_ASSET_BASE}reward-starlight.png`, locked: true, unlockId: 'star' },
-  { name: '生发精华液 30ml', subtitle: '实物好物', points: 4800, image: `${REWARD_ASSET_BASE}reward-serum.png` },
-  { name: '治愈蘑菇帽', subtitle: 'Lv.6 解锁', points: 2800, image: `${REWARD_ASSET_BASE}reward-healing.png`, locked: true },
-  { name: '护发礼盒套装', subtitle: '实物好物', points: 6500, image: `${REWARD_ASSET_BASE}reward-gift.png` },
-  { name: '蒲公英小夜灯', subtitle: '限量周边', points: 3200, image: `${REWARD_ASSET_BASE}reward-lamp.png`, locked: true },
-  { name: '嫩芽发型', subtitle: 'Lv.4 解锁', points: 2500, image: `${REWARD_ASSET_BASE}reward-sprout.png`, locked: true, unlockId: 'sprout' },
-  { name: '头皮按摩梳', subtitle: '实物好物', points: 4200, image: `${REWARD_ASSET_BASE}reward-brush.png` },
-  { name: '银河披风', subtitle: 'Lv.7 解锁', points: 5000, image: `${REWARD_ASSET_BASE}reward-cape.png`, locked: true },
-  { name: '7天特权卡', subtitle: '成长特权', points: 8000, image: `${REWARD_ASSET_BASE}reward-vip.png` },
-]
-
-const REWARD_GROWTH_ITEMS = [
-  { level: 'Lv.1', status: '已领取', image: `${REWARD_ASSET_BASE}reward-sprout.png`, active: true },
-  { level: 'Lv.2', status: '已领取', image: `${REWARD_ASSET_BASE}reward-flower.png`, active: true },
-  { level: 'Lv.3', status: '可领取', image: `${REWARD_ASSET_BASE}reward-gift.png`, active: true },
-  { level: 'Lv.4', status: '差 420 XP', image: `${REWARD_ASSET_BASE}reward-healing.png`, active: false },
-  { level: 'Lv.5', status: '未解锁', image: `${REWARD_ASSET_BASE}reward-starlight.png`, active: false },
-]
-
-const REWARD_RECORDS = [
-  { name: '樱花发箍', date: '2026-07-15', points: '-2,000 XP', status: '已兑换', image: `${REWARD_ASSET_BASE}reward-flower.png` },
-  { name: '护发礼盒', date: '2026-07-12', points: '-6,500 XP', status: '配送中', image: `${REWARD_ASSET_BASE}reward-gift.png` },
-  { name: '头皮按摩梳', date: '2026-07-08', points: '-4,200 XP', status: '已完成', image: `${REWARD_ASSET_BASE}reward-brush.png` },
-]
-
-function renderRewards(root: HTMLElement) {
-  const s = useUserStore.getState()
-  const selectedHair = currentHairStyle(s.unlockedHairStyles)
-  const totalHairStyles = HAIRSTYLE_CATALOG.length
-  const ownedHairStyles = HAIRSTYLE_CATALOG.filter((h) => s.unlockedHairStyles.includes(h.id)).length
-
-  setHtml(root.querySelector('[data-page="buddy"] .section-title'), `解锁发型 <span class="badge">${ownedHairStyles} / ${totalHairStyles} 已解锁</span>`)
-  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.map((h) => {
-    const owned = s.unlockedHairStyles.includes(h.id)
-    const active = h.id === selectedHair
-    const label = owned ? (active ? '使用中' : '点击换上') : `${h.cost} XP 解锁`
-    return `<button class="skin ${active ? 'active' : ''}" data-unlock-id="${escapeHtml(h.id)}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(label)}</small></button>`
-  }).join(''))
-
-  root.querySelectorAll<HTMLElement>('[data-rewards-points]').forEach((node) => {
-    node.textContent = s.points.toLocaleString('en-US')
-  })
-  setHtml(root.querySelector('#shop'), REWARD_MARKET_ITEMS.map((item) => {
-    const canUnlockHair = item.unlockId && HAIRSTYLE_CATALOG.some((h) => h.id === item.unlockId)
-    return `<button class="reward-card" type="button" ${canUnlockHair ? `data-unlock-id="${escapeHtml(item.unlockId)}"` : ''}>
-      <div class="reward-image-wrap">
-        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
-        ${item.locked ? '<span class="lock-icon">⌕</span>' : ''}
-      </div>
-      <div class="reward-copy">
-        <strong>${escapeHtml(item.name)}</strong>
-        <span>${escapeHtml(item.subtitle)}</span>
-        <b>${item.points.toLocaleString('en-US')} XP</b>
-      </div>
-    </button>`
-  }).join(''))
-  setHtml(root.querySelector('#rewardsGrowth'), REWARD_GROWTH_ITEMS.map((item) => `
-    <button type="button" class="growth-reward ${item.active ? 'active' : ''}">
-      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.level)} 奖励">
-      <strong>${escapeHtml(item.level)}</strong>
-      <span>${escapeHtml(item.status)}</span>
-    </button>
-  `).join(''))
-  setHtml(root.querySelector('#rewardsRecords'), REWARD_RECORDS.map((record) => `
-    <div class="record-item">
-      <img src="${escapeHtml(record.image)}" alt="${escapeHtml(record.name)}">
-      <div><strong>${escapeHtml(record.name)}</strong><span>${escapeHtml(record.date)}</span></div>
-      <div><b>${escapeHtml(record.points)}</b><small>${escapeHtml(record.status)}</small></div>
-    </div>
-  `).join(''))
-}
-
-function selectHairStyle(id: string) {
-  localStorage.setItem(selectedHairStyleKey(), id)
-}
-
-function currentHairStyle(unlocked: string[]) {
-  const saved = localStorage.getItem(selectedHairStyleKey())
-  if (saved && unlocked.includes(saved)) return saved
-  const fallback = unlocked[unlocked.length - 1] || HAIRSTYLE_CATALOG[0]?.id || 'none'
-  selectHairStyle(fallback)
-  return fallback
-}
-
-function renderLeague(root: HTMLElement, activeTab: LeagueTab = '排行榜') {
-  root.querySelectorAll<HTMLElement>('[data-league-tab]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.leagueTab === activeTab)
-  })
-  setHtml(root.querySelector('#leagueRankContent'), renderLeagueTab(activeTab))
-}
-
-function renderProfile(root: HTMLElement) {
-  const s = useUserStore.getState()
-  const checked = s.checkinDays.includes(todayKey())
-  setHtml(root.querySelector('#streak'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join(''))
-  setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
-}
-
 function attachChatAssistant(root: HTMLElement) {
   const widget = document.createElement('div')
   widget.className = 'ai-chat-widget'
@@ -1087,65 +421,11 @@ function attachChatAssistant(root: HTMLElement) {
   }
 }
 
-function completeQuest(category: QuestCategory, questId: string, root: HTMLElement) {
-  const quest = getQuests(category).find((item) => item.id === questId)
-  if (!quest) return
-  const done = loadDoneQuests(category)
-  if (done.has(questId)) {
-    showToast(root, '这个任务已经领取过啦')
-    return
-  }
-  done.add(questId)
-  saveDoneQuests(category, done)
-  useUserStore.getState().addPoints(quest.reward)
-  showToast(root, `+${quest.reward} XP · ${quest.title}`)
-
-  if (category === 'daily') {
-    const dailyQuests = getQuests('daily')
-    if (dailyQuests.length > 0 && dailyQuests.every((item) => done.has(item.id)) && localStorage.getItem(taskBonusKey()) !== '1') {
-      localStorage.setItem(taskBonusKey(), '1')
-      useUserStore.getState().addPoints(10)
-      showToast(root, '每日建议全完成，额外 +10 XP')
-    }
-  }
-}
-
-function loadDoneQuests(category: QuestCategory) {
-  try {
-    const next = new Set<string>(JSON.parse(localStorage.getItem(questProgressKey(category)) || '[]'))
-    if (category === 'daily' && next.size === 0) {
-      loadLegacyDoneTasks().forEach((index) => next.add(`daily-${index}`))
-    }
-    return next
-  } catch {
-    return new Set<string>()
-  }
-}
-
-function saveDoneQuests(category: QuestCategory, done: Set<string>) {
-  localStorage.setItem(questProgressKey(category), JSON.stringify([...done]))
-  if (category === 'daily') {
-    const legacyIndexes = [...done]
-      .map((id) => Number(id.replace('daily-', '')))
-      .filter((index) => Number.isFinite(index))
-    localStorage.setItem(taskKey(), JSON.stringify(legacyIndexes))
-  }
-}
-
-function loadLegacyDoneTasks() {
-  try {
-    return new Set<number>(JSON.parse(localStorage.getItem(taskKey()) || '[]'))
-  } catch {
-    return new Set<number>()
-  }
-}
-
-function isQuestCategory(value: string): value is QuestCategory {
-  return QUEST_CATEGORIES.includes(value as QuestCategory)
-}
-
-function isLeagueTab(value: string): value is LeagueTab {
-  return LEAGUE_TABS.includes(value as LeagueTab)
+function renderProfile(root: HTMLElement) {
+  const s = useUserStore.getState()
+  const checked = s.checkinDays.includes(todayKey())
+  setHtml(root.querySelector('#streak'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join(''))
+  setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 }
 
 function getSuggestions() {
@@ -1153,235 +433,9 @@ function getSuggestions() {
   return suggestions.length ? suggestions : ['上传一张照片生成专属建议', '今晚提前 30 分钟休息', '洗头时水温尽量温和']
 }
 
-function buildLeaders(): LeagueLeader[] {
-  const s = useUserStore.getState()
-  return [
-    { rank: 1, name: 'Luna', level: 'Lv.6', note: '头发是生命的种子 🌱', points: 28760, tier: '王者 I', tierTone: 'gold', trend: '↑ 1', trendTone: 'up', avatarSrc: '/league-avatars/luna.png', isMe: false },
-    { rank: 2, name: 'Mia', level: 'Lv.5', note: '每天进步 1% ✨', points: 25480, tier: '王者 II', tierTone: 'gold', trend: '↓ 1', trendTone: 'down', avatarSrc: '/league-avatars/mia.png', isMe: false },
-    { rank: 3, name: 'Ray', level: 'Lv.5', note: '慢慢来，比较更重要 💜', points: 22140, tier: '钻石 I', tierTone: 'purple', trend: '—', trendTone: 'flat', avatarSrc: '/league-avatars/ray.png', isMe: false },
-    { rank: 4, name: 'Sophia', level: 'Lv.5', note: '关注头皮，从现在开始', points: 18900, tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: '/league-avatars/sophia.png', isMe: false },
-    { rank: 5, name: 'Bella', level: 'Lv.4', note: '保持心情愉悦～', points: 16520, tier: '铂金 I', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: '/league-avatars/bella.png', isMe: false },
-    { rank: 6, name: 'Aria', level: 'Lv.4', note: '爱自己，从发起 ❤️', points: 15320, tier: '铂金 II', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: '/league-avatars/aria.png', isMe: false },
-    { rank: 12, name: 'You', level: 'Lv.5', note: s.checkinDays.length ? `${s.checkinDays.length} 天打卡 · 一起变好呀！` : '一起变好呀！', points: Math.max(s.points, 12360), tier: '钻石 III', tierTone: 'purple', trend: '↑ 3', trendTone: 'up', avatarSrc: '/league-avatars/you.png', isMe: true },
-  ]
-}
-
-function renderLeagueTab(tab: LeagueTab) {
-  if (tab === '我的联盟') return renderAllianceTab()
-  if (tab === '好友排行') return renderFriendRankTab()
-  if (tab === '段位晋升') return renderTierProgressTab()
-  return renderLeaderboardTab()
-}
-
-function renderLeaderboardTab() {
-  return `
-    <div class="ranking-layout">
-      <aside class="category-nav">
-        <button class="active" type="button"><span>✣</span><span><b>总 XP 排行</b></span></button>
-        <button type="button"><span>♔</span><span><b>护发达人</b><small>头发健康分</small></span></button>
-        <button type="button"><span>✦</span><span><b>活跃之星</b><small>任务完成数</small></span></button>
-        <button type="button"><span>⌁</span><span><b>坚持不懈</b><small>连续打卡天数</small></span></button>
-        <button type="button"><span>♡</span><span><b>爱心大使</b><small>帮助伙伴次数</small></span></button>
-      </aside>
-      <div class="ranking-card">
-        <div class="table-head"><span>排名</span><span>玩家</span><span>段位</span><span>总 XP</span><span>趋势</span></div>
-        <div class="table-body">${buildLeaders().map(renderLeagueLeader).join('')}</div>
-        <div class="refresh-note">◷ 每 10 分钟更新一次</div>
-      </div>
-    </div>
-  `
-}
-
-function renderAllianceTab() {
-  const cards = [
-    ['联盟等级', 'Lv.6', '距离 Lv.7 还需 740 XP', '58%'],
-    ['本周任务', '12 / 18', '今日新增 3 个可完成任务', '67%'],
-    ['成员活跃', '28 / 30', '5 位成员连续打卡超过 7 天', '86%'],
-  ]
-  const members = [
-    ['Luna', '队长', '8,420 XP'],
-    ['Mia', '副队长', '7,860 XP'],
-    ['Ray', '活跃成员', '6,980 XP'],
-    ['You', '成长成员', '3,260 XP'],
-  ]
-  return `
-    <div class="league-mock-grid alliance-mock">
-      ${cards.map(([title, value, note, width]) => `
-        <section class="league-mock-card">
-          <span>${escapeHtml(title)}</span>
-          <b>${escapeHtml(value)}</b>
-          <p>${escapeHtml(note)}</p>
-          <div class="league-mock-progress"><i style="width:${escapeHtml(width)}"></i></div>
-        </section>
-      `).join('')}
-      <section class="league-mock-card wide">
-        <div class="league-mock-title"><b>联盟成员贡献</b></div>
-        <div class="league-mini-list">
-          ${members.map(([name, role, xp]) => `<div><span class="avatar-dot"></span><b>${escapeHtml(name)}<small>${escapeHtml(role)}</small></b><strong>${escapeHtml(xp)}</strong></div>`).join('')}
-        </div>
-      </section>
-    </div>
-  `
-}
-
-function renderFriendRankTab() {
-  const friends: LeagueLeader[] = [
-    { rank: 1, name: 'Nora', level: 'Lv.5', note: '睡眠打卡稳定', points: 20680, tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: '', isMe: false },
-    { rank: 2, name: 'Echo', level: 'Lv.4', note: '本周完成 9 个任务', points: 18440, tier: '铂金 I', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: '', isMe: false },
-    { rank: 3, name: 'June', level: 'Lv.4', note: '护发建议执行率 86%', points: 17210, tier: '铂金 II', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: '', isMe: false },
-    { rank: 7, name: 'You', level: 'Lv.5', note: '一起变好呀！', points: 12360, tier: '钻石 III', tierTone: 'purple', trend: '↑ 1', trendTone: 'up', avatarSrc: '/league-avatars/you.png', isMe: true },
-  ]
-  return `
-    <div class="ranking-card full">
-      <div class="table-head"><span>排名</span><span>好友</span><span>段位</span><span>本周 XP</span><span>趋势</span></div>
-      <div class="table-body">${friends.map(renderLeagueLeader).join('')}</div>
-      <div class="refresh-note">好友排行为 mock 数据，后续接入好友关系后替换</div>
-    </div>
-  `
-}
-
-function renderTierProgressTab() {
-  const tiers = [
-    ['青铜', '完成第一次扫描', true],
-    ['白银', '累计 3 天记录', true],
-    ['黄金', '完成 8 个护发任务', true],
-    ['铂金', '连续打卡 7 天', true],
-    ['钻石 III', '当前段位 · 620 / 1000 XP', true],
-    ['钻石 II', '再获得 380 XP 解锁', false],
-    ['钻石 I', '进入联盟前 20%', false],
-    ['王者', '赛季前 3 名', false],
-  ]
-  return `
-    <div class="league-tier-board">
-      <section class="league-mock-card tier-current">
-        <span>当前段位</span>
-        <b>钻石 III</b>
-        <p>保持任务完成率，并在本周获得 380 XP 可晋升至钻石 II。</p>
-        <div class="league-mock-progress"><i style="width:62%"></i></div>
-      </section>
-      <section class="league-tier-road">
-        ${tiers.map(([name, rule, done]) => `
-          <div class="${done ? 'done' : ''}">
-            <span>${done ? '✓' : '·'}</span>
-            <b>${escapeHtml(String(name))}<small>${escapeHtml(String(rule))}</small></b>
-          </div>
-        `).join('')}
-      </section>
-    </div>
-  `
-}
-
-function renderLeagueLeader(leader: LeagueLeader) {
-  const rankClass = leader.isMe ? 'you-rank' : leader.rank === 1 ? 'gold' : leader.rank === 2 ? 'silver' : leader.rank === 3 ? 'bronze' : 'normal'
-  const tierClass = leader.tierTone === 'gold' ? 'king' : leader.tierTone === 'purple' ? 'diamond' : 'platinum'
-  return `
-    <div class="league-ranking-row ${leader.isMe ? 'current-user' : ''}" role="row">
-      <div class="rank-cell" role="cell"><span class="rank-badge ${rankClass}">${leader.rank}</span></div>
-      <div class="player-cell" role="cell">
-        ${leader.avatarSrc ? `<img class="league-avatar" src="${escapeHtml(leader.avatarSrc)}" alt="${escapeHtml(leader.name)} 的头像">` : '<span class="avatar-dot"></span>'}
-        <div class="player-copy">
-          <div class="player-name">${escapeHtml(leader.name)} <span class="level">${escapeHtml(leader.level)}</span>${leader.isMe ? '<span class="mini-crown" title="当前用户">●</span>' : ''}</div>
-          <div class="motto">${escapeHtml(leader.note)}</div>
-        </div>
-      </div>
-      <div class="tier-cell" role="cell">
-        <span class="tier-emblem ${tierClass}" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 2.3 16 5l4.7.8-.8 4.7 1.7 4.5-4.2 2.3L15 21.6 12 19l-3 2.6-2.4-4.3L2.4 15l1.7-4.5-.8-4.7L8 5l4-2.7Z"/><path class="tier-star" d="m12 7.2 1.35 2.74 3.03.44-2.19 2.13.52 3.02L12 14.1l-2.71 1.43.52-3.02-2.19-2.13 3.03-.44L12 7.2Z"/></svg>
-        </span>
-        <span>${escapeHtml(leader.tier)}</span>
-      </div>
-      <div class="xp-cell" role="cell">${leader.points.toLocaleString('en-US')} XP</div>
-      <div class="trend-cell ${leader.trendTone}" role="cell">${escapeHtml(leader.trend)}</div>
-    </div>
-  `
-}
-
-function renderRecordItems(records: ReportRecord[], timeline = false) {
-  if (!records.length) return `<div class="item"><span>📷</span><b>暂无记录<small>上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
-  return records.map((r) => {
-    const recordId = escapeHtml(r.id)
-    const itemAttrs = timeline ? '' : ` data-view-report="${recordId}" role="button" tabindex="0"`
-    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
-  }).join('')
-}
-
-function groupReportsByDay(records: ReportRecord[]) {
-  return records.reduce<Record<string, ReportRecord[]>>((days, record) => {
-    days[record.date] = days[record.date] || []
-    days[record.date].push(record)
-    return days
-  }, {})
-}
-
-function buildJourneyMilestones(records: ReportRecord[], groupedDays: Record<string, ReportRecord[]>) {
-  const days = Object.keys(groupedDays).sort().reverse()
-  if (!records.length) {
-    return [
-      { icon: '📷', title: '等待首次扫描', note: '点击去 Scan 上传', date: '' },
-      { icon: '🌱', title: '报告会自动保存', note: '生成后出现在这里', date: '' },
-      { icon: '✨', title: '趋势稍后生成', note: '多次记录后更清晰', date: '' },
-    ]
-  }
-  const best = records.reduce((top, item) => (item.score > top.score ? item : top), records[0])
-  return [
-    { icon: '⚑', title: '开始记录', note: formatShortDate(days[days.length - 1] || records[records.length - 1].date), date: days[days.length - 1] || records[records.length - 1].date },
-    { icon: '📄', title: `${records.length} 份报告`, note: 'Scan 自动沉淀', date: records[0].date },
-    { icon: '⭐', title: '最高状态分', note: `${best.score} 分`, date: best.date },
-    { icon: '🗓', title: `${days.length} 个记录日`, note: '持续观察中', date: days[0] || records[0].date },
-  ]
-}
-
-function buildJourneyHighlights(records: ReportRecord[], groupedDays: Record<string, ReportRecord[]>) {
-  if (!records.length) {
-    return `<div class="item"><span>🌱</span><b>还没有高光<small>完成一次 Scan 后自动生成。</small></b><button class="pill" data-go="scan">去扫描</button></div>`
-  }
-  const latest = records[0]
-  const best = records.reduce((top, item) => (item.score > top.score ? item : top), latest)
-  return [
-    `<div class="item"><span>📄</span><b>最新报告已保存<small>${escapeHtml(latest.title)}</small></b><button class="pill" data-view-report="${escapeHtml(latest.id)}">查看</button></div>`,
-    `<div class="item"><span>⭐</span><b>本月最高状态分<small>${best.score} 分，仅作趣味记录。</small></b><button class="pill" data-view-report="${escapeHtml(best.id)}">打开</button></div>`,
-    `<div class="item"><span>🗓</span><b>${Object.keys(groupedDays).length} 个记录日<small>每次上传都会沉淀到 Journey。</small></b><button class="pill" data-action="open-journey">回看</button></div>`,
-  ].join('')
-}
-
-function buildTrendBars(records: ReportRecord[]) {
-  const values = records.slice(0, 7).reverse().map((item) => Math.max(18, Math.min(96, item.score)))
-  const fallback = [28, 36, 44, 52, 60]
-  return (values.length ? values : fallback).map((v) => `<span class="bar" style="height:${v}%"></span>`).join('')
-}
-
-function formatShortDate(date: string) {
-  const parts = date.split('-')
-  return parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : date
-}
-
 function avgScore(records: ReportRecord[]) {
   if (!records.length) return null
   return Math.round(records.reduce((sum, item) => sum + item.score, 0) / records.length)
-}
-
-function showPage(root: HTMLElement, id: string) {
-  root.querySelectorAll<HTMLElement>('.page').forEach((page) => page.classList.toggle('active', page.dataset.page === id))
-  root.querySelectorAll<HTMLElement>('[data-go]').forEach((btn) => btn.classList.toggle('active', btn.dataset.go === id))
-  const heading = root.querySelector<HTMLElement>('#pageHeading')
-  const sub = root.querySelector<HTMLElement>('#pageSub')
-  const meta: Record<string, [string, string]> = {
-    scan: ['Scan', '用科学的方式，了解你的头发状况 💗'],
-    diary: ['Diary', '真实分析记录会在这里沉淀'],
-  }
-  if (heading && meta[id]) heading.textContent = meta[id][0]
-  if (sub && meta[id]) sub.textContent = meta[id][1]
-}
-
-function showToast(root: HTMLElement, message: string) {
-  const old = root.querySelector('[data-toast]')
-  old?.remove()
-  const toast = document.createElement('div')
-  toast.dataset.toast = 'true'
-  toast.className = 'prototype-toast'
-  toast.textContent = message
-  root.appendChild(toast)
-  window.setTimeout(() => toast.remove(), 1800)
 }
 
 function downloadShareCard() {
@@ -1423,19 +477,6 @@ function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, x: number, 
     }
   }
   if (line) ctx.fillText(line, x, y)
-}
-
-function setHtml(target: Element | null | undefined, html: string) {
-  if (target) target.innerHTML = html
-}
-
-function escapeHtml(value: unknown) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
 }
 
 const integrationStyle = `
@@ -3879,29 +2920,4 @@ const integrationStyle = `
   }
     }
   }
-
-  .diary-summary { margin: 16px 0; text-align: center; }
-  .calendar .diary-record-day { position: relative; box-shadow: inset 0 0 0 2px rgba(139,92,246,.45); }
-  .calendar .diary-record-day small { color: #65c982; font-size: 18px; line-height: 0; }
-  .community-post { align-items: flex-start; grid-template-columns: 56px 1fr 90px; }
-  .community-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .comments { display: grid; gap: 8px; margin-top: 12px; }
-  .comments.collapsed { display: none; }
-  .comment { border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,.68); color: #65709e; font-size: 14px; }
-  .ai-chat-widget { position: fixed; right: 28px; bottom: 28px; z-index: 40; font-family: inherit; }
-  .ai-chat-bubble { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 14px 18px; background: linear-gradient(135deg,#8b5cf6,#65c982); color: #fff; box-shadow: 0 20px 55px rgba(99,75,168,.32); cursor: grab; font-weight: 900; }
-  .ai-chat-bubble:active { cursor: grabbing; }
-  .ai-chat-panel { display: none; width: min(360px, calc(100vw - 32px)); height: 520px; overflow: hidden; border: 1px solid rgba(255,255,255,.75); border-radius: 28px; background: rgba(255,250,255,.96); box-shadow: 0 26px 80px rgba(19,32,95,.22); }
-  .ai-chat-widget.open .ai-chat-bubble { display: none; }
-  .ai-chat-widget.open .ai-chat-panel { display: grid; grid-template-rows: auto 1fr auto; }
-  .ai-chat-header { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 16px 18px; background: linear-gradient(135deg,rgba(139,92,246,.18),rgba(101,201,130,.18)); }
-  .ai-chat-header small { color: #65709e; }
-  .ai-chat-header button { grid-row: 1 / span 2; grid-column: 2; border: 0; border-radius: 50%; width: 30px; height: 30px; background: #fff; color: #13205f; cursor: pointer; }
-  .ai-chat-messages { display: flex; flex-direction: column; gap: 10px; overflow: auto; padding: 16px; }
-  .ai-chat-msg { max-width: 82%; border-radius: 18px; padding: 10px 12px; line-height: 1.5; white-space: pre-wrap; }
-  .ai-chat-msg.assistant { align-self: flex-start; background: #fff; color: #13205f; }
-  .ai-chat-msg.user { align-self: flex-end; background: #8b5cf6; color: #fff; }
-  .ai-chat-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 14px; border-top: 1px solid rgba(101,112,158,.14); }
-  .ai-chat-form input { min-width: 0; border: 1px solid rgba(101,112,158,.2); border-radius: 999px; padding: 12px 14px; outline: none; }
-  .ai-chat-form button { border: 0; border-radius: 999px; padding: 0 16px; background: #65c982; color: #fff; font-weight: 900; cursor: pointer; }
 `
