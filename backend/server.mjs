@@ -975,8 +975,9 @@ export function createApp() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  createApp().listen(PORT, () => {
-    console.log(`Diaoleme AI proxy listening on http://localhost:${PORT}`)
+  // Bind all interfaces so Render/Railway/Fly/Docker health checks can reach the process.
+  createApp().listen(PORT, '0.0.0.0', () => {
+    console.log(`Diaoleme AI proxy listening on http://0.0.0.0:${PORT}`)
     console.log(`Primary analysis endpoint: POST ${PRIMARY_ANALYSIS_PATH}`)
   })
 }
