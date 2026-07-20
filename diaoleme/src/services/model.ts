@@ -22,6 +22,9 @@ export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatRe
     const resp = await axios.post(CHAT_API_CONFIG.url, { messages }, { timeout: CHAT_API_CONFIG.timeout })
     return normalizeChatResponse(resp.data)
   } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.data) {
+      return normalizeChatResponse(err.response.data)
+    }
     console.warn('[model] 聊天接口不可达，返回本地客服兜底。', err)
     return {
       reply: '我现在暂时连不上后端 AI，但可以先陪你记录：今天先完成一次轻量 Scan，再根据结果选择一个小任务就好。',

@@ -776,7 +776,7 @@ function renderCommunity(root: HTMLElement) {
   setHtml(root.querySelector('#posts'), COMMUNITY_POSTS.map((post) => {
     const isLiked = liked.has(post.id)
     const comments = post.comments.map((text, index) => `<div class="comment"><b>${index === 0 ? '发友' : '小发球'}：</b>${escapeHtml(text)}</div>`).join('')
-    return `<div class="post community-post"><div class="mini-buddy"></div><div><b>${escapeHtml(post.name)} <span class="badge">${escapeHtml(post.level)}</span></b><p>${escapeHtml(post.body)}</p><span class="badge"># 头皮护理</span><div class="community-actions"><button class="pill ${isLiked ? 'primary' : ''}" data-post-like="${escapeHtml(post.id)}">💜 ${post.likes + (isLiked ? 1 : 0)}</button><button class="pill" data-post-comments="${escapeHtml(post.id)}">💬 ${post.comments.length}</button><button class="pill">☆ 收藏</button></div><div class="comments" data-comments-for="${escapeHtml(post.id)}">${comments}</div></div><div class="post-media">${escapeHtml(post.media)}</div></div>`
+    return `<div class="post community-post"><div class="mini-buddy"></div><div><b>${escapeHtml(post.name)} <span class="badge">${escapeHtml(post.level)}</span></b><p>${escapeHtml(post.body)}</p><span class="badge"># 头皮护理</span><div class="community-actions"><button class="pill ${isLiked ? 'primary' : ''}" data-post-like="${escapeHtml(post.id)}">💜 ${post.likes + (isLiked ? 1 : 0)}</button><button class="pill" data-post-comments="${escapeHtml(post.id)}">💬 ${post.comments.length}</button><button class="pill">☆ 收藏</button></div><div class="comments collapsed" data-comments-for="${escapeHtml(post.id)}">${comments}</div></div><div class="post-media">${escapeHtml(post.media)}</div></div>`
   }).join(''))
 }
 
@@ -792,7 +792,10 @@ function toggleCommunityLike(id: string) {
 }
 
 function buildDiaryCalendar(records: ReportRecord[]) {
-  const marked = new Map(records.map((r) => [r.date, r]))
+  const marked = new Map<string, ReportRecord>()
+  records.forEach((record) => {
+    if (!marked.has(record.date)) marked.set(record.date, record)
+  })
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth()
@@ -990,10 +993,10 @@ function attachChatAssistant(root: HTMLElement) {
   widget.innerHTML = `
     <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手">🌱<span>AI 助手</span></button>
     <section class="ai-chat-panel" aria-label="AI 助手对话">
-      <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" data-chat-close>×</button></header>
+      <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" aria-label="关闭 AI 助手" data-chat-close>×</button></header>
       <div class="ai-chat-messages" data-chat-messages></div>
       <form class="ai-chat-form" data-chat-form>
-        <input data-chat-input placeholder="问问护发习惯、记录建议或今天怎么坚持..." maxlength="300" />
+        <input data-chat-input aria-label="输入消息" placeholder="问问护发习惯、记录建议或今天怎么坚持..." maxlength="300" />
         <button type="submit">发送</button>
       </form>
     </section>
@@ -1044,7 +1047,7 @@ function attachChatAssistant(root: HTMLElement) {
   }
   const onPointerUp = (event: PointerEvent) => {
     dragging = false
-    bubble.releasePointerCapture(event.pointerId)
+    if (bubble.hasPointerCapture(event.pointerId)) bubble.releasePointerCapture(event.pointerId)
   }
   const onBubbleClick = () => {
     if (!moved) togglePanel(true)
@@ -1057,7 +1060,7 @@ function attachChatAssistant(root: HTMLElement) {
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: '正在思考一个轻松、不焦虑的回答...' })
     renderMessages()
     try {
-      const result = await chatWithAssistant(messages.filter((m) => !m.content.includes('正在思考')).slice(-8))
+      const result = await chatWithAssistant(messages.filter((m) => !(m.role === 'assistant' && m.content === '正在思考一个轻松、不焦虑的回答...')).slice(-8))
       messages[messages.length - 1] = { role: 'assistant', content: result.reply }
     } catch {
       messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }
