@@ -722,9 +722,8 @@ function renderHistory(root: HTMLElement) {
 function renderDiary(root: HTMLElement) {
   const history = useUserStore.getState().reportHistory
   const latest = history.slice(0, 7)
-  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date))
-  const last = sorted[sorted.length - 1]
-  const prev = sorted[sorted.length - 2]
+  const last = history[0]
+  const prev = history[1]
   const delta = last && prev ? last.score - prev.score : 0
   const trendText = !last ? '还没有记录，先完成一次 Scan。' : delta > 0 ? `比上次提升 ${delta} 分，状态在向上走。` : delta < 0 ? `比上次低 ${Math.abs(delta)} 分，今天适合轻量观察。` : '和上次基本持平，记录节奏稳定。'
   const suggestion = buildLocalDiaryAdvice(history)
