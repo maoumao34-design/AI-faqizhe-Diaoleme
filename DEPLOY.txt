@@ -1,0 +1,7 @@
+source_branch=fix/aifa-12-gh-pages-deploy
+source_commit=c1899244f1b43c2e42a77d7729c287c36cc00d34
+main_commit=c1899244f1b43c2e42a77d7729c287c36cc00d34
+built_at=2026-07-20T12:32:09Z
+api_base=https://26a317997932e3.lhr.life
+bundle=assets/index-B09UZxIM.js
+issue=AIFA-26 / AIFA-12
