@@ -1,7 +1,7 @@
-source_branch=fix/aifa-12-gh-pages-deploy
-source_commit=c1899244f1b43c2e42a77d7729c287c36cc00d34
-main_commit=c1899244f1b43c2e42a77d7729c287c36cc00d34
-built_at=2026-07-20T12:32:09Z
-api_base=https://26a317997932e3.lhr.life
+source_commit=bc38f15106cd31b03448cd73d6343f73b8c91ef3
+built_at=2026-07-20T12:34:34Z
+api_base=https://d3270573891f82.lhr.life
 bundle=assets/index-B09UZxIM.js
 issue=AIFA-26 / AIFA-12
+public_page=https://aihpj.github.io/AI-faqizhe-Diaoleme/
+note=upstream gh-pages push denied for AIhpJ; published via fork Pages. PR: https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/28
