@@ -1,9 +1,9 @@
 import { HAIRSTYLE_CATALOG } from '../../services/model'
 import { useUserStore } from '../../store/UserStore'
 import { renderBuddyHairStyles } from './buddyController'
-import { escapeHtml, setHtml } from './ui'
+import { escapeHtml, publicAssetUrl, setHtml } from './ui'
 
-const REWARD_ASSET_BASE = '/rewards-assets/'
+const REWARD_ASSET_BASE = publicAssetUrl('rewards-assets/')
 const REWARD_MARKET_ITEMS = [
   { name: '樱花发箍', subtitle: 'Lv.3 解锁', points: 2000, image: `${REWARD_ASSET_BASE}reward-flower.png`, locked: true, unlockId: 'sakura' },
   { name: '星光泡泡发型', subtitle: 'Lv.5 解锁', points: 3500, image: `${REWARD_ASSET_BASE}reward-starlight.png`, locked: true, unlockId: 'star' },
