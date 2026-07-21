@@ -381,7 +381,7 @@ Error generating stack: `+o.message+`
             <span>Diaoleme</span>
           </div>
         </div>
-        <nav class="nav" id="nav"><button data-go="home" class="active"><span class="icon">⌂</span><label>Home</label></button><button data-go="scan" class=""><span class="icon">▢</span><label>Scan</label></button><button data-go="buddy" class=""><span class="icon">☁</span><label>Buddy</label></button><button data-go="quests" class=""><span class="icon">✿</span><label>Quests</label></button><button data-go="journey" class=""><span class="icon">✧</span><label>Journey</label></button><button data-go="league" class=""><span class="icon">♛</span><label>League</label></button><button data-go="rewards" class=""><span class="icon">□</span><label>Rewards</label></button><button data-go="diary" class=""><span class="icon">▤</span><label>Diary</label></button><button data-go="community" class=""><span class="icon">☷</span><label>Community</label></button></nav>
+        <nav class="nav" id="nav"><button data-go="home" class="active"><span class="icon">⌂</span><label>Home</label></button><button data-go="scan" class=""><span class="icon">▢</span><label>Scan</label></button><button data-go="journey" class=""><span class="icon">✧</span><label>Journey</label></button><button data-go="buddy" class=""><span class="icon">☁</span><label>Buddy</label></button><button data-go="quests" class=""><span class="icon">✿</span><label>Quests</label></button><button data-go="league" class=""><span class="icon">♛</span><label>League</label></button><button data-go="rewards" class=""><span class="icon">□</span><label>Rewards</label></button><button data-go="diary" class=""><span class="icon">▤</span><label>Diary</label></button></nav>
         <div class="profile">
           <img alt="" src="data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; width=&#39;64&#39; height=&#39;64&#39;%3E%3Crect width=&#39;64&#39; height=&#39;64&#39; rx=&#39;32&#39; fill=&#39;%23ffe4ee&#39;/%3E%3Ccircle cx=&#39;32&#39; cy=&#39;25&#39; r=&#39;13&#39; fill=&#39;%23f0b899&#39;/%3E%3Cpath d=&#39;M14 60c2-14 12-22 18-22s16 8 18 22&#39; fill=&#39;%238b5cf6&#39;/%3E%3C/svg%3E">
           <label>Me<br><small>Lv.5</small></label>
@@ -424,15 +424,18 @@ Error generating stack: `+o.message+`
     </div>`,r0=`
 const pages = [
   ["home", "⌂", "Home", "Every hair is a seed."],
-  ["scan", "▢", "Scan", " 用科学的方式，了解你的头发状况 💗"],
+  ["scan", "▢", "Scan", "陪你轻松记一记头发小队今天的状态 💗"],
+  ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"],
   ["buddy", "☁", "Buddy", " 每个人拥有自己的生命伙伴 "],
   ["quests", "✿", "Quests", " 完成护发任务，获得经验值和能量 "],
-  ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"],
   ["league", "♛", "League", " 和伙伴们一起成长，赢取荣誉与奖励 "],
   ["rewards", "□", "Rewards", " 用成长兑换惊喜，奖励每一次认真生活 "],
   ["diary", "▤", "Diary", " 记录每一个小瞬间，见证成长的每一步 💜"],
   ["community", "☷", "Community", " 在这里，分享治愈，收获力量 "]
 ];
+
+// AIFA-43: demo 主路径 Home/Scan/Journey 置顶；Community 不进侧栏
+const navPages = pages.filter(([id]) => id !== "community");
 
 const quests = [
   ["💧", " 喝够 8 杯水 ", " 充足的水分让头发更健康 ", "6/8", "+50 XP"],
@@ -455,7 +458,7 @@ const nav = document.querySelector("#nav");
 const heading = document.querySelector("#pageHeading");
 const sub = document.querySelector("#pageSub");
 
-nav.innerHTML = pages
+nav.innerHTML = navPages
   .map(
     ([id, icon, label]) =>
       \`<button data-go="\${id}" class="\${id === "home" ? "active" : ""}"><span class="icon">\${icon}</span><label>\${label}</label></button>\`
@@ -1747,7 +1750,7 @@ document.querySelector("#posts").innerHTML = [
       grid-template-columns: 1fr;
     }
   }
-`;function la(r,s){r.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.dataset.page===s)),r.querySelectorAll("[data-go]").forEach(p=>p.classList.toggle("active",p.dataset.go===s));const i=r.querySelector("#pageHeading"),u=r.querySelector("#pageSub"),d={scan:["Scan","用科学的方式，了解你的头发状况 💗"],diary:["Diary","真实分析记录会在这里沉淀"]};i&&d[s]&&(i.textContent=d[s][0]),u&&d[s]&&(u.textContent=d[s][1])}function fe(r,s){r&&(r.innerHTML=s)}function z(r){return String(r??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function gt(r,s){const i=r.querySelector("[data-toast]");i==null||i.remove();const u=document.createElement("div");u.dataset.toast="true",u.className="prototype-toast",u.textContent=s,r.appendChild(u),window.setTimeout(()=>u.remove(),1800)}const op=()=>"diaoleme-prototype-buddy-care",up=()=>"diaoleme-prototype-selected-hair-style";function s0(r,s){const i=xe.getState(),u=fp(),d=i.reportHistory[0],p=Math.max(62,Math.min(98,Math.round((i.dropScore??82)+Math.min(i.reportHistory.length,6)))),f=Math.max(56,Math.min(96,Math.round((u.energy+u.love)/2))),g=f>=78?"Happy":f>=64?"Calm":"Need Care";pp(i.unlockedHairStyles),In.filter(x=>i.unlockedHairStyles.includes(x.id)).length;const b=s.getQuestCount();fe(r.querySelector('[data-page="buddy"] .metric'),`
+`;function la(r,s){r.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.dataset.page===s)),r.querySelectorAll("[data-go]").forEach(p=>p.classList.toggle("active",p.dataset.go===s));const i=r.querySelector("#pageHeading"),u=r.querySelector("#pageSub"),d={scan:["Scan","陪你轻松记一记头发小队今天的状态 💗"],diary:["Diary","真实分析记录会在这里沉淀"]};i&&d[s]&&(i.textContent=d[s][0]),u&&d[s]&&(u.textContent=d[s][1])}function fe(r,s){r&&(r.innerHTML=s)}function z(r){return String(r??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function gt(r,s){const i=r.querySelector("[data-toast]");i==null||i.remove();const u=document.createElement("div");u.dataset.toast="true",u.className="prototype-toast",u.textContent=s,r.appendChild(u),window.setTimeout(()=>u.remove(),1800)}const op=()=>"diaoleme-prototype-buddy-care",up=()=>"diaoleme-prototype-selected-hair-style";function s0(r,s){const i=xe.getState(),u=fp(),d=i.reportHistory[0],p=Math.max(62,Math.min(98,Math.round((i.dropScore??82)+Math.min(i.reportHistory.length,6)))),f=Math.max(56,Math.min(96,Math.round((u.energy+u.love)/2))),g=f>=78?"Happy":f>=64?"Calm":"Need Care";pp(i.unlockedHairStyles),In.filter(x=>i.unlockedHairStyles.includes(x.id)).length;const b=s.getQuestCount();fe(r.querySelector('[data-page="buddy"] .metric'),`
     <div class="metric-row"><span style="font-size:32px">💗</span><b>生命值</b><div class="meter"><div class="fill" style="--w:${p}%;--c:#ff77a8"></div></div><b>${p}/100</b></div>
     <div class="metric-row"><span style="font-size:32px">⚡</span><b>能量值</b><div class="meter"><div class="fill" style="--w:${u.energy}%;--c:#ffad2f"></div></div><b>${u.energy}/100</b></div>
     <div class="metric-row"><span style="font-size:32px">😊</span><b>心情值</b><div class="meter"><div class="fill" style="--w:${f}%;--c:#8b5cf6"></div></div><b>${g}</b></div>
