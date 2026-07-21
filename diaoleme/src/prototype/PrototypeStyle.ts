@@ -193,7 +193,7 @@ export const prototypeStyle = `
 
   .page-title h2 {
     margin: 0;
-    font-size: clamp(24px, 2.8vw, 34px);
+    font-size: 28px;
     line-height: 1.1;
     letter-spacing: 0;
   }
@@ -302,8 +302,8 @@ export const prototypeStyle = `
   .hero h2 {
     margin: 0;
     max-width: 620px;
-    /* Cap vw growth — desktop Pages was ~65px and felt oversized vs local phone preview */
-    font-size: clamp(28px, 3.2vw, 40px);
+    /* Fixed mobile-first size — avoid vw so wide Pages cannot re-inflate */
+    font-size: 32px;
     line-height: 1.12;
     letter-spacing: 0;
   }

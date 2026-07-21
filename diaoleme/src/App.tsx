@@ -504,7 +504,7 @@ const integrationStyle = `
   }
 
   .hero h2 {
-    font-size: clamp(28px, 3.2vw, 40px) !important;
+    font-size: 32px !important;
     line-height: 1.12 !important;
   }
 
