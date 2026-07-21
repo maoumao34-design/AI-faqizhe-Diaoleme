@@ -1,7 +1,7 @@
 export const prototypeScript = `
 const pages = [
   ["home", "⌂", "Home", "Every hair is a seed."],
-  ["scan", "▢", "Scan", " 用科学的方式，了解你的头发状况 💗"],
+  ["scan", "▢", "Scan", " 陪你轻松记一记头发小队今天的状态"],
   ["buddy", "☁", "Buddy", " 每个人拥有自己的生命伙伴 "],
   ["quests", "✿", "Quests", " 完成护发任务，获得经验值和能量 "],
   ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"],
