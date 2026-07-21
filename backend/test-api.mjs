@@ -80,6 +80,8 @@ function assertStableContract(data) {
 try {
   const health = await fetch(`${baseUrl}/api/health`).then((res) => res.json())
   assert.equal(health.ok, true)
+  assert.equal(typeof health.ai_provider, 'string')
+  assert.equal(typeof health.ai_key_configured, 'boolean')
 
   const root = await fetch(`${baseUrl}/`)
   assert.equal(root.status, 200)
