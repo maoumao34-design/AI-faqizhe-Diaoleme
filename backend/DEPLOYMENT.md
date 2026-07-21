@@ -10,7 +10,8 @@
 - 运行时：Node.js 20（Dockerfile 与 engines 对齐）
 - 启动命令：`npm start`
 - 本地开发：`npm run dev`
-- 健康检查：`GET /api/health`
+- 健康检查（推荐）：`GET /api/health`
+- 根路径兼容：`GET /` 同样返回 `{ ok: true }`（防止平台默认 Health Check Path=`/` 因 404 误杀实例）
 - 分析接口：`POST /api/analyze`（兼容 `POST /api/hair-analysis`）
 - 历史接口：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`
 - 容器：`backend/Dockerfile`
@@ -46,7 +47,31 @@
 - Root Directory：`backend`
 - Build Command：`npm install`
 - Start Command：`npm start`
-- Health Check Path：`/api/health`
+- **Health Check Path（必改）**：`/api/health`（不要用默认 `/`）
+  - Dashboard：Service → Settings → Health Check Path → 填 `/api/health` → Save
+  - Blueprint（`render.yaml`）已写 `healthCheckPath: /api/health`；手建服务不会自动继承，须在 UI 改一次
+
+### 冷启动 / 演示前预热（Free 档）
+
+Render Free 会休眠；首次请求可能 30–60s。演示前先预热，避免前端超时：
+
+```bash
+# 演示前 1 分钟执行一次即可
+curl -sS -m 90 https://ai-faqizhe-diaoleme.onrender.com/api/health
+# 期望：HTTP 200 且 body 含 "ok":true
+```
+
+稳定复验（唤醒后连续 5 次）：
+
+```bash
+for i in 1 2 3 4 5; do
+  curl -sS -m 30 -w " try$i HTTP %{http_code}\n" \
+    https://ai-faqizhe-diaoleme.onrender.com/api/health
+  sleep 1
+done
+```
+
+说明：代码侧 `GET /` 已返回 200 作兜底；Dashboard 仍应设为 `/api/health`，与 Blueprint / 验收口径一致。不擅自升级付费实例。
 
 ### 部署后验证
 
