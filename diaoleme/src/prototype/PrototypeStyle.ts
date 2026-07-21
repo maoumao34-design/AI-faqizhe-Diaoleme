@@ -20,7 +20,7 @@ export const prototypeStyle = `
 
   /* Keep line-height normal so Vite/Tailwind preflight (html line-height:1.5) does not inflate type */
   html {
-    line-height: normal;
+    line-height: normal !important;
   }
 
   body {
@@ -29,7 +29,7 @@ export const prototypeStyle = `
     color: var(--ink);
     font-family: Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
     font-size: 16px;
-    line-height: normal;
+    line-height: normal !important;
     background:
       radial-gradient(circle at 72% 4%, rgba(126, 105, 255, 0.34), transparent 31%),
       radial-gradient(circle at 20% 7%, rgba(255, 183, 210, 0.42), transparent 27%),
