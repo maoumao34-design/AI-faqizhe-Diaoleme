@@ -25,7 +25,9 @@ function resolveApiUrl() {
   if (runtimeBaseUrl) return appendAnalysisPath(runtimeBaseUrl)
   if (buildBaseUrl) return appendAnalysisPath(buildBaseUrl)
   if (legacyEndpoint) return legacyEndpoint
-  return `${LOCAL_API_ORIGIN}${ANALYSIS_PATH}`
+  // Production must not silently hit the visitor's localhost.
+  if (import.meta.env.DEV) return `${LOCAL_API_ORIGIN}${ANALYSIS_PATH}`
+  return ANALYSIS_PATH
 }
 
 function appendAnalysisPath(baseUrl: string) {
