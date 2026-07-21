@@ -942,7 +942,9 @@ export function createApp() {
       return
     }
 
-    if (req.method === 'GET' && url.pathname === '/api/health') {
+    // /api/health is the canonical probe. Also answer GET / with 200 so platform
+    // default Health Check Path=/ does not mark the instance unhealthy (404 flap).
+    if (req.method === 'GET' && (url.pathname === '/api/health' || url.pathname === '/')) {
       return jsonResponse(res, 200, { ok: true, service: 'diaoleme-ai-proxy' })
     }
 

@@ -81,6 +81,11 @@ try {
   const health = await fetch(`${baseUrl}/api/health`).then((res) => res.json())
   assert.equal(health.ok, true)
 
+  const root = await fetch(`${baseUrl}/`)
+  assert.equal(root.status, 200)
+  const rootBody = await root.json()
+  assert.equal(rootBody.ok, true)
+
   const mock = await postJson({ image_url: 'https://example.com/mock.jpg', mock_scenario: 'success' })
   assert.equal(mock.response.status, 200)
   assert.equal(mock.data.success, true)
