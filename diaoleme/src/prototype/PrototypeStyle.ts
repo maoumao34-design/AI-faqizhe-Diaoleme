@@ -18,11 +18,18 @@ export const prototypeStyle = `
     box-sizing: border-box;
   }
 
+  /* Keep line-height normal so Vite/Tailwind preflight (html line-height:1.5) does not inflate type */
+  html {
+    line-height: normal;
+  }
+
   body {
     margin: 0;
     min-height: 100vh;
     color: var(--ink);
     font-family: Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: normal;
     background:
       radial-gradient(circle at 72% 4%, rgba(126, 105, 255, 0.34), transparent 31%),
       radial-gradient(circle at 20% 7%, rgba(255, 183, 210, 0.42), transparent 27%),
@@ -186,8 +193,8 @@ export const prototypeStyle = `
 
   .page-title h2 {
     margin: 0;
-    font-size: clamp(30px, 4vw, 46px);
-    line-height: 1.05;
+    font-size: clamp(24px, 2.8vw, 34px);
+    line-height: 1.1;
     letter-spacing: 0;
   }
 
@@ -211,6 +218,8 @@ export const prototypeStyle = `
     color: var(--purple);
     background: rgba(255, 255, 255, 0.68);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    line-height: 1.2;
     font-weight: 800;
   }
 
@@ -293,8 +302,9 @@ export const prototypeStyle = `
   .hero h2 {
     margin: 0;
     max-width: 620px;
-    font-size: clamp(42px, 4.5vw, 68px);
-    line-height: 1.06;
+    /* Cap vw growth — desktop Pages was ~65px and felt oversized vs local phone preview */
+    font-size: clamp(28px, 3.2vw, 40px);
+    line-height: 1.12;
     letter-spacing: 0;
   }
 
@@ -564,7 +574,7 @@ export const prototypeStyle = `
   }
 
   .big-number {
-    font-size: 54px;
+    font-size: 40px;
     line-height: 1;
     color: var(--purple);
     font-weight: 950;
@@ -860,7 +870,7 @@ export const prototypeStyle = `
     border-radius: 8px;
     display: grid;
     place-items: center;
-    font-size: 58px;
+    font-size: 42px;
     background: linear-gradient(145deg, #fff, #ffe9f0);
   }
 
@@ -1035,7 +1045,7 @@ export const prototypeStyle = `
     }
 
     .hero h2 {
-      font-size: 42px;
+      font-size: 30px;
     }
 
     .buddy-stage {

@@ -486,6 +486,27 @@ function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, x: number, 
 }
 
 const integrationStyle = `
+  /* AIFA-36: keep Vite/Pages type from feeling larger than local HTML prototype */
+  html {
+    line-height: normal;
+  }
+
+  body {
+    line-height: normal;
+  }
+
+  button,
+  input,
+  .nav button,
+  .cta {
+    line-height: normal;
+  }
+
+  .hero h2 {
+    font-size: clamp(28px, 3.2vw, 40px);
+    line-height: 1.12;
+  }
+
   .main {
     padding-top: 8px;
   }
