@@ -1,7 +1,7 @@
-built_at=2026-07-20T12:36:53Z
-api_base=https://2687ae88e517f5.lhr.life
+built_at=2026-07-21T02:50:48Z
+api_base=https://ai-faqizhe-diaoleme.onrender.com
+analyze_url=https://ai-faqizhe-diaoleme.onrender.com/api/analyze
 bundle=assets/index-B09UZxIM.js
-gh_pages_commit_pending=after-push
 public_page=https://aihpj.github.io/AI-faqizhe-Diaoleme/
-upstream_blocked=https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/ (AIhpJ 无 push 权限)
-pr=https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/28
+issue=AIFA-26
+source_branch=fix/aifa-26-bind-render
