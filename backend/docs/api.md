@@ -47,9 +47,13 @@ npm run dev
 ```json
 {
   "ok": true,
-  "service": "diaoleme-ai-proxy"
+  "service": "diaoleme-ai-proxy",
+  "ai_provider": "siliconflow",
+  "ai_key_configured": false
 }
 ```
+
+说明：`ai_key_configured` 仅为布尔值，用于部署验收；永不返回密钥明文。
 
 ## 图片分析
 
