@@ -17,7 +17,8 @@ export const scanSection = `<section class="page" data-page="scan">
               <p>确保光线充足，避免阴影和反光</p>
               <div class="hero-buttons" style="justify-content:center">
                 <button class="cta primary" id="scanBtn">📷 拍照扫描</button>
-                <button class="cta ghost">🖼 相册上传</button>
+                <button class="cta ghost" id="uploadBtn" type="button">🖼 相册上传</button>
+                <button class="cta primary" id="scanCompleteBtn" type="button" style="display:none">✓ 完成</button>
               </div>
             </div>
             <div class="grid">

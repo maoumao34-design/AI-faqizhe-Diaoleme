@@ -67,7 +67,11 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
       percent.textContent = '已选'
       percent.style.zIndex = '4'
     }
-    if (completeBtn) completeBtn.style.display = ''
+    if (completeBtn) {
+      completeBtn.hidden = false
+      completeBtn.style.display = ''
+      completeBtn.setAttribute('aria-hidden', 'false')
+    }
     setStatus(`已选择：${file.name}，点击“完成”确认并开始 AI 分析。`)
   }
 
