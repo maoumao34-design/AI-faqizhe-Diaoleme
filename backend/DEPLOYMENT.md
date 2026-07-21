@@ -13,7 +13,7 @@
 - 健康检查（推荐）：`GET /api/health`
 - 根路径兼容：`GET /` 同样返回 `{ ok: true }`（防止平台默认 Health Check Path=`/` 因 404 误杀实例）
 - 分析接口：`POST /api/analyze`（兼容 `POST /api/hair-analysis`）
-- 历史接口：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`
+- 历史接口（唯一契约，无 `/api/history`）：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`（列表含 `fun_score` / `compare` / `growth` 摘要）
 - 容器：`backend/Dockerfile`
 
 ## 环境变量清单

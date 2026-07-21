@@ -134,9 +134,36 @@ try {
   assertStableContract(unsafe)
   assert.doesNotMatch(JSON.stringify(unsafe.result), /严重脱发|治疗|就医|疾病风险|使用药物|去医院/)
 
+  const lowQuality = await postJson({ image_url: 'https://example.com/low.jpg', mock_scenario: 'low_quality' })
+  assert.equal(lowQuality.response.status, 200)
+  assert.equal(lowQuality.data.result.score, 58)
+
   const records = await fetch(`${baseUrl}/api/records`).then((res) => res.json())
   assert.equal(records.success, true)
-  assert.ok(records.total >= 3)
+  assert.equal(records.contract, 'history_list_v1')
+  assert.equal(records.history_api, 'GET /api/records')
+  assert.ok(typeof records.persistence_note === 'string' && records.persistence_note.length > 0)
+  assert.ok(records.total >= 4)
+  assert.ok(Array.isArray(records.records) && records.records.length >= 2)
+
+  const newest = records.records[0]
+  const older = records.records[1]
+  assert.equal(newest.record_id, lowQuality.data.record_id)
+  assert.equal(newest.score, 58)
+  assert.equal(newest.fun_score, 58)
+  assert.equal(newest.title, '模糊也努力奖')
+  assert.equal(newest.thumbnail_url, newest.image_url)
+  assert.equal(typeof newest.growth.exp_added, 'number')
+  assert.ok(newest.compare)
+  assert.equal(newest.compare.prev_record_id, older.record_id)
+  assert.equal(typeof newest.compare.score_delta, 'number')
+  assert.equal(typeof newest.compare.title_changed, 'boolean')
+
+  const detail = await fetch(`${baseUrl}/api/records/${encodeURIComponent(newest.record_id)}`).then((res) => res.json())
+  assert.equal(detail.success, true)
+  assert.equal(detail.contract, 'history_detail_v1')
+  assert.equal(detail.record.fun_score, 58)
+  assert.ok(detail.record.compare)
 
   console.log('All API checks passed')
 } finally {
