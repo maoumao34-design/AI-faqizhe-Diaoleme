@@ -1173,12 +1173,6 @@ function buildDiaryCalendar(records: ReportRecord[]) {
   return cells.join('')
 }
 
-function scoreMood(score: number) {
-  if (score >= 75) return '😊 稳定'
-  if (score >= 55) return '😌 观察'
-  return '🌧 轻放松'
-}
-
 function scoreBars(records: ReportRecord[]) {
   const source = records.slice(0, 9).reverse().map((r) => r.score)
   return source.length ? source.map((score) => Math.max(18, Math.min(100, score))) : [36, 42, 52, 46, 60, 55, 66]
