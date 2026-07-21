@@ -12,7 +12,7 @@
 - 本地开发：`npm run dev`
 - 健康检查：`GET /api/health`
 - 分析接口：`POST /api/analyze`（兼容 `POST /api/hair-analysis`）
-- 历史接口：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`
+- 历史接口（唯一契约，无 `/api/history`）：`POST /api/records`、`GET /api/records`、`GET /api/records/:id`（列表含 `fun_score` / `compare` / `growth` 摘要）
 - 容器：`backend/Dockerfile`
 
 ## 环境变量清单
