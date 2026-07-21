@@ -1,5 +1,6 @@
 const ANALYSIS_PATH = '/api/analyze'
 const CHAT_PATH = '/api/chat'
+const RECORDS_PATH = '/api/records'
 const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
 const LOCAL_API_ORIGIN = 'http://localhost:8787'
 
@@ -25,7 +26,9 @@ function resolveApiUrl() {
   if (runtimeBaseUrl) return appendAnalysisPath(runtimeBaseUrl)
   if (buildBaseUrl) return appendAnalysisPath(buildBaseUrl)
   if (legacyEndpoint) return legacyEndpoint
-  return `${LOCAL_API_ORIGIN}${ANALYSIS_PATH}`
+  // Production must not silently hit the visitor's localhost.
+  if (import.meta.env.DEV) return `${LOCAL_API_ORIGIN}${ANALYSIS_PATH}`
+  return ANALYSIS_PATH
 }
 
 function appendAnalysisPath(baseUrl: string) {
@@ -40,6 +43,14 @@ function appendChatPath(value: string) {
   return `${value}${CHAT_PATH}`
 }
 
+function appendRecordsPath(value: string) {
+  if (value.endsWith(RECORDS_PATH)) return value
+  if (value.endsWith(ANALYSIS_PATH)) return value.slice(0, -ANALYSIS_PATH.length) + RECORDS_PATH
+  if (value.endsWith(LEGACY_ANALYSIS_PATH)) return value.slice(0, -LEGACY_ANALYSIS_PATH.length) + RECORDS_PATH
+  if (value.endsWith(CHAT_PATH)) return value.slice(0, -CHAT_PATH.length) + RECORDS_PATH
+  return `${value}${RECORDS_PATH}`
+}
+
 export const MODEL_API_CONFIG = {
   /** public/config.js or VITE_API_BASE_URL can switch deployments without rebuilding page business code. */
   url: resolveApiUrl(),
@@ -51,4 +62,10 @@ export const MODEL_API_CONFIG = {
 export const CHAT_API_CONFIG = {
   url: appendChatPath(resolveApiUrl()),
   timeout: 45000,
+}
+
+/** Canonical history API (AIFA-30): GET /api/records — no /api/history. */
+export const RECORDS_API_CONFIG = {
+  url: appendRecordsPath(resolveApiUrl()),
+  timeout: 20000,
 }

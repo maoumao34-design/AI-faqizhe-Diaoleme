@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+uploads
+data
+.env
+.env.*
+*.log
+.git
+.gitignore
+docs/cleanup-inventory.md
