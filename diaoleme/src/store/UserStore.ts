@@ -21,6 +21,10 @@ export interface ReportRecord {
   count: '少量' | '中等' | '偏多'
   thickness: '粗硬' | '正常' | '细软'
   suggestions: string[]
+  /** From GET /api/records compare (AIFA-30); optional for local-only rows. */
+  score_delta?: number | null
+  prev_title?: string | null
+  exp_added?: number
 }
 
 interface UserState {
@@ -48,6 +52,8 @@ interface UserState {
   viewReport: (id: string) => void
   viewDayReport: (date: string) => void
   addReport: (r: ReportRecord) => void
+  /** Merge server history (GET /api/records) without wiping fresher local-only rows. */
+  mergeRemoteHistory: (records: ReportRecord[]) => void
   markCheckinToday: () => void
   unlockHairStyle: (id: string, cost: number) => boolean
   addPoints: (n: number) => void
@@ -152,6 +158,13 @@ export const useUserStore = create<UserState>()(
 
       addReport: (r) =>
         set((s) => ({ reportHistory: [r, ...s.reportHistory].slice(0, 100) })),
+
+      mergeRemoteHistory: (records) =>
+        set((s) => {
+          const remoteKeys = new Set(records.map((r) => r.record_id || r.id).filter(Boolean))
+          const localOnly = s.reportHistory.filter((r) => !remoteKeys.has(r.record_id || r.id))
+          return { reportHistory: [...localOnly, ...records].slice(0, 100) }
+        }),
 
       markCheckinToday: () => {
         const t = today()

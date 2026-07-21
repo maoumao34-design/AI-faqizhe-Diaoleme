@@ -752,20 +752,89 @@ async function handleCreateRecord(req, res) {
   }
 }
 
+/** Canonical history list fields for frontend comparison / growth UI. */
+function toHistoryListItem(record, olderRecord = null) {
+  const result = record?.result && typeof record.result === 'object' ? record.result : {}
+  const growthSource = result.growthDelta && typeof result.growthDelta === 'object'
+    ? result.growthDelta
+    : (result.growth && typeof result.growth === 'object' ? result.growth : {})
+  const score = typeof result.score === 'number'
+    ? result.score
+    : (typeof result.fun_score === 'number' ? result.fun_score : null)
+  const title = typeof result.title === 'string' ? result.title : null
+  const imageUrl = typeof record?.image_url === 'string' ? record.image_url : null
+
+  const olderResult = olderRecord?.result && typeof olderRecord.result === 'object' ? olderRecord.result : null
+  const olderScore = typeof olderResult?.score === 'number'
+    ? olderResult.score
+    : (typeof olderResult?.fun_score === 'number' ? olderResult.fun_score : null)
+  const olderTitle = typeof olderResult?.title === 'string' ? olderResult.title : null
+
+  return {
+    ...record,
+    // Flat history summary (canonical for list / compare views)
+    record_id: record?.record_id || null,
+    created_at: record?.created_at || null,
+    image_url: imageUrl,
+    thumbnail_url: imageUrl,
+    title,
+    score,
+    fun_score: score,
+    record_status: record?.record_status || null,
+    growth: {
+      exp_added: typeof growthSource.exp_added === 'number' ? growthSource.exp_added : 0,
+      current_level: typeof growthSource.current_level === 'number' ? growthSource.current_level : 1,
+      streak_days: typeof growthSource.streak_days === 'number' ? growthSource.streak_days : 0,
+    },
+    compare: olderRecord
+      ? {
+          prev_record_id: olderRecord.record_id || null,
+          prev_created_at: olderRecord.created_at || null,
+          prev_title: olderTitle,
+          prev_score: olderScore,
+          score_delta: typeof score === 'number' && typeof olderScore === 'number' ? score - olderScore : null,
+          title_changed: Boolean(title && olderTitle && title !== olderTitle),
+        }
+      : null,
+  }
+}
+
 async function handleListRecords(url, res) {
   const requestedLimit = Number(url.searchParams.get('limit') || 50)
   const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 50
   const records = await readRecords()
-  return jsonResponse(res, 200, { success: true, records: records.slice(0, limit), total: records.length })
+  // Newest first; compare each item against the next (older) record for growth feedback.
+  const page = records.slice(0, limit)
+  const history = page.map((record, index) => {
+    const olderInPage = page[index + 1] || null
+    const olderOverall = olderInPage || records[limit] || null
+    return toHistoryListItem(record, olderOverall)
+  })
+  return jsonResponse(res, 200, {
+    success: true,
+    contract: 'history_list_v1',
+    // GET /api/records is the unique history API; do not invent /api/history for demo.
+    history_api: 'GET /api/records',
+    persistence_note: 'Free PaaS 磁盘可能在实例重启后丢失 JSON 记录；demo 可接受，长期需持久卷或数据库。',
+    records: history,
+    total: records.length,
+  })
 }
 
 async function handleGetRecord(recordId, res) {
   const records = await readRecords()
-  const record = records.find((item) => item.record_id === recordId)
-  if (!record) {
+  const index = records.findIndex((item) => item.record_id === recordId)
+  if (index < 0) {
     return jsonResponse(res, 404, { success: false, error: { code: 'RECORD_NOT_FOUND', message: '没有找到这条记录。' } })
   }
-  return jsonResponse(res, 200, { success: true, record })
+  const record = records[index]
+  const older = records[index + 1] || null
+  return jsonResponse(res, 200, {
+    success: true,
+    contract: 'history_detail_v1',
+    history_api: 'GET /api/records/:id',
+    record: toHistoryListItem(record, older),
+  })
 }
 
 function fallbackFromError(error, imageUrl) {
@@ -982,7 +1051,7 @@ export function createApp() {
     return jsonResponse(res, 404, {
       success: false,
       fallbackCode: 'NOT_FOUND',
-      error: { code: 'NOT_FOUND', message: `接口不存在，请检查 /api/analyze、/api/chat 或 /api/records。` },
+      error: { code: 'NOT_FOUND', message: `接口不存在，请检查 /api/analyze、/api/chat 或历史接口 /api/records。` },
     })
   })
 }

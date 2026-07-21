@@ -158,7 +158,19 @@ npm run dev
 }
 ```
 
-## 记录存档与历史查询
+## 记录存档与历史查询（唯一历史 API）
+
+**契约声明（AIFA-30）：** demo 阶段**不新建** `/api/history`。历史列表 / 详情 / 对比字段一律走：
+
+| 用途 | 方法 | 路径 |
+| --- | --- | --- |
+| 创建补存 | `POST` | `/api/records` |
+| 历史列表（对比/养成） | `GET` | `/api/records?limit=50` |
+| 单条详情 | `GET` | `/api/records/:id` |
+
+`POST /api/analyze` 成功或 fallback 后也会尽力落库；前端历史页只读 `GET /api/records` 即可。
+
+**持久化说明：** 默认写入本地 JSON（`RECORDS_FILE` / `backend/data/records.json`）。Render Free 等临时磁盘在实例重启后可能清空记录；5 周 demo 可接受，文案勿承诺「永久存档」。
 
 ### 创建记录
 
@@ -184,23 +196,98 @@ npm run dev
 }
 ```
 
-### 历史列表
+### 历史列表（对比 / 养成反馈）
 
 - 接口路径：`GET /api/records?limit=50`
-- `limit` 范围：1-100，默认 50。
+- `limit` 范围：1–100，默认 50。
+- 排序：按 `created_at` **新 → 旧**（与落库 `unshift` 一致）。
+- 每条记录在完整存档字段之外，额外提供扁平摘要与相对**下一条（更旧）**的 `compare`，方便历史页展示分数/称号变化。
+
+列表字段说明：
+
+| 字段 | 说明 |
+| --- | --- |
+| `record_id` | 记录 ID |
+| `created_at` | ISO 时间 |
+| `image_url` / `thumbnail_url` | 照片 URL（demo 阶段缩略图同原图） |
+| `title` | 娱乐化称号（来自 `result.title`） |
+| `score` / `fun_score` | 趣味分，二者同值（兼容旧 `score` 与产品文档 `fun_score`） |
+| `record_status` | 分析状态 |
+| `growth.exp_added` / `current_level` / `streak_days` | 本次成长摘要 |
+| `compare.score_delta` | 相对上一条（更旧）的分数差；最旧记录为 `null` |
+| `compare.title_changed` | 称号是否相对上一条变化 |
+| `compare.prev_*` | 上一条的 id / 时间 / 称号 / 分数 |
+| `result` | 完整分析结果（详情页可复用） |
+| `contract` | 固定 `history_list_v1` |
+| `history_api` | 固定提示 `GET /api/records` |
+| `persistence_note` | Free 盘可能丢数据的说明 |
+
+返回示例：
 
 ```json
 {
   "success": true,
-  "records": [],
-  "total": 0
+  "contract": "history_list_v1",
+  "history_api": "GET /api/records",
+  "persistence_note": "Free PaaS 磁盘可能在实例重启后丢失 JSON 记录；demo 可接受，长期需持久卷或数据库。",
+  "total": 2,
+  "records": [
+    {
+      "record_id": "rec_newer",
+      "created_at": "2026-07-21T10:00:00.000Z",
+      "image_url": "https://example.com/demo-a.jpg",
+      "thumbnail_url": "https://example.com/demo-a.jpg",
+      "title": "今日发量守护者",
+      "score": 86,
+      "fun_score": 86,
+      "record_status": "demo_mock_completed",
+      "growth": { "exp_added": 12, "current_level": 1, "streak_days": 1 },
+      "compare": {
+        "prev_record_id": "rec_older",
+        "prev_created_at": "2026-07-21T09:00:00.000Z",
+        "prev_title": "模糊也努力奖",
+        "prev_score": 58,
+        "score_delta": 28,
+        "title_changed": true
+      },
+      "result": {
+        "score": 86,
+        "title": "今日发量守护者",
+        "summary": "这张记录看起来清爽有精神，今天的头发小伙伴状态在线。",
+        "growthDelta": { "exp_added": 12, "current_level": 1, "streak_days": 1 }
+      }
+    },
+    {
+      "record_id": "rec_older",
+      "created_at": "2026-07-21T09:00:00.000Z",
+      "image_url": "https://example.com/demo-b.jpg",
+      "thumbnail_url": "https://example.com/demo-b.jpg",
+      "title": "模糊也努力奖",
+      "score": 58,
+      "fun_score": 58,
+      "record_status": "demo_mock_saved_with_notes",
+      "growth": { "exp_added": 8, "current_level": 1, "streak_days": 1 },
+      "compare": null,
+      "result": { "score": 58, "title": "模糊也努力奖" }
+    }
+  ]
 }
 ```
 
 ### 记录详情
 
 - 接口路径：`GET /api/records/:id`
+- 返回 `contract: history_detail_v1`，`record` 形状与列表项相同（含 `compare`）。
 - 未找到返回 `404` + `RECORD_NOT_FOUND`。
+
+### 前端联调步骤（历史页）
+
+1. `GET https://<host>/api/records?limit=20`（公网示例：`https://ai-faqizhe-diaoleme.onrender.com/api/records`）。
+2. 用 `records[0]` / `records[1]` 至少两条渲染列表；展示 `title`、`fun_score`（或 `score`）、`created_at`、`thumbnail_url`。
+3. 对比/养成：读 `compare.score_delta`、`compare.title_changed`、`growth.exp_added`；不要自己再算一遍也可。
+4. 点进详情：`GET /api/records/:id`，或直接用列表里的 `result`。
+5. Cold start：若首次请求慢/失败，先 `GET /api/health` 预热后再拉历史。
+6. 文案：保持娱乐养成语气；勿展示医疗化字段；可轻提示 Free 盘重启可能丢历史。
 
 ## Mock 场景
 
