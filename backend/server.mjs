@@ -20,12 +20,13 @@ const LEGACY_ANALYSIS_PATH = '/api/hair-analysis'
 const CHAT_PATH = '/api/chat'
 const SILICONFLOW_URL = 'https://api.siliconflow.cn/v1/chat/completions'
 const SILICONFLOW_MODEL = process.env.SILICONFLOW_MODEL || 'Qwen/Qwen3-VL-32B-Instruct'
-const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 30000)
+// VL / multimodal calls on free PaaS often exceed 30s; default 90s to cut false UPSTREAM_TIMEOUT.
+const SILICONFLOW_TIMEOUT_MS = Number(process.env.SILICONFLOW_TIMEOUT_MS || 90000)
 const AI_PROVIDER = normalizeProvider(process.env.AI_PROVIDER || (process.env.OPENAI_API_KEY ? 'openai_compatible' : 'siliconflow'))
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://claude-code.club/openai/v1'
 const OPENAI_RESPONSES_URL = process.env.OPENAI_RESPONSES_URL || buildEndpointUrl(OPENAI_BASE_URL, 'responses')
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5'
-const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || process.env.SILICONFLOW_TIMEOUT_MS || 30000)
+const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || process.env.SILICONFLOW_TIMEOUT_MS || 90000)
 
 const SAFE_DISCLAIMER = '本结果仅用于娱乐和习惯记录，不构成医疗建议。'
 const UNSAFE_AI_CONTENT = [
