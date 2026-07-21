@@ -1,0 +1,3 @@
+AIFA-33: restore AI chat CSS + relative Rewards/League assets
+Built from fix/aifa-33-pages-assets-chat (28e44eb)
+API: https://ai-faqizhe-diaoleme.onrender.com
