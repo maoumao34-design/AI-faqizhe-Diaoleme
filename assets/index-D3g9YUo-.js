@@ -106,8 +106,8 @@ Error generating stack: `+o.message+`
               <p>确保光线充足，避免阴影和反光</p>
               <div class="hero-buttons" style="justify-content:center">
                 <button class="cta primary" id="scanBtn">📷 拍照扫描</button>
-                <button class="cta ghost" id="uploadBtn">🖼 相册上传</button>
-                <button class="cta primary" id="scanCompleteBtn" style="display:none">完成</button>
+                <button class="cta ghost" id="uploadBtn" type="button">🖼 相册上传</button>
+                <button class="cta primary" id="scanCompleteBtn" type="button" style="display:none">✓ 完成</button>
               </div>
             </div>
             <div class="grid">
@@ -255,7 +255,7 @@ Error generating stack: `+o.message+`
                   <p>距离下一等级还需 2,640 XP</p>
                   <div class="rewards-level-progress"><i style="width:82%"></i></div>
                 </div>
-                <img class="rewards-hero-character" src="/rewards-assets/hero-character.png" alt="蒲公英角色">
+                <img class="rewards-hero-character" src="./rewards-assets/hero-character.png" alt="蒲公英角色">
                 <div class="rewards-earn-card">
                   <h3>积分获取方式</h3>
                   <ul>
@@ -307,7 +307,7 @@ Error generating stack: `+o.message+`
 
               <section class="rewards-side-panel event-panel">
                 <div class="rewards-panel-heading"><strong>限时活动</strong><button type="button">更多活动 ›</button></div>
-                <button type="button" class="event-banner"><img src="/rewards-assets/event-banner.png" alt="夏日养发计划"></button>
+                <button type="button" class="event-banner"><img src="./rewards-assets/event-banner.png" alt="夏日养发计划"></button>
               </section>
 
               <section class="rewards-side-panel records-panel">
@@ -702,11 +702,18 @@ document.querySelector("#posts").innerHTML = [
     box-sizing: border-box;
   }
 
+  /* Keep line-height normal so Vite/Tailwind preflight (html line-height:1.5) does not inflate type */
+  html {
+    line-height: normal !important;
+  }
+
   body {
     margin: 0;
     min-height: 100vh;
     color: var(--ink);
     font-family: Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: normal !important;
     background:
       radial-gradient(circle at 72% 4%, rgba(126, 105, 255, 0.34), transparent 31%),
       radial-gradient(circle at 20% 7%, rgba(255, 183, 210, 0.42), transparent 27%),
@@ -870,8 +877,8 @@ document.querySelector("#posts").innerHTML = [
 
   .page-title h2 {
     margin: 0;
-    font-size: clamp(30px, 4vw, 46px);
-    line-height: 1.05;
+    font-size: clamp(24px, 2.8vw, 34px);
+    line-height: 1.1;
     letter-spacing: 0;
   }
 
@@ -895,6 +902,8 @@ document.querySelector("#posts").innerHTML = [
     color: var(--purple);
     background: rgba(255, 255, 255, 0.68);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    line-height: 1.2;
     font-weight: 800;
   }
 
@@ -977,8 +986,9 @@ document.querySelector("#posts").innerHTML = [
   .hero h2 {
     margin: 0;
     max-width: 620px;
-    font-size: clamp(42px, 4.5vw, 68px);
-    line-height: 1.06;
+    /* Cap vw growth — desktop Pages was ~65px and felt oversized vs local phone preview */
+    font-size: clamp(28px, 3.2vw, 40px);
+    line-height: 1.12;
     letter-spacing: 0;
   }
 
@@ -1248,7 +1258,7 @@ document.querySelector("#posts").innerHTML = [
   }
 
   .big-number {
-    font-size: 54px;
+    font-size: 40px;
     line-height: 1;
     color: var(--purple);
     font-weight: 950;
@@ -1544,7 +1554,7 @@ document.querySelector("#posts").innerHTML = [
     border-radius: 8px;
     display: grid;
     place-items: center;
-    font-size: 58px;
+    font-size: 42px;
     background: linear-gradient(145deg, #fff, #ffe9f0);
   }
 
@@ -1719,7 +1729,7 @@ document.querySelector("#posts").innerHTML = [
     }
 
     .hero h2 {
-      font-size: 42px;
+      font-size: 30px;
     }
 
     .buddy-stage {
@@ -1802,7 +1812,7 @@ document.querySelector("#posts").innerHTML = [
       ${c0(s,i)}
     </div>
     <button class="pill" data-action="journey-share">分享我的旅程</button>
-  `)}const f0=Math.round(np/1024/1024);function g0(r,s){const i=r.querySelector('[data-page="scan"]'),u=r.querySelector("#scanBtn"),d=r.querySelector("#uploadBtn"),p=r.querySelector("#scanCompleteBtn"),f=r.querySelector("#scanPercent"),g=i==null?void 0:i.querySelector('.card[style*="text-align:center"]'),b=document.createElement("input"),k=document.createElement("input");let x=null,C=null,$=null;const I=(re,ae=!1)=>{re.type="file",re.accept="image/*",ae&&re.setAttribute("capture","environment"),re.style.display="none",document.body.appendChild(re)};I(b,!0),I(k);const q=(re,ae="idle")=>{const G=g==null?void 0:g.querySelector("[data-analysis-status]"),Z=G||document.createElement("p");Z.dataset.analysisStatus="true",Z.textContent=re,Z.style.color=ae==="error"?"#ff7a2f":ae==="success"?"#65c982":"#65709e",Z.style.fontWeight="800",G||g==null||g.appendChild(Z)},H=re=>{C&&URL.revokeObjectURL(C),C=URL.createObjectURL(re);const ae=r.querySelector(".scan-orbit"),G=ae==null?void 0:ae.querySelector("[data-upload-preview]"),Z=G||document.createElement("img");Z.dataset.uploadPreview="true",Z.src=C,Z.alt="上传预览",Object.assign(Z.style,{position:"absolute",inset:"22px",width:"calc(100% - 44px)",height:"calc(100% - 44px)",objectFit:"cover",borderRadius:"50%",boxShadow:"0 18px 45px rgba(99, 75, 168, 0.22)",zIndex:"3"}),G||ae==null||ae.appendChild(Z),f&&(f.textContent="已选",f.style.zIndex="4"),p&&(p.style.display=""),q(`已选择：${re.name}，点击“完成”确认并开始 AI 分析。`)},R=()=>{var re;$==null||$.getTracks().forEach(ae=>ae.stop()),$=null,(re=r.querySelector("[data-camera-modal]"))==null||re.remove()},P=re=>{const ae=new File([re],`diaoleme-camera-${Date.now()}.jpg`,{type:"image/jpeg"});x=ae,H(ae),q("已自动上传刚拍的照片，点击“完成”确认并开始 AI 分析。"),R()},U=async()=>{var G;const re={video:{facingMode:{ideal:"environment"}},audio:!1};if((G=navigator.mediaDevices)!=null&&G.getUserMedia)return navigator.mediaDevices.getUserMedia(re);const ae=navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia;return ae?new Promise((Z,ye)=>ae.call(navigator,re,Z,ye)):null},W=async()=>{var re,ae;try{if($=await U(),!$){q("此页面无相机权限，请检查吧。","error");return}const G=document.createElement("div");G.dataset.cameraModal="true",G.className="camera-capture-modal",G.innerHTML='<div class="camera-capture-box"><video autoplay playsinline></video><div class="hero-buttons" style="justify-content:center"><button class="cta primary" data-camera-capture>拍照并上传</button><button class="cta ghost" data-camera-cancel>取消</button></div></div>',r.appendChild(G);const Z=G.querySelector("video");Z&&(Z.srcObject=$),(re=G.querySelector("[data-camera-cancel]"))==null||re.addEventListener("click",R),(ae=G.querySelector("[data-camera-capture]"))==null||ae.addEventListener("click",()=>{var Re;if(!Z||Z.videoWidth===0)return;const ye=document.createElement("canvas");ye.width=Z.videoWidth,ye.height=Z.videoHeight,(Re=ye.getContext("2d"))==null||Re.drawImage(Z,0,0),ye.toBlob(Ee=>{Ee&&P(Ee)},"image/jpeg",.92)}),q("相机已打开，请拍照后自动上传。")}catch(G){console.error("[prototype] camera failed:",G),R(),q("此页面无相机权限，请检查吧。","error")}},F=()=>W(),se=()=>k.click(),X=re=>{var Z;const ae=re.currentTarget,G=(Z=ae.files)==null?void 0:Z[0];if(ae.value="",!!G)try{rp(G),x=G,H(G)}catch(ye){x=null;const Re={not_image:"这个文件不是图片，请选择 JPG、PNG 等图片文件。",empty_file:"图片文件为空，请重新选择。",file_too_large:`图片有点大啦，请选择 ${f0}MB 以内的照片再试。`};q(Re[ye==null?void 0:ye.message]||"图片暂时读不出来，请换一张再试。","error")}},de=async()=>{if(!x){se(),q("请先选择或拍摄一张图片。");return}u&&(u.disabled=!0),d&&(d.disabled=!0),p&&(p.disabled=!0),q("分析中，正在调用后端 AI 代理...");let re=10;f&&(f.textContent="10%");const ae=window.setInterval(()=>{re=Math.min(re+8,96),f&&(f.textContent=`${re}%`)},140);try{const G=await Oh(x);m0(G),window.clearInterval(ae),Hl(r,G),s.renderStatefulSections(),q(G.fallback_code?"已生成 fallback 结果，可继续演示完整流程。":"AI 分析完成，结果已写入报告和历史记录。","success")}catch(G){console.error("[prototype] analyze failed:",G),window.clearInterval(ae),f&&(f.textContent="失败"),q("分析接口暂时不可用，请稍后重试。","error")}finally{u&&(u.disabled=!1),d&&(d.disabled=!1),p&&(p.disabled=!1)}};return b.addEventListener("change",X),k.addEventListener("change",X),u==null||u.addEventListener("click",F),d==null||d.addEventListener("click",se),p==null||p.addEventListener("click",de),()=>{b.removeEventListener("change",X),k.removeEventListener("change",X),u==null||u.removeEventListener("click",F),d==null||d.removeEventListener("click",se),p==null||p.removeEventListener("click",de),R(),b.remove(),k.remove(),C&&URL.revokeObjectURL(C)}}function m0(r){const s=xe.getState();s.setAnalysis(r),s.addReport({id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),date:h0(),score:r.score,title:r.title,summary:r.summary,roast:r.roast,encouragement:r.encouragement,tags:r.tags,daily_task:r.daily_task,disclaimer:r.disclaimer,source:r.source,source_label:r.source_label,fallback_code:r.fallback_code,record_status:r.record_status,record_id:r.record_id,count:r.count,thickness:r.thickness,suggestions:r.suggestions})}function Cc(){const r=xe.getState();return{score:r.dropScore??66,title:r.title,summary:r.summary,roast:r.roast,encouragement:r.encouragement,tags:r.tags.length?r.tags:["等待记录"],daily_task:r.dailyTask,disclaimer:r.disclaimer,source:r.source,source_label:r.sourceLabel,fallback_code:r.fallbackCode,record_status:r.recordStatus,record_id:r.recordId,count:r.count,thickness:r.thickness,suggestions:r.suggestions}}function Rc(r){var i;const s=r.querySelector('[data-page="scan"] .card[style*="text-align:center"]');(i=s==null?void 0:s.querySelector("[data-analysis-result]"))==null||i.remove(),s==null||s.classList.remove("has-analysis-result")}function Hl(r,s){const i=r.querySelector("#scanPercent"),u=r.querySelector('[data-page="scan"] .card[style*="text-align:center"]');if(i&&(i.textContent=`${s.score}%`),!u||xe.getState().dropScore==null)return;const d=u.querySelector("[data-analysis-result]");d==null||d.remove(),u.classList.add("has-analysis-result");const p=s.source_label||"未知来源",f=s.fallback_code?`fallback: ${s.fallback_code}`:s.record_id?`记录编号: ${s.record_id}`:"已生成新的扫描记录",g=u.querySelector(".scan-orbit");g&&(g.style.filter="saturate(1.08)");const b=`
+  `)}const f0=Math.round(np/1024/1024);function g0(r,s){const i=r.querySelector('[data-page="scan"]'),u=r.querySelector("#scanBtn"),d=r.querySelector("#uploadBtn"),p=r.querySelector("#scanCompleteBtn"),f=r.querySelector("#scanPercent"),g=i==null?void 0:i.querySelector('.card[style*="text-align:center"]'),b=document.createElement("input"),k=document.createElement("input");let x=null,C=null,$=null;const I=(re,ae=!1)=>{re.type="file",re.accept="image/*",ae&&re.setAttribute("capture","environment"),re.style.display="none",document.body.appendChild(re)};I(b,!0),I(k);const q=(re,ae="idle")=>{const G=g==null?void 0:g.querySelector("[data-analysis-status]"),Z=G||document.createElement("p");Z.dataset.analysisStatus="true",Z.textContent=re,Z.style.color=ae==="error"?"#ff7a2f":ae==="success"?"#65c982":"#65709e",Z.style.fontWeight="800",G||g==null||g.appendChild(Z)},H=re=>{C&&URL.revokeObjectURL(C),C=URL.createObjectURL(re);const ae=r.querySelector(".scan-orbit"),G=ae==null?void 0:ae.querySelector("[data-upload-preview]"),Z=G||document.createElement("img");Z.dataset.uploadPreview="true",Z.src=C,Z.alt="上传预览",Object.assign(Z.style,{position:"absolute",inset:"22px",width:"calc(100% - 44px)",height:"calc(100% - 44px)",objectFit:"cover",borderRadius:"50%",boxShadow:"0 18px 45px rgba(99, 75, 168, 0.22)",zIndex:"3"}),G||ae==null||ae.appendChild(Z),f&&(f.textContent="已选",f.style.zIndex="4"),p&&(p.hidden=!1,p.style.display="",p.setAttribute("aria-hidden","false")),q(`已选择：${re.name}，点击“完成”确认并开始 AI 分析。`)},R=()=>{var re;$==null||$.getTracks().forEach(ae=>ae.stop()),$=null,(re=r.querySelector("[data-camera-modal]"))==null||re.remove()},P=re=>{const ae=new File([re],`diaoleme-camera-${Date.now()}.jpg`,{type:"image/jpeg"});x=ae,H(ae),q("已自动上传刚拍的照片，点击“完成”确认并开始 AI 分析。"),R()},U=async()=>{var G;const re={video:{facingMode:{ideal:"environment"}},audio:!1};if((G=navigator.mediaDevices)!=null&&G.getUserMedia)return navigator.mediaDevices.getUserMedia(re);const ae=navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia;return ae?new Promise((Z,ye)=>ae.call(navigator,re,Z,ye)):null},W=async()=>{var re,ae;try{if($=await U(),!$){q("此页面无相机权限，请检查吧。","error");return}const G=document.createElement("div");G.dataset.cameraModal="true",G.className="camera-capture-modal",G.innerHTML='<div class="camera-capture-box"><video autoplay playsinline></video><div class="hero-buttons" style="justify-content:center"><button class="cta primary" data-camera-capture>拍照并上传</button><button class="cta ghost" data-camera-cancel>取消</button></div></div>',r.appendChild(G);const Z=G.querySelector("video");Z&&(Z.srcObject=$),(re=G.querySelector("[data-camera-cancel]"))==null||re.addEventListener("click",R),(ae=G.querySelector("[data-camera-capture]"))==null||ae.addEventListener("click",()=>{var Re;if(!Z||Z.videoWidth===0)return;const ye=document.createElement("canvas");ye.width=Z.videoWidth,ye.height=Z.videoHeight,(Re=ye.getContext("2d"))==null||Re.drawImage(Z,0,0),ye.toBlob(Ee=>{Ee&&P(Ee)},"image/jpeg",.92)}),q("相机已打开，请拍照后自动上传。")}catch(G){console.error("[prototype] camera failed:",G),R(),q("此页面无相机权限，请检查吧。","error")}},F=()=>W(),se=()=>k.click(),X=re=>{var Z;const ae=re.currentTarget,G=(Z=ae.files)==null?void 0:Z[0];if(ae.value="",!!G)try{rp(G),x=G,H(G)}catch(ye){x=null;const Re={not_image:"这个文件不是图片，请选择 JPG、PNG 等图片文件。",empty_file:"图片文件为空，请重新选择。",file_too_large:`图片有点大啦，请选择 ${f0}MB 以内的照片再试。`};q(Re[ye==null?void 0:ye.message]||"图片暂时读不出来，请换一张再试。","error")}},de=async()=>{if(!x){se(),q("请先选择或拍摄一张图片。");return}u&&(u.disabled=!0),d&&(d.disabled=!0),p&&(p.disabled=!0),q("分析中，正在调用后端 AI 代理...");let re=10;f&&(f.textContent="10%");const ae=window.setInterval(()=>{re=Math.min(re+8,96),f&&(f.textContent=`${re}%`)},140);try{const G=await Oh(x);m0(G),window.clearInterval(ae),Hl(r,G),s.renderStatefulSections(),q(G.fallback_code?"已生成 fallback 结果，可继续演示完整流程。":"AI 分析完成，结果已写入报告和历史记录。","success")}catch(G){console.error("[prototype] analyze failed:",G),window.clearInterval(ae),f&&(f.textContent="失败"),q("分析接口暂时不可用，请稍后重试。","error")}finally{u&&(u.disabled=!1),d&&(d.disabled=!1),p&&(p.disabled=!1)}};return b.addEventListener("change",X),k.addEventListener("change",X),u==null||u.addEventListener("click",F),d==null||d.addEventListener("click",se),p==null||p.addEventListener("click",de),()=>{b.removeEventListener("change",X),k.removeEventListener("change",X),u==null||u.removeEventListener("click",F),d==null||d.removeEventListener("click",se),p==null||p.removeEventListener("click",de),R(),b.remove(),k.remove(),C&&URL.revokeObjectURL(C)}}function m0(r){const s=xe.getState();s.setAnalysis(r),s.addReport({id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),date:h0(),score:r.score,title:r.title,summary:r.summary,roast:r.roast,encouragement:r.encouragement,tags:r.tags,daily_task:r.daily_task,disclaimer:r.disclaimer,source:r.source,source_label:r.source_label,fallback_code:r.fallback_code,record_status:r.record_status,record_id:r.record_id,count:r.count,thickness:r.thickness,suggestions:r.suggestions})}function Cc(){const r=xe.getState();return{score:r.dropScore??66,title:r.title,summary:r.summary,roast:r.roast,encouragement:r.encouragement,tags:r.tags.length?r.tags:["等待记录"],daily_task:r.dailyTask,disclaimer:r.disclaimer,source:r.source,source_label:r.sourceLabel,fallback_code:r.fallbackCode,record_status:r.recordStatus,record_id:r.recordId,count:r.count,thickness:r.thickness,suggestions:r.suggestions}}function Rc(r){var i;const s=r.querySelector('[data-page="scan"] .card[style*="text-align:center"]');(i=s==null?void 0:s.querySelector("[data-analysis-result]"))==null||i.remove(),s==null||s.classList.remove("has-analysis-result")}function Hl(r,s){const i=r.querySelector("#scanPercent"),u=r.querySelector('[data-page="scan"] .card[style*="text-align:center"]');if(i&&(i.textContent=`${s.score}%`),!u||xe.getState().dropScore==null)return;const d=u.querySelector("[data-analysis-result]");d==null||d.remove(),u.classList.add("has-analysis-result");const p=s.source_label||"未知来源",f=s.fallback_code?`fallback: ${s.fallback_code}`:s.record_id?`记录编号: ${s.record_id}`:"已生成新的扫描记录",g=u.querySelector(".scan-orbit");g&&(g.style.filter="saturate(1.08)");const b=`
     <div class="card soft scan-result-card" data-analysis-result>
       <div class="scan-result-head">
         <div>
@@ -1823,7 +1833,7 @@ document.querySelector("#posts").innerHTML = [
       <div class="analysis-tags">${s.tags.map(k=>`<span class="badge">${z(k)}</span>`).join("")}</div>
       <small>${z(s.disclaimer)}</small>
     </div>
-  `;u.insertAdjacentHTML("beforeend",b)}function h0(){return new Date().toISOString().slice(0,10)}const Dn=["daily","weekly","growth","special"],Bl={daily:"每日任务",weekly:"每周任务",growth:"成长任务",special:"特别任务"},v0={weekly:[{id:"weekly-scan-3",category:"weekly",icon:"📷",title:"完成 3 次记录",description:"给小发球攒一组本周观察素材。",target:"0/3",reward:35,actionLabel:"记录本周"},{id:"weekly-sleep-4",category:"weekly",icon:"🌙",title:"4 天温柔早睡",description:"不卷到深夜，给头皮也放个小假。",target:"0/4",reward:40,actionLabel:"打卡早睡"},{id:"weekly-share",category:"weekly",icon:"💬",title:"分享一次发球周报",description:"把本周小进步发给朋友，轻松晒一下。",target:"0/1",reward:25,actionLabel:"去分享"},{id:"weekly-massage",category:"weekly",icon:"🪮",title:"完成 3 次头皮放松",description:"睡前 5 分钟，给自己按下暂停键。",target:"0/3",reward:30,actionLabel:"开始放松"}],growth:[{id:"growth-first-report",category:"growth",icon:"🌱",title:"生成第一份种子报告",description:"上传照片后获得你的第一枚趣味称号。",target:"0/1",reward:45,actionLabel:"去扫描"},{id:"growth-7-day",category:"growth",icon:"🔥",title:"连续记录 7 天",description:"把小习惯养成小成就，不求完美只求坚持。",target:"0/7",reward:80,actionLabel:"点亮进度"},{id:"growth-unlock-style",category:"growth",icon:"🎀",title:"解锁一个新造型",description:"给小发球换套新皮肤，奖励认真生活的你。",target:"0/1",reward:60,actionLabel:"去解锁"},{id:"growth-history",category:"growth",icon:"📒",title:"查看一次历史趋势",description:"回头看看，最近的自己已经很棒啦。",target:"0/1",reward:25,actionLabel:"看趋势"}],special:[{id:"special-spring",category:"special",icon:"🌸",title:"春风吹发季签到",description:"参与限时季节活动，领取春日能量。",target:"0/1",reward:50,actionLabel:"领取能量"},{id:"special-mood",category:"special",icon:"😊",title:"写下今日心情弹幕",description:"把压力吐槽给小发球听，轻轻放过自己。",target:"0/1",reward:30,actionLabel:"写一句"},{id:"special-buddy",category:"special",icon:"☁️",title:"和 Buddy 互动一次",description:"摸摸小发球，让陪伴感上线。",target:"0/1",reward:35,actionLabel:"去互动"},{id:"special-community",category:"special",icon:"✨",title:"逛逛社区治愈帖",description:"看看大家的小妙招，找到一点轻松感。",target:"0/1",reward:25,actionLabel:"去看看"}]};let ql=null;function y0(r){ql=r}function b0(r,s){Qt();const i=xe.getState(),u=gr(s),d=oa(s),p=u.filter(x=>d.has(x.id)).length,f=Dn.flatMap(gr),g=Dn.reduce((x,C)=>x+oa(C).size,0),b=f.length?Math.round(g/f.length*100):0,k=gr("daily").every(x=>oa("daily").has(x.id));fe(r.querySelector('[data-page="quests"] .tabs'),Dn.map(x=>`<button class="pill ${x===s?"primary":""}" data-quest-category="${x}">${Bl[x]}</button>`).join("")),fe(r.querySelector("#questList"),u.map(x=>S0(x,d.has(x.id))).join("")+E0(s,p,u.length,k)),fe(r.querySelector("#weekRewards"),["一","二","三","四","五","六","日"].map((x,C)=>`<span class="badge">${C<i.checkinDays.length?"✓":x}<br><small>+${C<5?10+C*5:25} XP</small></span>`).join("")),fe(r.querySelector('[data-page="quests"] aside .card:nth-child(1)'),`<h3>我的任务进度</h3><div class="big-number">${b}%</div><div class="meter"><div class="fill" style="--w:${b}%"></div></div><p>完成 ${g}/${f.length} 个任务</p><small>${Bl[s]}：${p}/${u.length}</small>`),fe(r.querySelector('[data-page="quests"] aside .card:nth-child(3)'),`<h3>任务小贴士</h3><p>${_0(s)}</p><div class="mini-buddy"></div>`),fe(r.querySelector('[data-page="quests"] aside .card:nth-child(4)'),`<h3>本周任务总览</h3><div class="donut" data-label="${g}/${f.length}\\A 已完成"></div><p>${k?"每日建议已全部点亮，额外奖励已入账。":"今天再点亮一个小任务，就很不错啦。"}</p>`)}function x0(r,s,i){const u=gr(r).find(p=>p.id===s);if(!u)return;const d=oa(r);if(d.has(s)){gt(i,"这个任务已经领取过啦");return}if(d.add(s),C0(r,d),xe.getState().addPoints(u.reward),gt(i,`+${u.reward} XP · ${u.title}`),r==="daily"){const p=gr("daily");p.length>0&&p.every(f=>d.has(f.id))&&localStorage.getItem(Qt().taskBonusKey())!=="1"&&(localStorage.setItem(Qt().taskBonusKey(),"1"),xe.getState().addPoints(10),gt(i,"每日建议全完成，额外 +10 XP"))}}function w0(){const r=Qt();localStorage.removeItem(r.taskKey()),localStorage.removeItem(r.taskBonusKey()),Dn.forEach(s=>localStorage.removeItem(r.questProgressKey(s)))}function k0(){const r=Dn.flatMap(gr).length;return{done:Dn.reduce((i,u)=>i+oa(u).size,0),total:r}}function gr(r){const s=Qt();return r!=="daily"?v0[r]:s.getSuggestions().map((i,u)=>({id:`daily-${u}`,category:"daily",icon:["💧","🌙","🥗","🖐","🚶"][u]||"✨",title:i,description:u===0?"来自 AI 的轻量建议":"完成后给小发球增加一点能量",target:"0/1",reward:u===0?5:2,actionLabel:"去完成"}))}function oa(r){try{const s=new Set(JSON.parse(localStorage.getItem(Qt().questProgressKey(r))||"[]"));return r==="daily"&&s.size===0&&R0().forEach(i=>s.add(`daily-${i}`)),s}catch{return new Set}}function Pc(r){return Dn.includes(r)}function S0(r,s){return`<div class="item"><span style="font-size:26px">${r.icon}</span><b>${z(r.title)}<small>${z(r.description)}</small></b><span>${s?"1/1":z(r.target)}</span><button data-quest-category="${r.category}" data-quest-id="${r.id}" class="quest-btn ${s?"done":""}">${s?"✓ 已领取":z(r.actionLabel)}</button></div>`}function E0(r,s,i,u){const d=r==="daily"?10:Math.max(20,i*10),p=s>=i;return`<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${r==="daily"?u?"今日建议全部完成！":"完成所有每日任务可获得额外奖励！":`${Bl[r]}完成度 ${s}/${i}`}<small>${p?"小发球已经收到这份能量。":"慢慢来，完成一个也算数。"}</small></b><span>+${d} XP</span><button class="quest-btn done">${p?"已点亮":"未完成"}</button></div>`}function _0(r){return{daily:"今天不用做到满分，挑一个最容易的小任务开始就很好。",weekly:"周任务适合拆成几天完成，记录、休息和放松都算成长。",growth:"成长任务会长期保留，像养小发球一样一点点解锁。",special:"特别任务偏活动和社交，主打轻松参与，不制造压力。"}[r]}function C0(r,s){if(localStorage.setItem(Qt().questProgressKey(r),JSON.stringify([...s])),r==="daily"){const i=[...s].map(u=>Number(u.replace("daily-",""))).filter(u=>Number.isFinite(u));localStorage.setItem(Qt().taskKey(),JSON.stringify(i))}}function R0(){try{return new Set(JSON.parse(localStorage.getItem(Qt().taskKey())||"[]"))}catch{return new Set}}function Qt(){if(!ql)throw new Error("quest controller is not configured");return ql}const He="/rewards-assets/",P0=[{name:"樱花发箍",subtitle:"Lv.3 解锁",points:2e3,image:`${He}reward-flower.png`,locked:!0,unlockId:"sakura"},{name:"星光泡泡发型",subtitle:"Lv.5 解锁",points:3500,image:`${He}reward-starlight.png`,locked:!0,unlockId:"star"},{name:"生发精华液 30ml",subtitle:"实物好物",points:4800,image:`${He}reward-serum.png`},{name:"治愈蘑菇帽",subtitle:"Lv.6 解锁",points:2800,image:`${He}reward-healing.png`,locked:!0},{name:"护发礼盒套装",subtitle:"实物好物",points:6500,image:`${He}reward-gift.png`},{name:"蒲公英小夜灯",subtitle:"限量周边",points:3200,image:`${He}reward-lamp.png`,locked:!0},{name:"嫩芽发型",subtitle:"Lv.4 解锁",points:2500,image:`${He}reward-sprout.png`,locked:!0,unlockId:"sprout"},{name:"头皮按摩梳",subtitle:"实物好物",points:4200,image:`${He}reward-brush.png`},{name:"银河披风",subtitle:"Lv.7 解锁",points:5e3,image:`${He}reward-cape.png`,locked:!0},{name:"7天特权卡",subtitle:"成长特权",points:8e3,image:`${He}reward-vip.png`}],L0=[{level:"Lv.1",status:"已领取",image:`${He}reward-sprout.png`,active:!0},{level:"Lv.2",status:"已领取",image:`${He}reward-flower.png`,active:!0},{level:"Lv.3",status:"可领取",image:`${He}reward-gift.png`,active:!0},{level:"Lv.4",status:"差 420 XP",image:`${He}reward-healing.png`,active:!1},{level:"Lv.5",status:"未解锁",image:`${He}reward-starlight.png`,active:!1}],T0=[{name:"樱花发箍",date:"2026-07-15",points:"-2,000 XP",status:"已兑换",image:`${He}reward-flower.png`},{name:"护发礼盒",date:"2026-07-12",points:"-6,500 XP",status:"配送中",image:`${He}reward-gift.png`},{name:"头皮按摩梳",date:"2026-07-08",points:"-4,200 XP",status:"已完成",image:`${He}reward-brush.png`}];function $0(r){const s=xe.getState();dp(r),r.querySelectorAll("[data-rewards-points]").forEach(i=>{i.textContent=s.points.toLocaleString("en-US")}),fe(r.querySelector("#shop"),P0.map(i=>`<button class="reward-card" type="button" ${i.unlockId&&In.some(d=>d.id===i.unlockId)?`data-unlock-id="${z(i.unlockId)}"`:""}>
+  `;u.insertAdjacentHTML("beforeend",b)}function h0(){return new Date().toISOString().slice(0,10)}const Dn=["daily","weekly","growth","special"],Bl={daily:"每日任务",weekly:"每周任务",growth:"成长任务",special:"特别任务"},v0={weekly:[{id:"weekly-scan-3",category:"weekly",icon:"📷",title:"完成 3 次记录",description:"给小发球攒一组本周观察素材。",target:"0/3",reward:35,actionLabel:"记录本周"},{id:"weekly-sleep-4",category:"weekly",icon:"🌙",title:"4 天温柔早睡",description:"不卷到深夜，给头皮也放个小假。",target:"0/4",reward:40,actionLabel:"打卡早睡"},{id:"weekly-share",category:"weekly",icon:"💬",title:"分享一次发球周报",description:"把本周小进步发给朋友，轻松晒一下。",target:"0/1",reward:25,actionLabel:"去分享"},{id:"weekly-massage",category:"weekly",icon:"🪮",title:"完成 3 次头皮放松",description:"睡前 5 分钟，给自己按下暂停键。",target:"0/3",reward:30,actionLabel:"开始放松"}],growth:[{id:"growth-first-report",category:"growth",icon:"🌱",title:"生成第一份种子报告",description:"上传照片后获得你的第一枚趣味称号。",target:"0/1",reward:45,actionLabel:"去扫描"},{id:"growth-7-day",category:"growth",icon:"🔥",title:"连续记录 7 天",description:"把小习惯养成小成就，不求完美只求坚持。",target:"0/7",reward:80,actionLabel:"点亮进度"},{id:"growth-unlock-style",category:"growth",icon:"🎀",title:"解锁一个新造型",description:"给小发球换套新皮肤，奖励认真生活的你。",target:"0/1",reward:60,actionLabel:"去解锁"},{id:"growth-history",category:"growth",icon:"📒",title:"查看一次历史趋势",description:"回头看看，最近的自己已经很棒啦。",target:"0/1",reward:25,actionLabel:"看趋势"}],special:[{id:"special-spring",category:"special",icon:"🌸",title:"春风吹发季签到",description:"参与限时季节活动，领取春日能量。",target:"0/1",reward:50,actionLabel:"领取能量"},{id:"special-mood",category:"special",icon:"😊",title:"写下今日心情弹幕",description:"把压力吐槽给小发球听，轻轻放过自己。",target:"0/1",reward:30,actionLabel:"写一句"},{id:"special-buddy",category:"special",icon:"☁️",title:"和 Buddy 互动一次",description:"摸摸小发球，让陪伴感上线。",target:"0/1",reward:35,actionLabel:"去互动"},{id:"special-community",category:"special",icon:"✨",title:"逛逛社区治愈帖",description:"看看大家的小妙招，找到一点轻松感。",target:"0/1",reward:25,actionLabel:"去看看"}]};let ql=null;function y0(r){ql=r}function b0(r,s){Qt();const i=xe.getState(),u=gr(s),d=oa(s),p=u.filter(x=>d.has(x.id)).length,f=Dn.flatMap(gr),g=Dn.reduce((x,C)=>x+oa(C).size,0),b=f.length?Math.round(g/f.length*100):0,k=gr("daily").every(x=>oa("daily").has(x.id));fe(r.querySelector('[data-page="quests"] .tabs'),Dn.map(x=>`<button class="pill ${x===s?"primary":""}" data-quest-category="${x}">${Bl[x]}</button>`).join("")),fe(r.querySelector("#questList"),u.map(x=>S0(x,d.has(x.id))).join("")+E0(s,p,u.length,k)),fe(r.querySelector("#weekRewards"),["一","二","三","四","五","六","日"].map((x,C)=>`<span class="badge">${C<i.checkinDays.length?"✓":x}<br><small>+${C<5?10+C*5:25} XP</small></span>`).join("")),fe(r.querySelector('[data-page="quests"] aside .card:nth-child(1)'),`<h3>我的任务进度</h3><div class="big-number">${b}%</div><div class="meter"><div class="fill" style="--w:${b}%"></div></div><p>完成 ${g}/${f.length} 个任务</p><small>${Bl[s]}：${p}/${u.length}</small>`),fe(r.querySelector('[data-page="quests"] aside .card:nth-child(3)'),`<h3>任务小贴士</h3><p>${_0(s)}</p><div class="mini-buddy"></div>`),fe(r.querySelector('[data-page="quests"] aside .card:nth-child(4)'),`<h3>本周任务总览</h3><div class="donut" data-label="${g}/${f.length}\\A 已完成"></div><p>${k?"每日建议已全部点亮，额外奖励已入账。":"今天再点亮一个小任务，就很不错啦。"}</p>`)}function x0(r,s,i){const u=gr(r).find(p=>p.id===s);if(!u)return;const d=oa(r);if(d.has(s)){gt(i,"这个任务已经领取过啦");return}if(d.add(s),C0(r,d),xe.getState().addPoints(u.reward),gt(i,`+${u.reward} XP · ${u.title}`),r==="daily"){const p=gr("daily");p.length>0&&p.every(f=>d.has(f.id))&&localStorage.getItem(Qt().taskBonusKey())!=="1"&&(localStorage.setItem(Qt().taskBonusKey(),"1"),xe.getState().addPoints(10),gt(i,"每日建议全完成，额外 +10 XP"))}}function w0(){const r=Qt();localStorage.removeItem(r.taskKey()),localStorage.removeItem(r.taskBonusKey()),Dn.forEach(s=>localStorage.removeItem(r.questProgressKey(s)))}function k0(){const r=Dn.flatMap(gr).length;return{done:Dn.reduce((i,u)=>i+oa(u).size,0),total:r}}function gr(r){const s=Qt();return r!=="daily"?v0[r]:s.getSuggestions().map((i,u)=>({id:`daily-${u}`,category:"daily",icon:["💧","🌙","🥗","🖐","🚶"][u]||"✨",title:i,description:u===0?"来自 AI 的轻量建议":"完成后给小发球增加一点能量",target:"0/1",reward:u===0?5:2,actionLabel:"去完成"}))}function oa(r){try{const s=new Set(JSON.parse(localStorage.getItem(Qt().questProgressKey(r))||"[]"));return r==="daily"&&s.size===0&&R0().forEach(i=>s.add(`daily-${i}`)),s}catch{return new Set}}function Pc(r){return Dn.includes(r)}function S0(r,s){return`<div class="item"><span style="font-size:26px">${r.icon}</span><b>${z(r.title)}<small>${z(r.description)}</small></b><span>${s?"1/1":z(r.target)}</span><button data-quest-category="${r.category}" data-quest-id="${r.id}" class="quest-btn ${s?"done":""}">${s?"✓ 已领取":z(r.actionLabel)}</button></div>`}function E0(r,s,i,u){const d=r==="daily"?10:Math.max(20,i*10),p=s>=i;return`<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${r==="daily"?u?"今日建议全部完成！":"完成所有每日任务可获得额外奖励！":`${Bl[r]}完成度 ${s}/${i}`}<small>${p?"小发球已经收到这份能量。":"慢慢来，完成一个也算数。"}</small></b><span>+${d} XP</span><button class="quest-btn done">${p?"已点亮":"未完成"}</button></div>`}function _0(r){return{daily:"今天不用做到满分，挑一个最容易的小任务开始就很好。",weekly:"周任务适合拆成几天完成，记录、休息和放松都算成长。",growth:"成长任务会长期保留，像养小发球一样一点点解锁。",special:"特别任务偏活动和社交，主打轻松参与，不制造压力。"}[r]}function C0(r,s){if(localStorage.setItem(Qt().questProgressKey(r),JSON.stringify([...s])),r==="daily"){const i=[...s].map(u=>Number(u.replace("daily-",""))).filter(u=>Number.isFinite(u));localStorage.setItem(Qt().taskKey(),JSON.stringify(i))}}function R0(){try{return new Set(JSON.parse(localStorage.getItem(Qt().taskKey())||"[]"))}catch{return new Set}}function Qt(){if(!ql)throw new Error("quest controller is not configured");return ql}const He="./rewards-assets/",P0=[{name:"樱花发箍",subtitle:"Lv.3 解锁",points:2e3,image:`${He}reward-flower.png`,locked:!0,unlockId:"sakura"},{name:"星光泡泡发型",subtitle:"Lv.5 解锁",points:3500,image:`${He}reward-starlight.png`,locked:!0,unlockId:"star"},{name:"生发精华液 30ml",subtitle:"实物好物",points:4800,image:`${He}reward-serum.png`},{name:"治愈蘑菇帽",subtitle:"Lv.6 解锁",points:2800,image:`${He}reward-healing.png`,locked:!0},{name:"护发礼盒套装",subtitle:"实物好物",points:6500,image:`${He}reward-gift.png`},{name:"蒲公英小夜灯",subtitle:"限量周边",points:3200,image:`${He}reward-lamp.png`,locked:!0},{name:"嫩芽发型",subtitle:"Lv.4 解锁",points:2500,image:`${He}reward-sprout.png`,locked:!0,unlockId:"sprout"},{name:"头皮按摩梳",subtitle:"实物好物",points:4200,image:`${He}reward-brush.png`},{name:"银河披风",subtitle:"Lv.7 解锁",points:5e3,image:`${He}reward-cape.png`,locked:!0},{name:"7天特权卡",subtitle:"成长特权",points:8e3,image:`${He}reward-vip.png`}],L0=[{level:"Lv.1",status:"已领取",image:`${He}reward-sprout.png`,active:!0},{level:"Lv.2",status:"已领取",image:`${He}reward-flower.png`,active:!0},{level:"Lv.3",status:"可领取",image:`${He}reward-gift.png`,active:!0},{level:"Lv.4",status:"差 420 XP",image:`${He}reward-healing.png`,active:!1},{level:"Lv.5",status:"未解锁",image:`${He}reward-starlight.png`,active:!1}],T0=[{name:"樱花发箍",date:"2026-07-15",points:"-2,000 XP",status:"已兑换",image:`${He}reward-flower.png`},{name:"护发礼盒",date:"2026-07-12",points:"-6,500 XP",status:"配送中",image:`${He}reward-gift.png`},{name:"头皮按摩梳",date:"2026-07-08",points:"-4,200 XP",status:"已完成",image:`${He}reward-brush.png`}];function $0(r){const s=xe.getState();dp(r),r.querySelectorAll("[data-rewards-points]").forEach(i=>{i.textContent=s.points.toLocaleString("en-US")}),fe(r.querySelector("#shop"),P0.map(i=>`<button class="reward-card" type="button" ${i.unlockId&&In.some(d=>d.id===i.unlockId)?`data-unlock-id="${z(i.unlockId)}"`:""}>
       <div class="reward-image-wrap">
         <img src="${z(i.image)}" alt="${z(i.name)}">
         ${i.locked?'<span class="lock-icon">⌕</span>':""}
@@ -1845,7 +1855,7 @@ document.querySelector("#posts").innerHTML = [
       <div><strong>${z(i.name)}</strong><span>${z(i.date)}</span></div>
       <div><b>${z(i.points)}</b><small>${z(i.status)}</small></div>
     </div>
-  `).join(""))}const O0=["排行榜","我的联盟","好友排行","段位晋升"];function z0(r,s="排行榜"){r.querySelectorAll("[data-league-tab]").forEach(i=>{i.classList.toggle("active",i.dataset.leagueTab===s)}),fe(r.querySelector("#leagueRankContent"),N0(s))}function hp(){const r=xe.getState();return[{rank:1,name:"Luna",level:"Lv.6",note:"头发是生命的种子 🌱",points:28760,tier:"王者 I",tierTone:"gold",trend:"↑ 1",trendTone:"up",avatarSrc:"/league-avatars/luna.png",isMe:!1},{rank:2,name:"Mia",level:"Lv.5",note:"每天进步 1% ✨",points:25480,tier:"王者 II",tierTone:"gold",trend:"↓ 1",trendTone:"down",avatarSrc:"/league-avatars/mia.png",isMe:!1},{rank:3,name:"Ray",level:"Lv.5",note:"慢慢来，比较更重要 💜",points:22140,tier:"钻石 I",tierTone:"purple",trend:"—",trendTone:"flat",avatarSrc:"/league-avatars/ray.png",isMe:!1},{rank:4,name:"Sophia",level:"Lv.5",note:"关注头皮，从现在开始",points:18900,tier:"钻石 II",tierTone:"purple",trend:"↑ 2",trendTone:"up",avatarSrc:"/league-avatars/sophia.png",isMe:!1},{rank:5,name:"Bella",level:"Lv.4",note:"保持心情愉悦～",points:16520,tier:"铂金 I",tierTone:"blue",trend:"↓ 1",trendTone:"down",avatarSrc:"/league-avatars/bella.png",isMe:!1},{rank:6,name:"Aria",level:"Lv.4",note:"爱自己，从发起 ❤️",points:15320,tier:"铂金 II",tierTone:"blue",trend:"—",trendTone:"flat",avatarSrc:"/league-avatars/aria.png",isMe:!1},{rank:12,name:"You",level:"Lv.5",note:r.checkinDays.length?`${r.checkinDays.length} 天打卡 · 一起变好呀！`:"一起变好呀！",points:Math.max(r.points,12360),tier:"钻石 III",tierTone:"purple",trend:"↑ 3",trendTone:"up",avatarSrc:"/league-avatars/you.png",isMe:!0}]}function N0(r){return r==="我的联盟"?I0():r==="好友排行"?D0():r==="段位晋升"?j0():A0()}function A0(){return`
+  `).join(""))}const O0=["排行榜","我的联盟","好友排行","段位晋升"];function z0(r,s="排行榜"){r.querySelectorAll("[data-league-tab]").forEach(i=>{i.classList.toggle("active",i.dataset.leagueTab===s)}),fe(r.querySelector("#leagueRankContent"),N0(s))}function hp(){const r=xe.getState();return[{rank:1,name:"Luna",level:"Lv.6",note:"头发是生命的种子 🌱",points:28760,tier:"王者 I",tierTone:"gold",trend:"↑ 1",trendTone:"up",avatarSrc:"./league-avatars/luna.png",isMe:!1},{rank:2,name:"Mia",level:"Lv.5",note:"每天进步 1% ✨",points:25480,tier:"王者 II",tierTone:"gold",trend:"↓ 1",trendTone:"down",avatarSrc:"./league-avatars/mia.png",isMe:!1},{rank:3,name:"Ray",level:"Lv.5",note:"慢慢来，比较更重要 💜",points:22140,tier:"钻石 I",tierTone:"purple",trend:"—",trendTone:"flat",avatarSrc:"./league-avatars/ray.png",isMe:!1},{rank:4,name:"Sophia",level:"Lv.5",note:"关注头皮，从现在开始",points:18900,tier:"钻石 II",tierTone:"purple",trend:"↑ 2",trendTone:"up",avatarSrc:"./league-avatars/sophia.png",isMe:!1},{rank:5,name:"Bella",level:"Lv.4",note:"保持心情愉悦～",points:16520,tier:"铂金 I",tierTone:"blue",trend:"↓ 1",trendTone:"down",avatarSrc:"./league-avatars/bella.png",isMe:!1},{rank:6,name:"Aria",level:"Lv.4",note:"爱自己，从发起 ❤️",points:15320,tier:"铂金 II",tierTone:"blue",trend:"—",trendTone:"flat",avatarSrc:"./league-avatars/aria.png",isMe:!1},{rank:12,name:"You",level:"Lv.5",note:r.checkinDays.length?`${r.checkinDays.length} 天打卡 · 一起变好呀！`:"一起变好呀！",points:Math.max(r.points,12360),tier:"钻石 III",tierTone:"purple",trend:"↑ 3",trendTone:"up",avatarSrc:"./league-avatars/you.png",isMe:!0}]}function N0(r){return r==="我的联盟"?I0():r==="好友排行"?D0():r==="段位晋升"?j0():A0()}function A0(){return`
     <div class="ranking-layout">
       <aside class="category-nav">
         <button class="active" type="button"><span>✣</span><span><b>总 XP 排行</b></span></button>
@@ -1880,7 +1890,7 @@ document.querySelector("#posts").innerHTML = [
   `}function D0(){return`
     <div class="ranking-card full">
       <div class="table-head"><span>排名</span><span>好友</span><span>段位</span><span>本周 XP</span><span>趋势</span></div>
-      <div class="table-body">${[{rank:1,name:"Nora",level:"Lv.5",note:"睡眠打卡稳定",points:20680,tier:"钻石 II",tierTone:"purple",trend:"↑ 2",trendTone:"up",avatarSrc:"",isMe:!1},{rank:2,name:"Echo",level:"Lv.4",note:"本周完成 9 个任务",points:18440,tier:"铂金 I",tierTone:"blue",trend:"—",trendTone:"flat",avatarSrc:"",isMe:!1},{rank:3,name:"June",level:"Lv.4",note:"护发建议执行率 86%",points:17210,tier:"铂金 II",tierTone:"blue",trend:"↓ 1",trendTone:"down",avatarSrc:"",isMe:!1},{rank:7,name:"You",level:"Lv.5",note:"一起变好呀！",points:12360,tier:"钻石 III",tierTone:"purple",trend:"↑ 1",trendTone:"up",avatarSrc:"/league-avatars/you.png",isMe:!0}].map(vp).join("")}</div>
+      <div class="table-body">${[{rank:1,name:"Nora",level:"Lv.5",note:"睡眠打卡稳定",points:20680,tier:"钻石 II",tierTone:"purple",trend:"↑ 2",trendTone:"up",avatarSrc:"",isMe:!1},{rank:2,name:"Echo",level:"Lv.4",note:"本周完成 9 个任务",points:18440,tier:"铂金 I",tierTone:"blue",trend:"—",trendTone:"flat",avatarSrc:"",isMe:!1},{rank:3,name:"June",level:"Lv.4",note:"护发建议执行率 86%",points:17210,tier:"铂金 II",tierTone:"blue",trend:"↓ 1",trendTone:"down",avatarSrc:"",isMe:!1},{rank:7,name:"You",level:"Lv.5",note:"一起变好呀！",points:12360,tier:"钻石 III",tierTone:"purple",trend:"↑ 1",trendTone:"up",avatarSrc:"./league-avatars/you.png",isMe:!0}].map(vp).join("")}</div>
       <div class="refresh-note">好友排行为 mock 数据，后续接入好友关系后替换</div>
     </div>
   `}function j0(){return`
@@ -1943,6 +1953,28 @@ ${rv}`;let i=()=>{};return r.current&&(r.current.innerHTML=n0,new Function(r0)()
       </form>
     </section>
   `,r.appendChild(s);const i=s.querySelector(".ai-chat-bubble"),u=s.querySelector("[data-chat-form]"),d=s.querySelector("[data-chat-input]"),p=s.querySelector("[data-chat-messages]"),f=s.querySelector("[data-chat-close]"),g=[{role:"assistant",content:"你好呀，我是掉了么 AI 助手。可以陪你聊记录、任务和轻松护发习惯，但不会做医疗诊断。"}];let b=!1,k=!1,x=0,C=0,$=0,I=0;const q="正在思考一个轻松、不焦虑的回答...",H=()=>{p.innerHTML=g.map(X=>`<div class="ai-chat-msg ${X.role}">${z(X.content)}</div>`).join(""),p.scrollTop=p.scrollHeight},R=X=>{s.classList.toggle("open",X??!s.classList.contains("open")),s.classList.contains("open")&&d.focus()},P=X=>{if(s.classList.contains("open"))return;b=!0,k=!1,x=X.clientX,C=X.clientY;const de=s.getBoundingClientRect();$=de.left,I=de.top,i.setPointerCapture(X.pointerId)},U=X=>{if(!b)return;const de=X.clientX-x,re=X.clientY-C;Math.abs(de)+Math.abs(re)>6&&(k=!0);const ae=Math.max(12,Math.min(window.innerWidth-s.offsetWidth-12,$+de)),G=Math.max(12,Math.min(window.innerHeight-s.offsetHeight-12,I+re));s.style.left=`${ae}px`,s.style.top=`${G}px`,s.style.right="auto",s.style.bottom="auto"},W=X=>{b=!1,i.hasPointerCapture(X.pointerId)&&i.releasePointerCapture(X.pointerId)},F=()=>{k||R(!0)},se=async X=>{X.preventDefault();const de=d.value.trim();if(de){d.value="",g.push({role:"user",content:de},{role:"assistant",content:q}),H();try{const re=await Lh(g.filter(ae=>!(ae.role==="assistant"&&ae.content===q)).slice(-8));g[g.length-1]={role:"assistant",content:re.reply}}catch{g[g.length-1]={role:"assistant",content:"我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。"}}H()}};return H(),i.addEventListener("pointerdown",P),i.addEventListener("pointermove",U),i.addEventListener("pointerup",W),i.addEventListener("click",F),f.addEventListener("click",()=>R(!1)),u.addEventListener("submit",se),()=>{i.removeEventListener("pointerdown",P),i.removeEventListener("pointermove",U),i.removeEventListener("pointerup",W),i.removeEventListener("click",F),u.removeEventListener("submit",se),s.remove()}}function tv(r){const s=xe.getState(),i=s.checkinDays.includes(vn());fe(r.querySelector("#streak"),["一","二","三","四","五","六","日"].map((u,d)=>`<span class="badge">${d<Math.min(s.checkinDays.length,6)?"✓":d===6?"🎁":u}<br><small>${u}</small></span>`).join("")),fe(r.querySelector("#checkin"),["一","二","三","四","五","六","日"].map((u,d)=>`<span class="badge">${d<Math.min(s.checkinDays.length,6)?"✓":d===6?"🎁":u}<br><small>${u}</small></span>`).join("")+`<button class="pill ${i?"":"primary"}" data-action="checkin">${i?"今日已打卡":"今日打卡 +5"}</button><button class="pill" data-action="reset-progress">重置</button>`)}function xp(){const r=xe.getState().suggestions;return r.length?r:["上传一张照片生成专属建议","今晚提前 30 分钟休息","洗头时水温尽量温和"]}function wp(r){return r.length?Math.round(r.reduce((s,i)=>s+i.score,0)/r.length):null}function zl(){const r=xe.getState(),s=document.createElement("canvas");s.width=720,s.height=960;const i=s.getContext("2d");i.fillStyle="#f7edff",i.fillRect(0,0,s.width,s.height),i.fillStyle="#13205f",i.font="bold 54px sans-serif",i.fillText("掉了么 Diaoleme",64,110),i.font="bold 92px sans-serif",i.fillText(`${r.dropScore??"--"} 分`,64,250),i.font="bold 38px sans-serif",i.fillText(r.title,64,330),i.font="28px sans-serif",nv(i,r.summary,64,400,590,42),i.fillStyle="#8b5cf6",i.font="bold 30px sans-serif",i.fillText(`${r.points} XP · 打卡 ${r.checkinDays.length} 天`,64,820);const u=document.createElement("a");u.href=s.toDataURL("image/png"),u.download=`掉了么-分享-${vn()}.png`,u.click()}function nv(r,s,i,u,d,p){let f="";for(const g of s){const b=f+g;r.measureText(b).width>d&&f?(r.fillText(f,i,u),f=g,u+=p):f=b}f&&r.fillText(f,i,u)}const rv=`
+  /* AIFA-36: keep Vite/Pages type from feeling larger than local HTML prototype */
+  html {
+    line-height: normal !important;
+  }
+
+  body {
+    line-height: normal !important;
+  }
+
+  button,
+  input,
+  .nav button,
+  .cta,
+  .pill {
+    line-height: 1.2 !important;
+  }
+
+  .hero h2 {
+    font-size: clamp(28px, 3.2vw, 40px) !important;
+    line-height: 1.12 !important;
+  }
+
   .main {
     padding-top: 8px;
   }
@@ -4381,6 +4413,113 @@ ${rv}`;let i=()=>{};return r.current&&(r.current.innerHTML=n0,new Function(r0)()
       justify-items: start;
     }
   }
-    }
+
+  .ai-chat-widget {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 40;
+    font-family: inherit;
+  }
+  .ai-chat-bubble {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #8b5cf6, #65c982);
+    color: #fff;
+    box-shadow: 0 20px 55px rgba(99, 75, 168, 0.32);
+    cursor: grab;
+    font-weight: 900;
+  }
+  .ai-chat-bubble:active {
+    cursor: grabbing;
+  }
+  .ai-chat-panel {
+    display: none;
+    width: min(360px, calc(100vw - 32px));
+    height: 520px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 28px;
+    background: rgba(255, 250, 255, 0.96);
+    box-shadow: 0 26px 80px rgba(19, 32, 95, 0.22);
+  }
+  .ai-chat-widget.open .ai-chat-bubble {
+    display: none;
+  }
+  .ai-chat-widget.open .ai-chat-panel {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  .ai-chat-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 12px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(101, 201, 130, 0.18));
+  }
+  .ai-chat-header small {
+    color: #65709e;
+  }
+  .ai-chat-header button {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    border: 0;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    color: #13205f;
+    cursor: pointer;
+  }
+  .ai-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: auto;
+    padding: 16px;
+  }
+  .ai-chat-msg {
+    max-width: 82%;
+    border-radius: 18px;
+    padding: 10px 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .ai-chat-msg.assistant {
+    align-self: flex-start;
+    background: #fff;
+    color: #13205f;
+  }
+  .ai-chat-msg.user {
+    align-self: flex-end;
+    background: #8b5cf6;
+    color: #fff;
+  }
+  .ai-chat-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid rgba(101, 112, 158, 0.14);
+  }
+  .ai-chat-form input {
+    min-width: 0;
+    border: 1px solid rgba(101, 112, 158, 0.2);
+    border-radius: 999px;
+    padding: 12px 14px;
+    outline: none;
+  }
+  .ai-chat-form button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0 16px;
+    background: #65c982;
+    color: #fff;
+    font-weight: 900;
+    cursor: pointer;
   }
 `;Pg.createRoot(document.getElementById("root")).render(Nl.jsx(ia.StrictMode,{children:Nl.jsx(H0,{})}));
