@@ -11,7 +11,7 @@ export const journeySection = `<section class="page" data-page="journey">
             <aside class="grid">
               <div class="card"><h3>旅程总览</h3><div class="three grid"><div><span class="big-number">32</span><br>记录天数</div><div><span class="big-number">1,620</span><br>总 XP</div><div><span class="big-number">12</span><br>连续天数</div></div></div>
               <div class="card"><h3>心情轨迹</h3><div class="chart" data-bars="38,47,62,42,68,58,76"><span class="bar" style="height:38%"></span><span class="bar" style="height:47%"></span><span class="bar" style="height:62%"></span><span class="bar" style="height:42%"></span><span class="bar" style="height:68%"></span><span class="bar" style="height:58%"></span><span class="bar" style="height:76%"></span></div></div>
-              <div class="card"><h3>本月高光时刻</h3><div class="item-list"><div class="item"><span>🌱</span><b>连续打卡 7 天</b><span>5/12</span></div><div class="item"><span>💧</span><b>健康评分提升</b><span>5/18</span></div><div class="item"><span>💙</span><b>解锁新发型</b><span>5/24</span></div></div></div>
+              <div class="card"><h3>本月高光时刻</h3><div class="item-list"><div class="item"><span>🌱</span><b>连续打卡 7 天</b><span>5/12</span></div><div class="item"><span>💧</span><b>健康评分提升</b><span>5/18</span></div><div class="item"><span>💙</span><b>解锁新发型</b><span>5/24</span></div></div><button class="pill" data-action="journey-share">分享到 Community</button></div>
             </aside>
           </div>
         </section>`

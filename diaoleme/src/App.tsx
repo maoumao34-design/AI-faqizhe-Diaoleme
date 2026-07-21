@@ -197,11 +197,8 @@ function attachPrototypeFeatures(root: HTMLElement) {
       return
     }
     if (shareReportBtn?.dataset.shareReport) {
+      event.preventDefault()
       const shared = shareJourneyToCommunity({ reportId: shareReportBtn.dataset.shareReport })
-      if (!shared.ok) {
-        showToast(root, shared.message)
-        return
-      }
       activeCommunityTab = '最新'
       showPage(root, 'community')
       render()
@@ -221,11 +218,8 @@ function attachPrototypeFeatures(root: HTMLElement) {
       }
     }
     if (shareBtn || journeyShareBtn || shareToCommunityBtn) {
+      event.preventDefault()
       const shared = shareJourneyToCommunity()
-      if (!shared.ok) {
-        showToast(root, shared.message)
-        return
-      }
       activeCommunityTab = '最新'
       showPage(root, 'community')
       render()
@@ -588,34 +582,32 @@ function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean
     ? s.reportHistory.find((item) => item.id === options.reportId)
     : s.reportHistory[0]
 
-  if (!report) {
-    return { ok: false, message: '还没有 Journey 记录，先去 Scan 完成一次上传吧' }
-  }
-
   const existing = loadUserCommunityPosts()
-  if (existing.some((post) => post.reportId === report.id)) {
-    return { ok: true, message: '这份旅程已经分享过啦，已帮你打开社区最新流' }
+  if (report && existing.some((post) => post.reportId === report.id)) {
+    return { ok: true, message: '这份旅程已经分享过啦，已打开社区最新流' }
   }
 
   const post: CommunityPost = {
     id: `journey-${Date.now().toString(36)}`,
     name: '我',
     level: userLevelLabel(s.points),
-    body: options?.reportId
-      ? `从 Journey 分享：${report.title}（${report.score} 分）。${report.summary}`
-      : `分享我的护发旅程：打卡 ${s.checkinDays.length} 天，累计 ${s.reportHistory.length} 次记录。最近一次是「${report.title}」${report.score} 分，${report.summary}`,
+    body: report
+      ? (options?.reportId
+        ? `从 Journey 分享：${report.title}（${report.score} 分）。${report.summary}`
+        : `分享我的护发旅程：打卡 ${s.checkinDays.length} 天，累计 ${s.reportHistory.length} 次记录。最近一次是「${report.title}」${report.score} 分，${report.summary}`)
+      : `先在社区打个招呼：我开始记录护发旅程啦！打卡 ${s.checkinDays.length} 天，一起轻松坚持～`,
     media: '✨',
     likes: 0,
     comments: ['欢迎分享旅程，我们一起轻松记录～'],
-    tag: report.tags[0] || '旅程分享',
+    tag: report?.tags[0] || '旅程分享',
     createdAt: Date.now(),
     featured: false,
     following: true,
     fromJourney: true,
-    reportId: report.id,
+    reportId: report?.id,
   }
   saveUserCommunityPosts([post, ...existing])
-  return { ok: true, message: '已分享到 Community，可以在「最新 / 关注」里看到' }
+  return { ok: true, message: '已发到 Community，可在「最新 / 关注」看到，不会再下载图片' }
 }
 
 function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') {
@@ -635,7 +627,7 @@ function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') 
       ? `<div class="comments" data-comments-for="${escapeHtml(post.id)}"><div class="comment"><b>${post.fromJourney ? '小发球' : '发友'}：</b>${escapeHtml(firstComment)}</div>${extraComments.length ? `<div class="comments-extra collapsed" data-comments-extra-for="${escapeHtml(post.id)}">${extraComments.map((text, index) => `<div class="comment"><b>${index % 2 === 0 ? '发友' : '小发球'}：</b>${escapeHtml(text)}</div>`).join('')}</div>` : ''}</div>`
       : ''
     return `<div class="post community-post"><div class="mini-buddy"></div><div><b>${escapeHtml(post.name)} <span class="badge">${escapeHtml(post.level)}</span>${post.fromJourney ? '<span class="badge">Journey</span>' : ''}</b><p>${escapeHtml(post.body)}</p><span class="badge"># ${escapeHtml(post.tag)}</span><div class="community-actions"><button class="pill ${isLiked ? 'primary' : ''}" data-post-like="${escapeHtml(post.id)}">💜 ${likeCount}</button><button class="pill" data-post-comments="${escapeHtml(post.id)}">💬 ${post.comments.length}${extraComments.length ? ' · 展开' : ''}</button><button class="pill">☆ 收藏</button></div>${commentsHtml}</div><div class="post-media">${escapeHtml(post.media)}</div></div>`
-  }).join('') : `<div class="item journey-empty"><span>🌱</span><b>${activeTab}还没有内容<small>去 Journey 分享一次旅程，或切换其他 Tab 看看。</small></b><button class="pill primary" data-action="share-to-community">分享我的旅程</button></div>`)
+  }).join('') : `<div class="item journey-empty"><span>🌱</span><b>${activeTab}还没有内容<small>去 Journey 分享一次旅程，或切换其他 Tab 看看。</small></b><button class="pill primary" data-action="share-to-community">分享到 Community</button></div>`)
 }
 
 function loadLikedPosts() {
@@ -802,47 +794,6 @@ function getSuggestions() {
 function avgScore(records: ReportRecord[]) {
   if (!records.length) return null
   return Math.round(records.reduce((sum, item) => sum + item.score, 0) / records.length)
-}
-
-function downloadShareCard() {
-  const s = useUserStore.getState()
-  const canvas = document.createElement('canvas')
-  canvas.width = 720
-  canvas.height = 960
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = '#f7edff'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = '#13205f'
-  ctx.font = 'bold 54px sans-serif'
-  ctx.fillText('掉了么 Diaoleme', 64, 110)
-  ctx.font = 'bold 92px sans-serif'
-  ctx.fillText(`${s.dropScore ?? '--'} 分`, 64, 250)
-  ctx.font = 'bold 38px sans-serif'
-  ctx.fillText(s.title, 64, 330)
-  ctx.font = '28px sans-serif'
-  wrapCanvasText(ctx, s.summary, 64, 400, 590, 42)
-  ctx.fillStyle = '#8b5cf6'
-  ctx.font = 'bold 30px sans-serif'
-  ctx.fillText(`${s.points} XP · 打卡 ${s.checkinDays.length} 天`, 64, 820)
-  const a = document.createElement('a')
-  a.href = canvas.toDataURL('image/png')
-  a.download = `掉了么-分享-${todayKey()}.png`
-  a.click()
-}
-
-function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-  let line = ''
-  for (const char of text) {
-    const test = line + char
-    if (ctx.measureText(test).width > maxWidth && line) {
-      ctx.fillText(line, x, y)
-      line = char
-      y += lineHeight
-    } else {
-      line = test
-    }
-  }
-  if (line) ctx.fillText(line, x, y)
 }
 
 const integrationStyle = `
