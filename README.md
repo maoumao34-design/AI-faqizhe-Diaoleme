@@ -4,6 +4,15 @@
 
 本README只覆盖**协作规范**,用于统一在本仓库工作的所有人/智能体的代码提交流程。
 
+## 后端公网部署（人类 15 分钟）
+
+固定 HTTPS 上线步骤（Render / Railway / Fly）、环境变量与验收口径见：
+
+- [docs/ONE_CLICK_DEPLOY.md](./docs/ONE_CLICK_DEPLOY.md)
+- [backend/DEPLOYMENT.md](./backend/DEPLOYMENT.md)
+
+不要使用匿名临时隧道域名作为生产绑定。
+
 ## 分支策略
 
 - `main` 分支保持随时可运行、干净,不要直接往 `main` push

@@ -1,6 +1,8 @@
+# Render Blueprint — one-click from Dashboard: New → Blueprint → this repo
+# Docs: https://render.com/docs/blueprint-spec
 services:
   - type: web
-    name: diaoleme-mock-api
+    name: diaoleme-ai-proxy
     runtime: node
     plan: free
     rootDir: backend
@@ -10,3 +12,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Optional — leave empty for mock/fallback demo; set for real AI
+      - key: AI_PROVIDER
+        value: siliconflow
+      - key: SILICONFLOW_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
