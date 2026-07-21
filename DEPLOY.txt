@@ -1,7 +1,0 @@
-built_at=2026-07-21T02:50:48Z
-api_base=https://ai-faqizhe-diaoleme.onrender.com
-analyze_url=https://ai-faqizhe-diaoleme.onrender.com/api/analyze
-bundle=assets/index-B09UZxIM.js
-public_page=https://aihpj.github.io/AI-faqizhe-Diaoleme/
-issue=AIFA-26
-source_branch=fix/aifa-26-bind-render
