@@ -23,7 +23,7 @@ function renderRecordItems(records: ReportRecord[], timeline = false) {
   }).join('')
 }
 
-function groupReportsByDay(records: ReportRecord[]) {
+export function groupReportsByDay(records: ReportRecord[]) {
   return records.reduce<Record<string, ReportRecord[]>>((days, record) => {
     days[record.date] = days[record.date] || []
     days[record.date].push(record)
@@ -116,7 +116,7 @@ export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
       <b>${escapeHtml(r.title)}${compareLine}</b>
       <span class="status">${r.score} 分</span>
       <button class="pill primary" data-view-report="${escapeHtml(r.id)}">查看报告</button>
-      <button class="pill" data-share-report="${escapeHtml(r.id)}">分享</button>
+      <button class="pill" data-share-report="${escapeHtml(r.id)}">分享到社区</button>
       ${compareBadge}
     </div>
   `
@@ -147,7 +147,7 @@ export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
     <div class="item-list">
       ${buildJourneyHighlights(history, groupedDays)}
     </div>
-    <button class="pill" data-action="journey-share">分享我的旅程</button>
+    <button class="pill" data-action="journey-share">分享到 Community</button>
   `)
 }
 

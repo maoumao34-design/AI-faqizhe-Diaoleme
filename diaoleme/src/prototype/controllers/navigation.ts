@@ -5,7 +5,7 @@ export function showPage(root: HTMLElement, id: string) {
   const sub = root.querySelector<HTMLElement>('#pageSub')
   const meta: Record<string, [string, string]> = {
     scan: ['Scan', '用科学的方式，了解你的头发状况 💗'],
-    diary: ['Diary', '真实分析记录会在这里沉淀'],
+    diary: ['My Diary ✨', '每一天一篇小结，由当日报告温柔整理而成'],
   }
   if (heading && meta[id]) heading.textContent = meta[id][0]
   if (sub && meta[id]) sub.textContent = meta[id][1]
