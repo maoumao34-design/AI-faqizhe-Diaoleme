@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { chatWithAssistant, HAIRSTYLE_CATALOG } from './services/model'
+import { chatWithAssistant, fetchHistoryRecords, HAIRSTYLE_CATALOG } from './services/model'
 import { useUserStore, type ReportRecord } from './store/UserStore'
 import type { ChatMessage } from './services/model'
 import { prototypeBody } from './prototype/PrototypeBody'
@@ -65,6 +65,12 @@ function attachPrototypeFeatures(root: HTMLElement) {
   const chatCleanup = attachChatAssistant(root)
   render()
   const unsubscribe = useUserStore.subscribe(render)
+
+  // Hydrate Scan/Journey/Diary from public GET /api/records (AIFA-30).
+  void fetchHistoryRecords(20).then((records) => {
+    if (!records.length) return
+    useUserStore.getState().mergeRemoteHistory(records)
+  })
 
   const onClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement

@@ -12,7 +12,14 @@ function renderRecordItems(records: ReportRecord[], timeline = false) {
   return records.map((r) => {
     const recordId = escapeHtml(r.id)
     const itemAttrs = timeline ? '' : ` data-view-report="${recordId}" role="button" tabindex="0"`
-    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
+    const delta = typeof r.score_delta === 'number'
+      ? r.score_delta > 0 ? `↑${r.score_delta}` : r.score_delta < 0 ? `↓${Math.abs(r.score_delta)}` : '→0'
+      : null
+    const growth = typeof r.exp_added === 'number' && r.exp_added > 0 ? ` · +${r.exp_added}XP` : ''
+    const compareNote = delta
+      ? `<small>${escapeHtml(r.prev_title ? `对比「${r.prev_title}」 ${delta}${growth}` : `较上次 ${delta}${growth}`)}</small>`
+      : `<small>${escapeHtml(r.summary)}</small>`
+    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}${compareNote}</b><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
   }).join('')
 }
 
@@ -93,16 +100,27 @@ export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
     </button>
   `).join(''))
 
-  setHtml(root.querySelector('#timeline'), latest.length ? latest.map((r, index) => `
+  setHtml(root.querySelector('#timeline'), latest.length ? latest.map((r, index) => {
+    const delta = typeof r.score_delta === 'number'
+      ? r.score_delta > 0 ? `↑${r.score_delta}` : r.score_delta < 0 ? `↓${Math.abs(r.score_delta)}` : '持平'
+      : null
+    const compareBadge = delta
+      ? `<span class="badge">${escapeHtml(delta)}${typeof r.exp_added === 'number' && r.exp_added > 0 ? ` · +${r.exp_added}XP` : ''}</span>`
+      : (index === 0 ? '<span class="badge">最新</span>' : '')
+    const compareLine = delta && r.prev_title
+      ? `<small>对比上一份「${escapeHtml(r.prev_title)}」· ${escapeHtml(r.summary)}</small>`
+      : `<small>${escapeHtml(r.summary)}</small>`
+    return `
     <div class="item journey-record">
       <span>${escapeHtml(formatShortDate(r.date))}</span>
-      <b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b>
+      <b>${escapeHtml(r.title)}${compareLine}</b>
       <span class="status">${r.score} 分</span>
       <button class="pill primary" data-view-report="${escapeHtml(r.id)}">查看报告</button>
       <button class="pill" data-share-report="${escapeHtml(r.id)}">分享</button>
-      ${index === 0 ? '<span class="badge">最新</span>' : ''}
+      ${compareBadge}
     </div>
-  `).join('') : `
+  `
+  }).join('') : `
     <div class="item journey-empty">
       <span>📷</span>
       <b>还没有旅程记录<small>完成一次 Scan 上传后，你的趣味报告和历史对比会自动出现在这里。</small></b>

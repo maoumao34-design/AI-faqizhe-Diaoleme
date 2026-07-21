@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AnalysisResult, AnalysisSource } from '../types'
-import { CHAT_API_CONFIG, MODEL_API_CONFIG } from './config'
+import type { ReportRecord } from '../store/UserStore'
+import { CHAT_API_CONFIG, MODEL_API_CONFIG, RECORDS_API_CONFIG } from './config'
 
 export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
 
@@ -32,6 +33,105 @@ export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatRe
       source_label: '本地聊天 fallback（非真实 AI）',
       fallback_code: 'CHAT_BACKEND_UNREACHABLE',
     }
+  }
+}
+
+/**
+ * Load archive history from GET /api/records (canonical history API, AIFA-30).
+ * Supports both flat history_list_v1 fields and nested result.* for older deploys.
+ */
+export async function fetchHistoryRecords(limit = 20): Promise<ReportRecord[]> {
+  try {
+    const resp = await axios.get(RECORDS_API_CONFIG.url, {
+      params: { limit },
+      timeout: RECORDS_API_CONFIG.timeout,
+    })
+    const rows = Array.isArray(resp.data?.records) ? resp.data.records : []
+    const normalized: ReportRecord[] = rows
+      .map((row: unknown) => normalizeHistoryRecord(row))
+      .filter((row: ReportRecord | null): row is ReportRecord => Boolean(row))
+    // Backfill compare when public deploy still lacks history_list_v1 flat fields.
+    return normalized.map((row: ReportRecord, index: number) => {
+      if (row.score_delta != null) return row
+      const older = normalized[index + 1]
+      if (!older) return row
+      return {
+        ...row,
+        score_delta: row.score - older.score,
+        prev_title: older.title,
+      }
+    })
+  } catch (err) {
+    console.warn('[model] 历史接口不可达，保留本地记录。', err)
+    return []
+  }
+}
+
+function normalizeHistoryRecord(raw: any): ReportRecord | null {
+  if (!raw || typeof raw !== 'object') return null
+  const result = raw.result && typeof raw.result === 'object' ? raw.result : {}
+  const scoreValue = typeof raw.fun_score === 'number'
+    ? raw.fun_score
+    : typeof raw.score === 'number'
+      ? raw.score
+      : typeof result.score === 'number'
+        ? result.score
+        : typeof result.fun_score === 'number'
+          ? result.fun_score
+          : null
+  if (typeof scoreValue !== 'number') return null
+
+  const createdAt = typeof raw.created_at === 'string' ? raw.created_at : ''
+  const date = createdAt.slice(0, 10) || new Date().toISOString().slice(0, 10)
+  const recordId = typeof raw.record_id === 'string' ? raw.record_id : null
+  const compare = raw.compare && typeof raw.compare === 'object' ? raw.compare : null
+  const growth = raw.growth && typeof raw.growth === 'object'
+    ? raw.growth
+    : result.growthDelta && typeof result.growthDelta === 'object'
+      ? result.growthDelta
+      : {}
+
+  let scoreDelta = typeof compare?.score_delta === 'number' ? compare.score_delta : null
+  const prevTitle = typeof compare?.prev_title === 'string' ? compare.prev_title : null
+
+  const analysis = normalizeResponse({
+    ...raw,
+    result: {
+      ...result,
+      score: scoreValue,
+      title: raw.title || result.title,
+      source: result.source || raw.ai_source,
+      source_label: result.source_label,
+    },
+    record_id: recordId,
+    record_status: raw.record_status,
+    fallbackCode: raw.fallbackCode ?? raw.fallback_code,
+    ai_source: raw.ai_source,
+    success: raw.success,
+  })
+
+  return {
+    id: recordId || `remote_${date}_${scoreValue}`,
+    date,
+    score: analysis.score,
+    title: analysis.title,
+    summary: analysis.summary,
+    roast: analysis.roast,
+    encouragement: analysis.encouragement,
+    tags: analysis.tags,
+    daily_task: analysis.daily_task,
+    disclaimer: analysis.disclaimer,
+    source: analysis.source,
+    source_label: analysis.source_label,
+    fallback_code: analysis.fallback_code,
+    record_status: analysis.record_status,
+    record_id: analysis.record_id,
+    count: analysis.count,
+    thickness: analysis.thickness,
+    suggestions: analysis.suggestions,
+    score_delta: scoreDelta,
+    prev_title: prevTitle,
+    exp_added: typeof growth.exp_added === 'number' ? growth.exp_added : undefined,
   }
 }
 
