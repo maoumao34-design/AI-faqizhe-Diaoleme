@@ -29,13 +29,13 @@ export function renderLeague(root: HTMLElement, activeTab: LeagueTab = '排行�
 export function buildLeaders(): LeagueLeader[] {
   const s = useUserStore.getState()
   return [
-    { rank: 1, name: 'Luna', level: 'Lv.6', note: '头发是生命的种子 🌱', points: 28760, tier: '王者 I', tierTone: 'gold', trend: '↑ 1', trendTone: 'up', avatarSrc: '/league-avatars/luna.png', isMe: false },
-    { rank: 2, name: 'Mia', level: 'Lv.5', note: '每天进步 1% ✨', points: 25480, tier: '王者 II', tierTone: 'gold', trend: '↓ 1', trendTone: 'down', avatarSrc: '/league-avatars/mia.png', isMe: false },
-    { rank: 3, name: 'Ray', level: 'Lv.5', note: '慢慢来，比较更重要 💜', points: 22140, tier: '钻石 I', tierTone: 'purple', trend: '—', trendTone: 'flat', avatarSrc: '/league-avatars/ray.png', isMe: false },
-    { rank: 4, name: 'Sophia', level: 'Lv.5', note: '关注头皮，从现在开始', points: 18900, tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: '/league-avatars/sophia.png', isMe: false },
-    { rank: 5, name: 'Bella', level: 'Lv.4', note: '保持心情愉悦～', points: 16520, tier: '铂金 I', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: '/league-avatars/bella.png', isMe: false },
-    { rank: 6, name: 'Aria', level: 'Lv.4', note: '爱自己，从发起 ❤️', points: 15320, tier: '铂金 II', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: '/league-avatars/aria.png', isMe: false },
-    { rank: 12, name: 'You', level: 'Lv.5', note: s.checkinDays.length ? `${s.checkinDays.length} 天打卡 · 一起变好呀！` : '一起变好呀！', points: Math.max(s.points, 12360), tier: '钻石 III', tierTone: 'purple', trend: '↑ 3', trendTone: 'up', avatarSrc: '/league-avatars/you.png', isMe: true },
+    { rank: 1, name: 'Luna', level: 'Lv.6', note: '头发是生命的种子 🌱', points: 28760, tier: '王者 I', tierTone: 'gold', trend: '↑ 1', trendTone: 'up', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/luna.png`, isMe: false },
+    { rank: 2, name: 'Mia', level: 'Lv.5', note: '每天进步 1% ✨', points: 25480, tier: '王者 II', tierTone: 'gold', trend: '↓ 1', trendTone: 'down', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/mia.png`, isMe: false },
+    { rank: 3, name: 'Ray', level: 'Lv.5', note: '慢慢来，比较更重要 💜', points: 22140, tier: '钻石 I', tierTone: 'purple', trend: '—', trendTone: 'flat', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/ray.png`, isMe: false },
+    { rank: 4, name: 'Sophia', level: 'Lv.5', note: '关注头皮，从现在开始', points: 18900, tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/sophia.png`, isMe: false },
+    { rank: 5, name: 'Bella', level: 'Lv.4', note: '保持心情愉悦～', points: 16520, tier: '铂金 I', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/bella.png`, isMe: false },
+    { rank: 6, name: 'Aria', level: 'Lv.4', note: '爱自己，从发起 ❤️', points: 15320, tier: '铂金 II', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/aria.png`, isMe: false },
+    { rank: 12, name: 'You', level: 'Lv.5', note: s.checkinDays.length ? `${s.checkinDays.length} 天打卡 · 一起变好呀！` : '一起变好呀！', points: Math.max(s.points, 12360), tier: '钻石 III', tierTone: 'purple', trend: '↑ 3', trendTone: 'up', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/you.png`, isMe: true },
   ]
 }
 
@@ -102,7 +102,7 @@ function renderFriendRankTab() {
     { rank: 1, name: 'Nora', level: 'Lv.5', note: '睡眠打卡稳定', points: 20680, tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: '', isMe: false },
     { rank: 2, name: 'Echo', level: 'Lv.4', note: '本周完成 9 个任务', points: 18440, tier: '铂金 I', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: '', isMe: false },
     { rank: 3, name: 'June', level: 'Lv.4', note: '护发建议执行率 86%', points: 17210, tier: '铂金 II', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: '', isMe: false },
-    { rank: 7, name: 'You', level: 'Lv.5', note: '一起变好呀！', points: 12360, tier: '钻石 III', tierTone: 'purple', trend: '↑ 1', trendTone: 'up', avatarSrc: '/league-avatars/you.png', isMe: true },
+    { rank: 7, name: 'You', level: 'Lv.5', note: '一起变好呀！', points: 12360, tier: '钻石 III', tierTone: 'purple', trend: '↑ 1', trendTone: 'up', avatarSrc: `${import.meta.env.BASE_URL}league-avatars/you.png`, isMe: true },
   ]
   return `
     <div class="ranking-card full">

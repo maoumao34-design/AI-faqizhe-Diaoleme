@@ -8,7 +8,7 @@ export const rewardsSection = `<section class="page" data-page="rewards">
                   <p>距离下一等级还需 2,640 XP</p>
                   <div class="rewards-level-progress"><i style="width:82%"></i></div>
                 </div>
-                <img class="rewards-hero-character" src="/rewards-assets/hero-character.png" alt="蒲公英角色">
+                <img class="rewards-hero-character" src="./rewards-assets/hero-character.png" alt="蒲公英角色">
                 <div class="rewards-earn-card">
                   <h3>积分获取方式</h3>
                   <ul>
@@ -60,7 +60,7 @@ export const rewardsSection = `<section class="page" data-page="rewards">
 
               <section class="rewards-side-panel event-panel">
                 <div class="rewards-panel-heading"><strong>限时活动</strong><button type="button">更多活动 ›</button></div>
-                <button type="button" class="event-banner"><img src="/rewards-assets/event-banner.png" alt="夏日养发计划"></button>
+                <button type="button" class="event-banner"><img src="./rewards-assets/event-banner.png" alt="夏日养发计划"></button>
               </section>
 
               <section class="rewards-side-panel records-panel">

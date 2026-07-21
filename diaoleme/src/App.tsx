@@ -2924,6 +2924,113 @@ const integrationStyle = `
       justify-items: start;
     }
   }
-    }
+
+  .ai-chat-widget {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 40;
+    font-family: inherit;
+  }
+  .ai-chat-bubble {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #8b5cf6, #65c982);
+    color: #fff;
+    box-shadow: 0 20px 55px rgba(99, 75, 168, 0.32);
+    cursor: grab;
+    font-weight: 900;
+  }
+  .ai-chat-bubble:active {
+    cursor: grabbing;
+  }
+  .ai-chat-panel {
+    display: none;
+    width: min(360px, calc(100vw - 32px));
+    height: 520px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 28px;
+    background: rgba(255, 250, 255, 0.96);
+    box-shadow: 0 26px 80px rgba(19, 32, 95, 0.22);
+  }
+  .ai-chat-widget.open .ai-chat-bubble {
+    display: none;
+  }
+  .ai-chat-widget.open .ai-chat-panel {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  .ai-chat-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 12px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(101, 201, 130, 0.18));
+  }
+  .ai-chat-header small {
+    color: #65709e;
+  }
+  .ai-chat-header button {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    border: 0;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    color: #13205f;
+    cursor: pointer;
+  }
+  .ai-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: auto;
+    padding: 16px;
+  }
+  .ai-chat-msg {
+    max-width: 82%;
+    border-radius: 18px;
+    padding: 10px 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .ai-chat-msg.assistant {
+    align-self: flex-start;
+    background: #fff;
+    color: #13205f;
+  }
+  .ai-chat-msg.user {
+    align-self: flex-end;
+    background: #8b5cf6;
+    color: #fff;
+  }
+  .ai-chat-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid rgba(101, 112, 158, 0.14);
+  }
+  .ai-chat-form input {
+    min-width: 0;
+    border: 1px solid rgba(101, 112, 158, 0.2);
+    border-radius: 999px;
+    padding: 12px 14px;
+    outline: none;
+  }
+  .ai-chat-form button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0 16px;
+    background: #65c982;
+    color: #fff;
+    font-weight: 900;
+    cursor: pointer;
   }
 `
