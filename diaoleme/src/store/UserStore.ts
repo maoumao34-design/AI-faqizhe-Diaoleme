@@ -163,7 +163,8 @@ export const useUserStore = create<UserState>()(
         set((s) => {
           const remoteKeys = new Set(records.map((r) => r.record_id || r.id).filter(Boolean))
           const localOnly = s.reportHistory.filter((r) => !remoteKeys.has(r.record_id || r.id))
-          return { reportHistory: [...localOnly, ...records].slice(0, 100) }
+          // Remote first (newest→oldest from GET /api/records); keep local-only drafts after.
+          return { reportHistory: [...records, ...localOnly].slice(0, 100) }
         }),
 
       markCheckinToday: () => {

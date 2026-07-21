@@ -85,7 +85,7 @@ export function renderHistory(root: HTMLElement) {
   setHtml(root.querySelector('[data-page="scan"] .grid .card:nth-child(2)'), `<h3>本周扫描数据</h3><div class="three grid scan-stat-grid"><div class="scan-stat-item"><span class="big-number">${history.length}</span><small>扫描次数</small></div><div class="scan-stat-item"><span class="big-number">${avgScore || '--'}</span><small>平均状态分</small></div><div class="scan-stat-item scan-source-stat"><span class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceText}</span><small>最新来源</small></div></div>`)
   setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords)}</div>${pager}`)
   renderJourney(root, history)
-  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
+  // #diaries 由 App.renderDiary 负责（含称号/分数对比与成长摘要），此处不再覆盖。
 }
 
 export function renderJourney(root: HTMLElement, history: ReportRecord[]) {

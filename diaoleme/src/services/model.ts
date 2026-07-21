@@ -42,6 +42,9 @@ export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatRe
  */
 export async function fetchHistoryRecords(limit = 20): Promise<ReportRecord[]> {
   try {
+    // Cold start: warm health before history list (AIFA-30 联调步骤).
+    const healthUrl = RECORDS_API_CONFIG.url.replace(/\/api\/records\/?$/, '/api/health')
+    await axios.get(healthUrl, { timeout: 15000 }).catch(() => null)
     const resp = await axios.get(RECORDS_API_CONFIG.url, {
       params: { limit },
       timeout: RECORDS_API_CONFIG.timeout,

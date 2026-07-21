@@ -70,6 +70,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
   void fetchHistoryRecords(20).then((records) => {
     if (!records.length) return
     useUserStore.getState().mergeRemoteHistory(records)
+    showToast(root, `已同步 ${records.length} 条云端历史`)
   })
 
   const onClick = (event: MouseEvent) => {
@@ -217,9 +218,25 @@ function renderDiary(root: HTMLElement) {
   const latest = history.slice(0, 7)
   const last = history[0]
   const prev = history[1]
-  const delta = last && prev ? last.score - prev.score : 0
-  const trendText = !last ? '还没有记录，先完成一次 Scan。' : delta > 0 ? `比上次提升 ${delta} 分，状态在向上走。` : delta < 0 ? `比上次低 ${Math.abs(delta)} 分，今天适合轻量观察。` : '和上次基本持平，记录节奏稳定。'
+  const delta = typeof last?.score_delta === 'number'
+    ? last.score_delta
+    : last && prev
+      ? last.score - prev.score
+      : 0
+  const titleChanged = Boolean(last?.prev_title && last.prev_title !== last.title)
+  const trendText = !last
+    ? '还没有记录，先完成一次 Scan。'
+    : delta > 0
+      ? `比上次提升 ${delta} 分${titleChanged ? '，称号也焕新啦' : ''}，养成感在线。`
+      : delta < 0
+        ? `比上次低 ${Math.abs(delta)} 分，今天适合轻量观察，不焦虑。`
+        : titleChanged
+          ? '分数差不多，但称号换了新皮肤，继续轻松记录就好。'
+          : '和上次基本持平，记录节奏稳定。'
   const suggestion = buildLocalDiaryAdvice(history)
+  const growthBadge = typeof last?.exp_added === 'number'
+    ? `+${last.exp_added} XP`
+    : last?.title || '等待'
   const hero = root.querySelector<HTMLElement>('[data-page="diary"] .card.hero')
   setHtml(hero, `
     <div>
@@ -227,26 +244,65 @@ function renderDiary(root: HTMLElement) {
       <p>${escapeHtml(trendText)}</p>
       <div class="three grid diary-summary">
         <div><span class="big-number">${history.length}</span><br>累计记录</div>
-        <div><span class="big-number">${avgScore(history) || '--'}</span><br>平均状态分</div>
-        <div><span class="badge">${escapeHtml(last?.count || '等待')}</span><br>最近掉发量</div>
+        <div><span class="big-number">${avgScore(history) || '--'}</span><br>平均趣味分</div>
+        <div><span class="badge">${escapeHtml(growthBadge)}</span><br>${typeof last?.exp_added === 'number' ? '最近成长' : '最近称号'}</div>
       </div>
       <p><b>智能建议：</b>${escapeHtml(suggestion)}</p>
+      <p class="history-persist-note"><small>Demo 历史在 Free 盘上，重启后可能清空；轻松记录即可，不承诺永久存档。</small></p>
     </div>
     <div class="buddy-stage" style="min-height:220px"><div class="ground"></div><div class="buddy" style="transform:scale(.5)"><div class="fluff"></div><div class="sprout"></div><div class="face"><span class="eye left"></span><span class="eye right"></span><span class="nose"></span><span class="blush left"></span><span class="blush right"></span></div><div class="body"></div><div class="shoe left"></div><div class="shoe right"></div></div></div>
   `)
   setHtml(root.querySelector('#calendar'), buildDiaryCalendar(history))
-  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${escapeHtml(r.date.slice(8))}</b><br>${escapeHtml(r.date.slice(5, 7))}月</span><b>${scoreMood(r.score)} ${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有历史记录<small>从 Scan 上传图片后，这里会自动沉淀记录、分数和智能建议。</small></b><span class="status">等待</span></div>`)
+  setHtml(
+    root.querySelector('#diaries'),
+    latest.length
+      ? latest.map((r) => renderDiaryHistoryItem(r)).join('')
+      : `<div class="item"><span>📷</span><b>还没有历史记录<small>从 Scan 上传图片后，这里会自动沉淀记录、分数和智能建议。</small></b><span class="status">等待</span></div>`,
+  )
   const bars = scoreBars(history)
   setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(1)'), `<h3>变化趋势</h3><p>${escapeHtml(trendText)}</p><div class="chart">${bars.map((v) => `<span class="bar" style="height:${v}%"></span>`).join('')}</div>`)
   setHtml(root.querySelector('[data-page="diary"] .word-cloud'), `<h3>关键词统计</h3>${buildWordCloud(history)}`)
-  setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(3)'), `<h3>回忆精选</h3><div class="reward-art">${last ? '📈' : '🌄'}</div><b>${escapeHtml(last?.title || '第一篇日记 ✨')}</b><p>${escapeHtml(last?.encouragement || '完成第一次 Scan 后，这里会展示最近一次记录的鼓励语。')}</p>`)
+  const featuredCompare = last
+    ? formatDiaryCompareLine(last)
+    : ''
+  setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(3)'), `<h3>回忆精选</h3><div class="reward-art">${last ? '📈' : '🌄'}</div><b>${escapeHtml(last?.title || '第一篇日记 ✨')}</b><p>${escapeHtml(last?.encouragement || '完成第一次 Scan 后，这里会展示最近一次记录的鼓励语。')}</p>${featuredCompare ? `<p><small>${escapeHtml(featuredCompare)}</small></p>` : ''}`)
+}
+
+function formatDiaryCompareLine(r: ReportRecord) {
+  const parts: string[] = []
+  if (typeof r.score_delta === 'number') {
+    parts.push(r.score_delta > 0 ? `比上次 +${r.score_delta} 分` : r.score_delta < 0 ? `比上次 ${r.score_delta} 分` : '和上次持平')
+  }
+  if (r.prev_title && r.prev_title !== r.title) {
+    parts.push(`称号：${r.prev_title} → ${r.title}`)
+  }
+  if (typeof r.exp_added === 'number') {
+    parts.push(`+${r.exp_added} XP`)
+  }
+  return parts.length ? parts.join(' · ') : '第一条养成记录'
+}
+
+function renderDiaryHistoryItem(r: ReportRecord) {
+  const compareLine = formatDiaryCompareLine(r)
+  const delta = r.score_delta
+  const deltaBadge =
+    typeof delta === 'number'
+      ? `<span class="badge history-delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}">${delta > 0 ? `+${delta}` : String(delta)}</span>`
+      : ''
+  return `<div class="item history-record-item">
+    <span class="history-date-col"><span class="history-thumb history-thumb-fallback" aria-hidden="true">${r.score >= 70 ? '🌿' : '📷'}</span><b>${escapeHtml(r.date.slice(8))}</b><br>${escapeHtml(r.date.slice(5, 7))}月</span>
+    <b>${scoreMood(r.score)} ${escapeHtml(r.title)} ${deltaBadge}
+      <small>${escapeHtml(compareLine)}<br>${escapeHtml(r.summary)}</small>
+    </b>
+    <button class="pill" data-view-report="${escapeHtml(r.id)}">${r.score} 分</button>
+  </div>`
 }
 
 function buildLocalDiaryAdvice(records: ReportRecord[]) {
   const last = records[0]
   const prev = records[1]
   if (!last) return '先完成一次 Scan，让小发球有第一条记录可以陪你观察变化。'
-  const delta = prev ? last.score - prev.score : 0
+  const delta = typeof last.score_delta === 'number' ? last.score_delta : prev ? last.score - prev.score : 0
   const countHint = last.count === '偏多' ? '今天先把目标放轻一点，选一个早睡或放松任务就够了' : last.count === '少量' ? '状态看起来比较轻松，可以继续保持记录节奏' : '保持温和观察，不需要给自己额外压力'
   const tagHint = last.tags[0] ? `这次标签是“${last.tags[0]}”，` : ''
   const fallbackTask = last.suggestions[0] || last.daily_task || '睡前做 2 分钟放松呼吸'
@@ -2925,5 +2981,44 @@ const integrationStyle = `
     }
   }
     }
+  }
+
+  [data-page="diary"] .history-persist-note {
+    color: #8b91bc;
+    margin-top: 8px;
+  }
+
+  [data-page="diary"] .history-record-item .history-date-col {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 52px;
+    text-align: center;
+  }
+
+  [data-page="diary"] .history-thumb-fallback {
+    align-items: center;
+    background: rgba(155, 191, 138, 0.18);
+    border-radius: 12px;
+    display: inline-flex;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+  }
+
+  [data-page="diary"] .history-delta.up {
+    background: rgba(155, 191, 138, 0.22);
+    color: #4f7a3e;
+  }
+
+  [data-page="diary"] .history-delta.down {
+    background: rgba(230, 122, 90, 0.18);
+    color: #c45a3a;
+  }
+
+  [data-page="diary"] .history-delta.flat {
+    background: rgba(139, 145, 188, 0.16);
+    color: #5c628a;
   }
 `
