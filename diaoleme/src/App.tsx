@@ -18,6 +18,20 @@ const buddyCareKey = () => 'diaoleme-prototype-buddy-care'
 type QuestCategory = 'daily' | 'weekly' | 'growth' | 'special'
 type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
 type CommunityTab = '关注' | '最新' | '热门' | '精华'
+type DiaryMoodKey = 'all' | 'happy' | 'calm' | 'anxious' | 'tired'
+type DiaryDayEntry = {
+  date: string
+  reports: ReportRecord[]
+  score: number
+  mood: { key: Exclude<DiaryMoodKey, 'all'>; label: string; emoji: string }
+  title: string
+  snippet: string
+  thumbEmoji: string
+  thumbTone: string
+  primaryReportId: string
+}
+const DIARY_MOODS: DiaryMoodKey[] = ['all', 'happy', 'calm', 'anxious', 'tired']
+const isDiaryMood = (value: string): value is DiaryMoodKey => DIARY_MOODS.includes(value as DiaryMoodKey)
 type CommunityPost = {
   id: string
   name: string
@@ -133,7 +147,9 @@ function attachPrototypeFeatures(root: HTMLElement) {
   let activeQuestCategory: QuestCategory = 'daily'
   let activeLeagueTab: LeagueTab = '排行榜'
   let activeCommunityTab: CommunityTab = '最新'
-  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeCommunityTab)
+  let activeDiaryMood: DiaryMoodKey = 'all'
+  let diaryVisibleCount = 6
+  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeCommunityTab, activeDiaryMood, diaryVisibleCount)
   render()
   const unsubscribe = useUserStore.subscribe(render)
 
@@ -142,6 +158,8 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const categoryBtn = target.closest<HTMLElement>('[data-quest-category]')
     const leagueTabBtn = target.closest<HTMLElement>('[data-league-tab]')
     const communityTabBtn = target.closest<HTMLElement>('[data-community-tab]')
+    const diaryMoodBtn = target.closest<HTMLElement>('[data-diary-mood]')
+    const diaryLoadMoreBtn = target.closest<HTMLElement>('[data-action="diary-load-more"]')
     const questBtn = target.closest<HTMLElement>('[data-quest-id]')
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
@@ -176,6 +194,16 @@ function attachPrototypeFeatures(root: HTMLElement) {
       render()
       showToast(root, `已切换至${activeCommunityTab}`)
     }
+    if (diaryMoodBtn?.dataset.diaryMood && isDiaryMood(diaryMoodBtn.dataset.diaryMood)) {
+      activeDiaryMood = diaryMoodBtn.dataset.diaryMood
+      diaryVisibleCount = 6
+      render()
+      showToast(root, activeDiaryMood === 'all' ? '已显示全部日记' : `已筛选：${diaryMoodBtn.textContent?.trim()}`)
+    }
+    if (diaryLoadMoreBtn) {
+      diaryVisibleCount += 6
+      render()
+    }
     if (questBtn?.dataset.questId && questBtn.dataset.questCategory && isQuestCategory(questBtn.dataset.questCategory)) {
       completeQuest(questBtn.dataset.questCategory, questBtn.dataset.questId, root)
       render()
@@ -201,12 +229,14 @@ function attachPrototypeFeatures(root: HTMLElement) {
       showPage(root, 'scan')
       renderAnalysisCard(root, currentAnalysisFromStore())
       showToast(root, '已打开这份扫描报告')
+      return
     }
     if (viewDayBtn?.dataset.viewDay) {
       useUserStore.getState().viewDayReport(viewDayBtn.dataset.viewDay)
       showPage(root, 'scan')
       renderAnalysisCard(root, currentAnalysisFromStore())
       showToast(root, '已打开当天最新报告')
+      return
     }
     if (shareReportBtn?.dataset.shareReport) {
       const shared = shareJourneyToCommunity({ reportId: shareReportBtn.dataset.shareReport })
@@ -474,12 +504,19 @@ function attachPrototypeAnalysis(root: HTMLElement) {
   }
 }
 
-function renderStatefulSections(root: HTMLElement, activeQuestCategory: QuestCategory = 'daily', activeLeagueTab: LeagueTab = '排行榜', activeCommunityTab: CommunityTab = '最新') {
+function renderStatefulSections(
+  root: HTMLElement,
+  activeQuestCategory: QuestCategory = 'daily',
+  activeLeagueTab: LeagueTab = '排行榜',
+  activeCommunityTab: CommunityTab = '最新',
+  activeDiaryMood: DiaryMoodKey = 'all',
+  diaryVisibleCount = 6,
+) {
   renderHome(root)
   renderBuddy(root)
   renderTasks(root, activeQuestCategory)
   renderHistory(root)
-  renderDiary(root)
+  renderDiary(root, activeDiaryMood, diaryVisibleCount)
   renderCommunity(root, activeCommunityTab)
   renderRewards(root)
   renderLeague(root, activeLeagueTab)
@@ -761,34 +798,185 @@ function renderHistory(root: HTMLElement) {
   setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
 }
 
-function renderDiary(root: HTMLElement) {
+function diaryMoodFromScore(score: number): DiaryDayEntry['mood'] {
+  if (score >= 75) return { key: 'happy', label: '开心', emoji: '😊' }
+  if (score >= 60) return { key: 'calm', label: '平静', emoji: '🧘' }
+  if (score >= 45) return { key: 'anxious', label: '焦虑', emoji: '😟' }
+  return { key: 'tired', label: '疲惫', emoji: '😫' }
+}
+
+function diaryThumbFor(moodKey: DiaryDayEntry['mood']['key'], tags: string[]) {
+  const tag = tags[0] || ''
+  if (/按摩|护理|头皮/.test(tag)) return { emoji: '🪮', tone: 'mint' }
+  if (/睡眠|早睡|放松/.test(tag)) return { emoji: '🌙', tone: 'lavender' }
+  if (/运动|打卡|坚持/.test(tag)) return { emoji: '🌱', tone: 'sprout' }
+  if (moodKey === 'happy') return { emoji: '✨', tone: 'sunny' }
+  if (moodKey === 'calm') return { emoji: '🍃', tone: 'mint' }
+  if (moodKey === 'anxious') return { emoji: '💭', tone: 'cloud' }
+  return { emoji: '🕯️', tone: 'warm' }
+}
+
+function synthesizeDayTitle(reports: ReportRecord[], score: number) {
+  const latest = reports[0]
+  if (reports.length === 1) return latest.title
+  const best = reports.reduce((top, item) => (item.score > top.score ? item : top), latest)
+  if (score >= 75) return `今天整体挺稳：${best.title}`
+  if (score < 50) return `今天先温柔一点：${latest.title}`
+  return `今日小结（${reports.length} 次记录）：${latest.title}`
+}
+
+function synthesizeDaySnippet(reports: ReportRecord[], score: number) {
+  const latest = reports[0]
+  const pieces = [latest.summary]
+  if (reports.length > 1) {
+    pieces.push(`这一天共整理了 ${reports.length} 次 Scan，平均状态分 ${score}。`)
+  } else {
+    pieces.push(`状态分 ${score}，掉发量 ${latest.count}。`)
+  }
+  const tip = latest.suggestions[0] || latest.daily_task
+  if (tip) pieces.push(`轻任务：${tip}`)
+  return pieces.join(' ')
+}
+
+function buildDiaryDayEntries(history: ReportRecord[]): DiaryDayEntry[] {
+  const grouped = groupReportsByDay(history)
+  return Object.keys(grouped)
+    .sort((a, b) => b.localeCompare(a))
+    .map((date) => {
+      const reports = [...grouped[date]].sort((a, b) => b.id.localeCompare(a.id))
+      const score = Math.round(reports.reduce((sum, item) => sum + item.score, 0) / reports.length)
+      const mood = diaryMoodFromScore(score)
+      const thumb = diaryThumbFor(mood.key, reports.flatMap((item) => item.tags))
+      return {
+        date,
+        reports,
+        score,
+        mood,
+        title: synthesizeDayTitle(reports, score),
+        snippet: synthesizeDaySnippet(reports, score),
+        thumbEmoji: thumb.emoji,
+        thumbTone: thumb.tone,
+        primaryReportId: reports[0].id,
+      }
+    })
+}
+
+function buildDiaryMoodStats(entries: DiaryDayEntry[]) {
+  const counts = { happy: 0, calm: 0, anxious: 0, tired: 0 }
+  entries.forEach((entry) => {
+    counts[entry.mood.key] += 1
+  })
+  const total = entries.length || 1
+  return {
+    counts,
+    percents: {
+      happy: Math.round((counts.happy / total) * 100),
+      calm: Math.round((counts.calm / total) * 100),
+      anxious: Math.round((counts.anxious / total) * 100),
+      tired: Math.round((counts.tired / total) * 100),
+    },
+  }
+}
+
+function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibleCount = 6) {
   const history = useUserStore.getState().reportHistory
-  const latest = history.slice(0, 7)
-  const last = history[0]
-  const prev = history[1]
-  const delta = last && prev ? last.score - prev.score : 0
-  const trendText = !last ? '还没有记录，先完成一次 Scan。' : delta > 0 ? `比上次提升 ${delta} 分，状态在向上走。` : delta < 0 ? `比上次低 ${Math.abs(delta)} 分，今天适合轻量观察。` : '和上次基本持平，记录节奏稳定。'
+  const allEntries = buildDiaryDayEntries(history)
+  const filtered = activeMood === 'all' ? allEntries : allEntries.filter((entry) => entry.mood.key === activeMood)
+  const visible = filtered.slice(0, visibleCount)
+  const latestEntry = allEntries[0]
   const suggestion = buildLocalDiaryAdvice(history)
-  const hero = root.querySelector<HTMLElement>('[data-page="diary"] .card.hero')
-  setHtml(hero, `
+  const moodStats = buildDiaryMoodStats(allEntries)
+  const todayMood = latestEntry?.mood || { key: 'calm' as const, label: '平静', emoji: '🧘' }
+
+  setHtml(root.querySelector('[data-page="diary"] .card.hero'), `
     <div>
-      <h2 style="font-size:36px">历史记录与变化趋势 ✨</h2>
-      <p>${escapeHtml(trendText)}</p>
-      <div class="three grid diary-summary">
-        <div><span class="big-number">${history.length}</span><br>累计记录</div>
-        <div><span class="big-number">${avgScore(history) || '--'}</span><br>平均状态分</div>
-        <div><span class="badge">${escapeHtml(last?.count || '等待')}</span><br>最近掉发量</div>
+      <h2 style="font-size:36px">今天也要好好爱自己呀 ✨</h2>
+      <p>每一根头发都在努力生长，你也是！日记会把每天的 Scan 报告收成一篇 blog 小结。</p>
+      <div class="diary-hero-meta">
+        <button class="pill primary" type="button">${todayMood.emoji} ${todayMood.label}</button>
+        <span class="badge">${latestEntry ? formatDiaryWeekday(latestEntry.date) : '等待第一篇'}</span>
       </div>
-      <p><b>智能建议：</b>${escapeHtml(suggestion)}</p>
+      <p class="diary-hero-advice"><b>智能建议：</b>${escapeHtml(suggestion)}</p>
     </div>
     <div class="buddy-stage" style="min-height:220px"><div class="ground"></div><div class="buddy" style="transform:scale(.5)"><div class="fluff"></div><div class="sprout"></div><div class="face"><span class="eye left"></span><span class="eye right"></span><span class="nose"></span><span class="blush left"></span><span class="blush right"></span></div><div class="body"></div><div class="shoe left"></div><div class="shoe right"></div></div></div>
   `)
+
   setHtml(root.querySelector('#calendar'), buildDiaryCalendar(history))
-  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${escapeHtml(r.date.slice(8))}</b><br>${escapeHtml(r.date.slice(5, 7))}月</span><b>${scoreMood(r.score)} ${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有历史记录<small>从 Scan 上传图片后，这里会自动沉淀记录、分数和智能建议。</small></b><span class="status">等待</span></div>`)
-  const bars = scoreBars(history)
-  setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(1)'), `<h3>变化趋势</h3><p>${escapeHtml(trendText)}</p><div class="chart">${bars.map((v) => `<span class="bar" style="height:${v}%"></span>`).join('')}</div>`)
+  setHtml(
+    root.querySelector('#diaryMoodFilters'),
+    [
+      ['all', '全部'],
+      ['happy', '😊 开心'],
+      ['calm', '🧘 平静'],
+      ['anxious', '😟 焦虑'],
+      ['tired', '😫 疲惫'],
+    ].map(([key, label]) => `<button class="pill ${activeMood === key ? 'primary' : ''}" data-diary-mood="${key}">${label}</button>`).join(''),
+  )
+
+  const happyEnd = moodStats.percents.happy
+  const calmEnd = happyEnd + moodStats.percents.calm
+  const anxiousEnd = calmEnd + moodStats.percents.anxious
+  const donut = root.querySelector<HTMLElement>('#diaryMoodDonut')
+  if (donut) {
+    donut.dataset.label = `${allEntries.length}\n篇日记`
+    donut.style.background = allEntries.length
+      ? `conic-gradient(#8b5cf6 0 ${happyEnd}%, #65c982 ${happyEnd}% ${calmEnd}%, #f59e0b ${calmEnd}% ${anxiousEnd}%, #c4b5fd ${anxiousEnd}% 100%)`
+      : 'conic-gradient(#e8e4f8 0 100%)'
+  }
+  setHtml(
+    root.querySelector('#diaryMoodLegend'),
+    `<span>😊 ${moodStats.percents.happy}%</span><span>🧘 ${moodStats.percents.calm}%</span><span>😟 ${moodStats.percents.anxious}%</span><span>😫 ${moodStats.percents.tired}%</span>`,
+  )
+
+  setHtml(root.querySelector('#diaryFeedTitle'), `共 ${filtered.length} 篇日记`)
+  setHtml(
+    root.querySelector('#diaries'),
+    visible.length
+      ? visible.map((entry) => {
+          const day = entry.date.slice(8)
+          const month = Number(entry.date.slice(5, 7))
+          return `<article class="diary-entry" data-view-day="${escapeHtml(entry.date)}" role="button" tabindex="0">
+            <div class="diary-entry-date"><b>${escapeHtml(day)}</b><small>${month}月</small></div>
+            <div class="diary-entry-main">
+              <div class="diary-mood-pill">${entry.mood.emoji} ${entry.mood.label}</div>
+              <h4>${escapeHtml(entry.title)}</h4>
+              <p>${escapeHtml(entry.snippet)}</p>
+              <div class="diary-entry-meta"><span>${entry.reports.length} 次报告</span><span>${entry.score} 分</span></div>
+            </div>
+            <div class="diary-entry-thumb tone-${escapeHtml(entry.thumbTone)}" aria-hidden="true">${entry.thumbEmoji}</div>
+            <button class="diary-entry-more" type="button" data-view-report="${escapeHtml(entry.primaryReportId)}" title="查看当天报告">⋯</button>
+          </article>`
+        }).join('')
+      : `<div class="diary-empty"><span>📖</span><b>${activeMood === 'all' ? '还没有日记' : '这个心情还没有日记'}<small>${activeMood === 'all' ? '去 Scan 完成一次上传后，这里会按天整理成 blog 小结。' : '换个心情筛选，或继续记录新的一天。'}</small></b><button class="pill primary" data-go="scan">去上传今天的记录</button></div>`,
+  )
+
+  const loadMore = root.querySelector<HTMLButtonElement>('#diaryLoadMore')
+  if (loadMore) {
+    loadMore.hidden = filtered.length <= visible.length
+    loadMore.textContent = `加载更多日记（还有 ${Math.max(filtered.length - visible.length, 0)} 篇）`
+  }
+
+  const trendBars = scoreBars(history)
+  setHtml(
+    root.querySelector('#diaryTrendCard'),
+    `<h3>心情趋势</h3><p>${escapeHtml(latestEntry ? `${formatDiaryWeekday(latestEntry.date)} · ${latestEntry.mood.emoji} ${latestEntry.mood.label}` : '完成记录后显示趋势')}</p><div class="chart">${trendBars.map((v) => `<span class="bar" style="height:${v}%"></span>`).join('')}</div>`,
+  )
   setHtml(root.querySelector('[data-page="diary"] .word-cloud'), `<h3>关键词统计</h3>${buildWordCloud(history)}`)
-  setHtml(root.querySelector('[data-page="diary"] aside .card:nth-child(3)'), `<h3>回忆精选</h3><div class="reward-art">${last ? '📈' : '🌄'}</div><b>${escapeHtml(last?.title || '第一篇日记 ✨')}</b><p>${escapeHtml(last?.encouragement || '完成第一次 Scan 后，这里会展示最近一次记录的鼓励语。')}</p>`)
+
+  const memory = allEntries.find((entry) => entry.mood.key === 'happy') || allEntries[allEntries.length - 1]
+  setHtml(
+    root.querySelector('#diaryMemoryCard'),
+    memory
+      ? `<h3>回忆精选</h3><div class="reward-art diary-memory-thumb tone-${escapeHtml(memory.thumbTone)}">${memory.thumbEmoji}</div><b>${escapeHtml(memory.title)}</b><p>${escapeHtml(memory.snippet)}</p><button class="pill" data-view-day="${escapeHtml(memory.date)}">回看这一天</button>`
+      : `<h3>回忆精选</h3><div class="reward-art">🌄</div><b>第一篇日记 ✨</b><p>完成第一次 Scan 后，这里会展示值得回看的一天。</p><button class="pill primary" data-go="scan">去记录</button>`,
+  )
+}
+
+function formatDiaryWeekday(date: string) {
+  const d = new Date(`${date}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return date
+  const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
+  return `${Number(date.slice(5, 7))}月${Number(date.slice(8))}日 · ${week}`
 }
 
 function buildLocalDiaryAdvice(records: ReportRecord[]) {
@@ -979,7 +1167,8 @@ function buildDiaryCalendar(records: ReportRecord[]) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const rec = marked.get(date)
     const cls = rec ? 'selected diary-record-day' : date === todayKey() ? 'today' : ''
-    cells.push(`<span class="${cls}" title="${rec ? `${rec.score} 分 ${escapeHtml(rec.title)}` : ''}">${day}${rec ? '<small>•</small>' : ''}</span>`)
+    const attrs = rec ? ` class="${cls}" data-view-day="${escapeHtml(date)}" role="button" tabindex="0" title="${rec.score} 分 ${escapeHtml(rec.title)}"` : ` class="${cls}"`
+    cells.push(`<span${attrs}>${day}${rec ? '<small>•</small>' : ''}</span>`)
   }
   return cells.join('')
 }
@@ -1539,7 +1728,7 @@ function showPage(root: HTMLElement, id: string) {
   const sub = root.querySelector<HTMLElement>('#pageSub')
   const meta: Record<string, [string, string]> = {
     scan: ['Scan', '用科学的方式，了解你的头发状况 💗'],
-    diary: ['Diary', '真实分析记录会在这里沉淀'],
+    diary: ['My Diary ✨', '每一天一篇小结，由当日报告温柔整理而成'],
   }
   if (heading && meta[id]) heading.textContent = meta[id][0]
   if (sub && meta[id]) sub.textContent = meta[id][1]
@@ -4053,8 +4242,105 @@ const integrationStyle = `
   }
 
   .diary-summary { margin: 16px 0; text-align: center; }
-  .calendar .diary-record-day { position: relative; box-shadow: inset 0 0 0 2px rgba(139,92,246,.45); }
+  .calendar .diary-record-day { position: relative; box-shadow: inset 0 0 0 2px rgba(139,92,246,.45); cursor: pointer; }
   .calendar .diary-record-day small { color: #65c982; font-size: 18px; line-height: 0; }
+  .diary-layout .diary-main-grid { grid-template-columns: 300px minmax(0, 1fr); gap: 18px; }
+  .diary-side-left .diary-mood-filter-title { margin-top: 18px; }
+  .diary-mood-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 18px; }
+  .diary-mood-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; color: #65709e; font-size: 13px; font-weight: 700; }
+  .diary-hero-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+  .diary-hero-advice { margin-top: 14px; color: #65709e; }
+  .diary-feed-card { display: grid; gap: 14px; align-content: start; }
+  .diary-feed-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+  .diary-feed-sub { margin-top: 4px; color: #65709e; font-size: 13px; }
+  .diary-feed { display: grid; gap: 12px; }
+  .diary-entry {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 84px 28px;
+    gap: 14px;
+    align-items: center;
+    border-radius: 18px;
+    padding: 14px 12px;
+    background: rgba(255,255,255,.72);
+    box-shadow: 0 10px 28px rgba(99,75,168,.08);
+    cursor: pointer;
+  }
+  .diary-entry-date {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: #13205f;
+  }
+  .diary-entry-date b { font-size: 28px; line-height: 1; }
+  .diary-entry-date small { color: #8b5cf6; font-weight: 800; }
+  .diary-entry-main h4 { margin: 6px 0 4px; font-size: 16px; color: #13205f; }
+  .diary-entry-main p {
+    margin: 0;
+    color: #65709e;
+    font-size: 13px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .diary-mood-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(139,92,246,.12);
+    color: #6d28d9;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .diary-entry-meta { display: flex; gap: 10px; margin-top: 8px; color: #8b849f; font-size: 12px; font-weight: 700; }
+  .diary-entry-thumb {
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
+  }
+  .diary-entry-thumb.tone-sunny,
+  .diary-memory-thumb.tone-sunny { background: linear-gradient(145deg, #fff7d6, #ffd9ec); }
+  .diary-entry-thumb.tone-mint,
+  .diary-memory-thumb.tone-mint { background: linear-gradient(145deg, #e8fff4, #d7f0ff); }
+  .diary-entry-thumb.tone-lavender,
+  .diary-memory-thumb.tone-lavender { background: linear-gradient(145deg, #f1e9ff, #ffe8f6); }
+  .diary-entry-thumb.tone-sprout,
+  .diary-memory-thumb.tone-sprout { background: linear-gradient(145deg, #e9ffe3, #fff4d0); }
+  .diary-entry-thumb.tone-cloud,
+  .diary-memory-thumb.tone-cloud { background: linear-gradient(145deg, #eef2ff, #f5f0ff); }
+  .diary-entry-thumb.tone-warm,
+  .diary-memory-thumb.tone-warm { background: linear-gradient(145deg, #ffe9d6, #ffe0ef); }
+  .diary-entry-more {
+    border: 0;
+    background: transparent;
+    color: #8b849f;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .diary-empty {
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+    padding: 18px 8px;
+    color: #65709e;
+  }
+  .diary-empty span { font-size: 28px; }
+  .diary-load-more { justify-self: center; }
+  .diary-memory-thumb { font-size: 54px; }
+  @media (max-width: 1100px) {
+    .diary-layout .diary-main-grid { grid-template-columns: 1fr; }
+    .diary-entry { grid-template-columns: 56px minmax(0, 1fr) 72px; }
+    .diary-entry-more { display: none; }
+  }
   .community-post { align-items: flex-start; grid-template-columns: 56px 1fr 90px; }
   .community-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .comments { display: grid; gap: 8px; margin-top: 12px; }
