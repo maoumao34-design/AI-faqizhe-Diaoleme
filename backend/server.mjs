@@ -945,7 +945,17 @@ export function createApp() {
     // /api/health is the canonical probe. Also answer GET / with 200 so platform
     // default Health Check Path=/ does not mark the instance unhealthy (404 flap).
     if (req.method === 'GET' && (url.pathname === '/api/health' || url.pathname === '/')) {
-      return jsonResponse(res, 200, { ok: true, service: 'diaoleme-ai-proxy' })
+      const aiKeyConfigured =
+        AI_PROVIDER === 'openai_compatible'
+          ? Boolean(process.env.OPENAI_API_KEY?.trim())
+          : Boolean(process.env.SILICONFLOW_API_KEY?.trim())
+      return jsonResponse(res, 200, {
+        ok: true,
+        service: 'diaoleme-ai-proxy',
+        ai_provider: AI_PROVIDER,
+        // boolean only — never return key material
+        ai_key_configured: aiKeyConfigured,
+      })
     }
 
     if (req.method === 'POST' && (url.pathname === PRIMARY_ANALYSIS_PATH || url.pathname === LEGACY_ANALYSIS_PATH)) {

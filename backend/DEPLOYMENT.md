@@ -82,6 +82,33 @@ curl -sS -X POST https://<fixed-host>/api/analyze \
   -d '{"image_url":"https://example.com/demo.jpg","mock_scenario":"success"}'
 ```
 
+### 真实 AI（非 mock）— Render 环境变量
+
+Demo 无密钥也能跑（返回 `source=fallback` / mock）。公网要真实分析时，在 Render → Environment 配置（**密钥不要贴进群聊 / issue / 仓库**）：
+
+| 变量 | 推荐值 | 说明 |
+|---|---|---|
+| `AI_PROVIDER` | `siliconflow` | 或 `openai_compatible` |
+| `SILICONFLOW_API_KEY` | （人类填入） | `AI_PROVIDER=siliconflow` 时必填 |
+| `SILICONFLOW_MODEL` | `Qwen/Qwen3-VL-32B-Instruct` | 可选 |
+| `OPENAI_API_KEY` | （人类填入） | 仅当 `AI_PROVIDER=openai_compatible` |
+| `OPENAI_BASE_URL` / `OPENAI_MODEL` | 按供应商 | 仅 openai_compatible |
+
+保存后会触发重启。验收探测（**不要**带 `mock_scenario`）：
+
+```bash
+# 1) 是否已挂密钥（只看布尔，不含密钥明文）
+curl -sS https://ai-faqizhe-diaoleme.onrender.com/api/health
+# 期望含: "ai_key_configured": true
+
+# 2) 真实 analyze
+curl -sS -m 90 -X POST https://ai-faqizhe-diaoleme.onrender.com/api/analyze \
+  -H 'content-type: application/json' \
+  -d '{"image_url":"https://example.com/demo.jpg","note":"real-ai-check"}'
+# 期望: success=true 且 result.source=api（或 ai_source 为 siliconflow/openai_compatible）
+# 失败时应仍 200 + 可展示 fallback，且无医疗诊断式文案
+```
+
 ## 前端联调口径
 
 - Base URL：平台固定域名，例如 `https://<service>.onrender.com`
