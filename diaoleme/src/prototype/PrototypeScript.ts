@@ -2,19 +2,18 @@ export const prototypeScript = `
 const primaryPages = [
   ["home", "⌂", "Home", "Every hair is a seed."],
   ["scan", "▢", "Scan", " 陪你轻松记一记头发小队今天的状态"],
-  ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"]
-];
-const secondaryPages = [
   ["buddy", "☁", "Buddy", " 每个人拥有自己的生命伙伴 "],
   ["quests", "✿", "Quests", " 完成护发任务，获得经验值和能量 "],
   ["league", "♛", "League", " 和伙伴们一起成长，赢取荣誉与奖励 "],
   ["rewards", "□", "Rewards", " 用成长兑换惊喜，奖励每一次认真生活 "],
-  ["diary", "▤", "Diary", " 记录每一个小瞬间，见证成长的每一步 💜"]
+  ["me", "◎", "Me", " 你的成长档案 "],
 ];
 const laterPages = [
+  ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"],
+  ["diary", "▤", "Diary", " 记录每一个小瞬间，见证成长的每一步 💜"],
   ["community", "☷", "Community", " 在这里，分享治愈，收获力量 "]
 ];
-const pages = [...primaryPages, ...secondaryPages, ...laterPages];
+const pages = [...primaryPages, ...laterPages];
 
 const quests = [
   ["💧", " 喝够 8 杯水 ", " 充足的水分让头发更健康 ", "6/8", "+50 XP"],
@@ -42,8 +41,7 @@ const renderNavButton = ([id, icon, label], extraClass = "") =>
 
 nav.innerHTML = [
   ...primaryPages.map((page) => renderNavButton(page, "nav-primary")),
-  ...secondaryPages.map((page) => renderNavButton(page)),
-  \`<div class="nav-later" aria-label="后续"><span class="nav-later-label">后续</span>\${laterPages
+  \`<div class="nav-later" aria-label="更多"><span class="nav-later-label">更多</span>\${laterPages
     .map((page) => renderNavButton(page, "nav-later-item"))
     .join("")}</div>\`,
 ].join("");
@@ -58,8 +56,18 @@ function showPage(id) {
   const meta = pages.find((page) => page[0] === id);
   heading.textContent = meta?.[2] || "Diaoleme";
   sub.textContent = meta?.[3] || "";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.body.classList.toggle("on-home", id === "home");
+  const canvas = document.querySelector("#designCanvas");
+  if (canvas) canvas.scrollTop = 0;
 }
+
+function updatePageScale() {
+  const scale = Math.min(window.innerWidth / 2048, window.innerHeight / 1365);
+  document.documentElement.style.setProperty("--page-scale", String(scale));
+}
+updatePageScale();
+window.addEventListener("resize", updatePageScale);
+document.body.classList.add("on-home");
 
 document.addEventListener("click", (event) => {
   const go = event.target.closest("[data-go]");
@@ -73,21 +81,25 @@ document.querySelectorAll(".chart").forEach((chart) => {
     .join("");
 });
 
-document.querySelector(".compact-quests").innerHTML = quests
-  .slice(0, 4)
-  .map(
-    (q, i) =>
-      \`<div class="item" style="grid-template-columns:34px 1fr auto"><span>\${q[0]}</span><b>\${q[1]}</b><span class="\${i === 2 ? "status" : ""}">\${q[4]}</span></div>\`
-  )
-  .join("");
+document.querySelectorAll(".compact-quests:not(.home-static)").forEach((root) => {
+  root.innerHTML = quests
+    .slice(0, 4)
+    .map(
+      (q, i) =>
+        \`<div class="item" style="grid-template-columns:34px 1fr auto"><span>\${q[0]}</span><b>\${q[1]}</b><span class="\${i === 2 ? "status" : ""}">\${q[4]}</span></div>\`
+    )
+    .join("");
+});
 
-document.querySelector(".small-leaders").innerHTML = leaders
-  .slice(0, 4)
-  .map(
-    (l) =>
-      \`<div class="leader \${l[0] === "12" ? "you" : ""}" style="grid-template-columns:34px 1fr auto"><span class="badge">\${l[0]}</span><b>\${l[1]}</b><span>\${l[3]}</span></div>\`
-  )
-  .join("");
+document.querySelectorAll(".small-leaders:not(.home-static)").forEach((root) => {
+  root.innerHTML = leaders
+    .slice(0, 4)
+    .map(
+      (l) =>
+        \`<div class="leader \${l[0] === "12" ? "you" : ""}" style="grid-template-columns:34px 1fr auto"><span class="badge">\${l[0]}</span><b>\${l[1]}</b><span>\${l[3]}</span></div>\`
+    )
+    .join("");
+});
 
 const skinNames = [
   " 蒲公英蓬蓬头 ",
