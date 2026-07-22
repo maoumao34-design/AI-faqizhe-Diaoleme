@@ -427,14 +427,72 @@ function buildResponsesInput(imageContent, note) {
   ]
 }
 
-function buildChatResponsesInput(messages) {
+function buildChatResponsesInput(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
   return [
-    { role: 'system', content: [{ type: 'input_text', text: CHAT_SYSTEM_PROMPT }] },
+    { role: 'system', content: [{ type: 'input_text', text: systemPrompt }] },
     ...messages.map((message) => ({
       role: message.role,
       content: [{ type: 'input_text', text: message.content }],
     })),
   ]
+}
+
+function normalizeReportContext(value) {
+  const raw = Array.isArray(value) ? value : []
+  const items = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+    const tags = Array.isArray(item.tags)
+      ? item.tags
+          .map((tag) => safeText(tag, '').slice(0, 24))
+          .filter(Boolean)
+          .slice(0, 6)
+      : []
+    const normalized = {
+      date: safeText(item.date, '').slice(0, 40) || undefined,
+      title: safeText(item.title, '').slice(0, 60) || undefined,
+      score: typeof item.score === 'number' && Number.isFinite(item.score)
+        ? Math.max(0, Math.min(100, Math.round(item.score)))
+        : undefined,
+      summary: safeText(item.summary, '').slice(0, 240) || undefined,
+      score_delta: typeof item.score_delta === 'number' && Number.isFinite(item.score_delta)
+        ? Math.max(-100, Math.min(100, Math.round(item.score_delta)))
+        : undefined,
+      daily_task: safeText(item.daily_task, '').slice(0, 80) || undefined,
+      tags: tags.length ? tags : undefined,
+    }
+    if (!normalized.date && !normalized.title && normalized.score == null && !normalized.summary
+      && normalized.score_delta == null && !normalized.daily_task && !normalized.tags) {
+      continue
+    }
+    items.push(normalized)
+    if (items.length >= 5) break
+  }
+  return items
+}
+
+function buildChatSystemPrompt(reportContext = []) {
+  if (!reportContext.length) return CHAT_SYSTEM_PROMPT
+
+  const lines = reportContext.map((report, index) => {
+    const parts = [`第${index + 1}条`]
+    if (report.date) parts.push(`日期:${report.date}`)
+    if (report.title) parts.push(`称号:${report.title}`)
+    if (report.score != null) parts.push(`趣味分:${report.score}`)
+    if (report.score_delta != null) parts.push(`相对上次变化:${report.score_delta}`)
+    if (report.summary) parts.push(`摘要:${report.summary}`)
+    if (report.daily_task) parts.push(`小任务:${report.daily_task}`)
+    if (report.tags?.length) parts.push(`标签:${report.tags.join('、')}`)
+    return `- ${parts.join(' | ')}`
+  })
+
+  return (
+    `${CHAT_SYSTEM_PROMPT}` +
+    '下面是用户本机提供的最近历史报告摘要（最多 5 条）。它们是娱乐化养成记录，不是医疗档案。' +
+    '回答时优先依据这些摘要；只能引用已提供内容，不要编造未出现的报告、分数或称号。' +
+    '如果用户问历史但摘要为空或不足以回答，请温柔引导去做一次 Scan / 记录，不要假装查过更多数据。' +
+    `用户历史报告摘要：\n${lines.join('\n')}`
+  )
 }
 
 async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extractResponse }) {
@@ -488,12 +546,12 @@ async function callAiProvider(args) {
   return callSiliconFlow(args)
 }
 
-async function callChatProvider(messages) {
-  if (AI_PROVIDER === 'openai_compatible') return callOpenAICompatibleChat(messages)
-  return callSiliconFlowChat(messages)
+async function callChatProvider(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
+  if (AI_PROVIDER === 'openai_compatible') return callOpenAICompatibleChat(messages, systemPrompt)
+  return callSiliconFlowChat(messages, systemPrompt)
 }
 
-async function callOpenAICompatibleChat(messages) {
+async function callOpenAICompatibleChat(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
     const err = new Error('Missing OPENAI_API_KEY')
@@ -507,7 +565,7 @@ async function callOpenAICompatibleChat(messages) {
     apiKey,
     body: {
       model: OPENAI_MODEL,
-      input: buildChatResponsesInput(messages),
+      input: buildChatResponsesInput(messages, systemPrompt),
     },
     timeoutMs: OPENAI_TIMEOUT_MS,
     provider: 'openai_compatible_chat',
@@ -515,7 +573,7 @@ async function callOpenAICompatibleChat(messages) {
   })
 }
 
-async function callSiliconFlowChat(messages) {
+async function callSiliconFlowChat(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
   const apiKey = process.env.SILICONFLOW_API_KEY?.trim()
   if (!apiKey) {
     const err = new Error('Missing SILICONFLOW_API_KEY')
@@ -530,7 +588,7 @@ async function callSiliconFlowChat(messages) {
     body: {
       model: SILICONFLOW_MODEL,
       messages: [
-        { role: 'system', content: CHAT_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         ...messages,
       ],
       temperature: 0.7,
@@ -972,8 +1030,11 @@ async function handleChat(req, res) {
       return jsonResponse(res, 400, chatFallbackResponse('EMPTY_MESSAGE', '请先输入一句想聊的内容。'))
     }
 
+    const reportContext = normalizeReportContext(payload.report_context)
+    const systemPrompt = buildChatSystemPrompt(reportContext)
+
     try {
-      const reply = await callChatProvider(messages)
+      const reply = await callChatProvider(messages, systemPrompt)
       return jsonResponse(res, 200, {
         success: true,
         ai_source: AI_PROVIDER,
@@ -982,6 +1043,7 @@ async function handleChat(req, res) {
         fallback_code: null,
         reply: sanitizeChatReply(reply),
         disclaimer: SAFE_DISCLAIMER,
+        report_context_count: reportContext.length,
       })
     } catch (error) {
       console.warn('[chat] upstream failed, returning fallback:', error?.code || error?.message)
@@ -989,7 +1051,10 @@ async function handleChat(req, res) {
       const message = code === 'MISSING_API_KEY'
         ? `后端还没有配置 ${AI_PROVIDER === 'openai_compatible' ? 'OPENAI_API_KEY' : 'SILICONFLOW_API_KEY'}，当前返回 demo 兜底聊天。`
         : 'AI 聊天服务暂时不可用，当前返回 demo 兜底聊天。'
-      return jsonResponse(res, 200, chatFallbackResponse(code, message))
+      return jsonResponse(res, 200, {
+        ...chatFallbackResponse(code, message),
+        report_context_count: reportContext.length,
+      })
     }
   } catch (error) {
     const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'

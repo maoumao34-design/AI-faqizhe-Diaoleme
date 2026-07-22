@@ -165,6 +165,57 @@ try {
   assert.equal(detail.record.fun_score, 58)
   assert.ok(detail.record.compare)
 
+  process.env.OPENAI_API_KEY = 'test-key'
+  const chatWithReports = await postJson({
+    message: '我最近一次报告叫什么，多少分？',
+    messages: [{ role: 'user', content: '先打个招呼' }],
+    report_context: [
+      {
+        date: '2026-07-21',
+        title: '今日发量守护者',
+        score: 86,
+        summary: '今天状态挺精神，继续轻松记录就好。',
+        score_delta: 8,
+        daily_task: '今晚早点睡',
+        tags: ['清爽', '稳定'],
+      },
+      {
+        date: '2026-07-20',
+        title: '模糊也努力奖',
+        score: 58,
+        summary: '图片有点暗，但记录已经收下。',
+      },
+      null,
+      { title: 'x'.repeat(120), score: 999, tags: ['a'.repeat(40), 1, 'ok'] },
+      { title: '多出来的第4条' },
+      { title: '多出来的第5条' },
+      { title: '多出来的第6条应被丢弃' },
+    ],
+  }, '/api/chat')
+  assert.equal(chatWithReports.response.status, 200)
+  assert.equal(chatWithReports.data.success, true)
+  assert.equal(chatWithReports.data.source, 'api')
+  assert.equal(chatWithReports.data.report_context_count, 5)
+  assert.equal(typeof chatWithReports.data.reply, 'string')
+  assert.ok(chatWithReports.data.reply.length > 0)
+  const chatSystem = upstreamRequest.body.input?.[0]?.content?.[0]?.text || ''
+  assert.match(chatSystem, /今日发量守护者/)
+  assert.match(chatSystem, /趣味分:86/)
+  assert.match(chatSystem, /模糊也努力奖/)
+  assert.match(chatSystem, /只能引用已提供内容|禁止编造|不要编造/)
+  assert.doesNotMatch(chatSystem, /多出来的第6条应被丢弃/)
+  assert.match(chatSystem, /x{60}/)
+  assert.doesNotMatch(chatSystem, /x{61}/)
+
+  const chatWithoutReports = await postJson({
+    message: '今天适合做什么小任务？',
+  }, '/api/chat')
+  assert.equal(chatWithoutReports.response.status, 200)
+  assert.equal(chatWithoutReports.data.success, true)
+  assert.equal(chatWithoutReports.data.report_context_count, 0)
+  const plainSystem = upstreamRequest.body.input?.[0]?.content?.[0]?.text || ''
+  assert.doesNotMatch(plainSystem, /用户历史报告摘要/)
+
   console.log('All API checks passed')
 } finally {
   await rm(process.env.RECORDS_FILE, { force: true })

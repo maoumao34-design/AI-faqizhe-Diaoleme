@@ -289,6 +289,79 @@ npm run dev
 5. Cold start：若首次请求慢/失败，先 `GET /api/health` 预热后再拉历史。
 6. 文案：保持娱乐养成语气；勿展示医疗化字段；可轻提示 Free 盘重启可能丢历史。
 
+## AI 助手聊天（可选历史报告上下文）
+
+- 接口路径：`POST /api/chat`
+- 请求格式：`application/json`
+- 用途：网页浮层 AI 助手陪聊；可附带本机历史报告摘要，让助手按用户自己的报告回答。
+- 兼容：旧客户端不传 `report_context` 时行为与现网一致。
+- 安全：回复仍会做医疗化内容清洗；助手不会自动拉取共享 `GET /api/records` 全量（避免串用户数据）。
+
+### 请求字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `message` | string | 可选，当前用户一句话；与 `messages` 至少提供其一 |
+| `messages` | array | 可选，最近对话轮次；每项 `{ role: "user"\|"assistant", content }`，最多保留 10 条，单条 content 截断 800 字 |
+| `report_context` | array | 可选，最多 **5** 条历史报告摘要；非法/过长字段会被安全截断或丢弃 |
+
+`report_context[]` 可选字段：
+
+| 字段 | 类型 | 截断/约束 |
+| --- | --- | --- |
+| `date` | string | 最长 40 |
+| `title` | string | 最长 60 |
+| `score` | number | 钳制到 0–100 |
+| `summary` | string | 最长 240 |
+| `score_delta` | number | 钳制到 -100–100 |
+| `daily_task` | string | 最长 80 |
+| `tags` | string[] | 最多 6 个，每项最长 24 |
+
+### 请求示例（带 2 条假报告）
+
+```bash
+curl -X POST http://localhost:8787/api/chat \
+  -H "content-type: application/json" \
+  -d '{
+    "message": "我最近一次报告叫什么，多少分？",
+    "messages": [],
+    "report_context": [
+      {
+        "date": "2026-07-21",
+        "title": "今日发量守护者",
+        "score": 86,
+        "summary": "今天状态挺精神，继续轻松记录就好。",
+        "score_delta": 8,
+        "daily_task": "今晚早点睡",
+        "tags": ["清爽", "稳定"]
+      },
+      {
+        "date": "2026-07-20",
+        "title": "模糊也努力奖",
+        "score": 58,
+        "summary": "图片有点暗，但记录已经收下。"
+      }
+    ]
+  }'
+```
+
+### 成功返回示例
+
+```json
+{
+  "success": true,
+  "ai_source": "openai_compatible",
+  "source": "api",
+  "source_label": "CC club OpenAI compatible AI 聊天结果",
+  "fallback_code": null,
+  "reply": "你最近一次报告称号是「今日发量守护者」，趣味分 86。",
+  "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。",
+  "report_context_count": 2
+}
+```
+
+说明：有 `report_context` 时，后端会把它写进聊天系统提示，要求模型优先据此回答、禁止编造未提供的报告；`report_context_count` 仅便于联调确认注入条数。
+
 ## Mock 场景
 
 如需不走真实 AI，可传 `mock_scenario`：
