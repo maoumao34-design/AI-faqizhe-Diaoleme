@@ -47,7 +47,7 @@ export const rewardsSection = `<section class="page" data-page="rewards">
 
             <aside class="rewards-right-rail">
               <section class="rewards-side-panel overview-panel">
-                <div class="rewards-panel-heading"><strong>积分总览</strong><button type="button">更多详情 ›</button></div>
+                <div class="rewards-panel-heading"><strong>积分总览</strong></div>
                 <div class="overview-content">
                   <div class="points-donut"><div><strong data-rewards-points></strong><span>总积分</span></div></div>
                   <ul class="legend"><li><i class="purple"></i><span>任务奖励</span><b>67%</b></li><li><i class="blue"></i><span>打卡奖励</span><b>18%</b></li><li><i class="orange"></i><span>活动奖励</span><b>10%</b></li><li><i class="gray"></i><span>其他</span><b>5%</b></li></ul>
@@ -61,14 +61,13 @@ export const rewardsSection = `<section class="page" data-page="rewards">
               </section>
 
               <section class="rewards-side-panel event-panel">
-                <div class="rewards-panel-heading"><strong>限时活动</strong><button type="button">更多活动 ›</button></div>
+                <div class="rewards-panel-heading"><strong>限时活动</strong></div>
                 <button type="button" class="event-banner"><img src="./rewards-assets/event-banner.png" alt="夏日养发计划"></button>
               </section>
 
               <section class="rewards-side-panel records-panel">
-                <div class="rewards-panel-heading"><strong>兑换记录</strong><button type="button">全部记录 ›</button></div>
+                <div class="rewards-panel-heading"><strong>兑换记录</strong></div>
                 <div class="record-list" id="rewardsRecords"></div>
-                <button type="button" class="records-link">查看全部记录 ›</button>
               </section>
             </aside>
           </div>
