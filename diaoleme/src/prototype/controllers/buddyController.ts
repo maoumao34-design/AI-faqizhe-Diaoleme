@@ -27,36 +27,33 @@ export function renderBuddy(root: HTMLElement, options: BuddyControllerOptions) 
   const health = Math.max(62, Math.min(98, Math.round((s.dropScore ?? 82) + Math.min(s.reportHistory.length, 6))))
   const moodScore = Math.max(56, Math.min(96, Math.round((care.energy + care.love) / 2)))
   const mood = moodScore >= 78 ? 'Happy' : moodScore >= 64 ? 'Calm' : 'Need Care'
-  const selectedHair = currentHairStyle(s.unlockedHairStyles)
-  const ownedHairStyles = HAIRSTYLE_CATALOG.filter((h) => s.unlockedHairStyles.includes(h.id)).length
   const questCount = options.getQuestCount()
+  const companionDays = Math.max(s.checkinDays.length, s.reportHistory.length ? 1 : 0, 38)
+
+  setHtml(root.querySelector('[data-buddy-days]'), `陪伴你已经 ${companionDays} 天啦`)
 
   setHtml(root.querySelector('[data-page="buddy"] .metric'), `
-    <div class="metric-row"><span style="font-size:32px">💗</span><b>生命值</b><div class="meter"><div class="fill" style="--w:${health}%;--c:#ff77a8"></div></div><b>${health}/100</b></div>
-    <div class="metric-row"><span style="font-size:32px">⚡</span><b>能量值</b><div class="meter"><div class="fill" style="--w:${care.energy}%;--c:#ffad2f"></div></div><b>${care.energy}/100</b></div>
-    <div class="metric-row"><span style="font-size:32px">😊</span><b>心情值</b><div class="meter"><div class="fill" style="--w:${moodScore}%;--c:#8b5cf6"></div></div><b>${mood}</b></div>
+    <div class="metric-row"><span style="font-size:28px">💗</span><b>生命值</b><div class="meter"><div class="fill" style="--w:${health}%;--c:#ff77a8"></div></div><b>${health}/100</b></div>
+    <div class="metric-row"><span style="font-size:28px">⚡</span><b>能量值</b><div class="meter"><div class="fill" style="--w:${care.energy}%;--c:#ffad2f"></div></div><b>${care.energy}/100</b></div>
+    <div class="metric-row"><span style="font-size:28px">😊</span><b>心情值</b><div class="meter"><div class="fill" style="--w:${moodScore}%;--c:#8b5cf6"></div></div><b>${mood}</b></div>
   `)
 
   renderBuddyHairStyles(root)
 
-  setHtml(root.querySelector('[data-page="buddy"] .card.item-list'), `
+  setHtml(root.querySelector('[data-buddy-actions]'), `
     <button class="item buddy-action dress" data-buddy-action="dress"><span>👗</span><b>Dress Up<small>装扮你的伙伴，选择或解锁造型</small></b><span>›</span></button>
     <button class="item buddy-action feed" data-buddy-action="feed"><span>🍚</span><b>Feed<small>喂养伙伴，补充爱与能量</small></b><span>›</span></button>
     <button class="item buddy-action diary" data-buddy-action="diary"><span>📖</span><b>Buddy Diary<small>记录我们一起成长的每一天</small></b><span>›</span></button>
     <button class="item buddy-action growth" data-buddy-action="growth"><span>📈</span><b>成长记录<small>查看伙伴的成长轨迹</small></b><span>›</span></button>
   `)
 
-  setHtml(root.querySelector('[data-page="buddy"] .grid:nth-child(2) .card:first-child'), `
+  setHtml(root.querySelector('[data-buddy-report]'), `
     <h3>今日头发报告</h3>
-    <div><span class="big-number">${s.dropScore ?? '--'}</span> ${s.dropScore == null ? '' : '分'}</div>
+    <div class="buddy-report-score"><span class="big-number">${s.dropScore ?? '--'}</span><small>${s.dropScore == null ? '等待首次记录' : '趣味状态分'}</small></div>
     <p>${escapeHtml(latestReport?.summary || '还没有今日报告，完成一次 Scan 后会同步到 Buddy。')}</p>
     <div class="chart">${options.buildTrendBars(s.reportHistory)}</div>
   `)
 
-  const buddyPage = root.querySelector<HTMLElement>('[data-page="buddy"]')
-  if (buddyPage && !buddyPage.querySelector('.buddy-extra-grid')) {
-    buddyPage.insertAdjacentHTML('beforeend', '<div class="buddy-extra-grid"><div class="card" data-buddy-summary></div><div class="card" data-buddy-cheers></div></div>')
-  }
   setHtml(root.querySelector('[data-buddy-summary]'), `
     <h3>💗 本周成长小结</h3>
     <p>你的护理表现超过了 ${Math.min(96, 60 + questCount.done * 4 + s.checkinDays.length)}% 的用户，继续保持哦！</p>
