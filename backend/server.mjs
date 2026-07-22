@@ -49,6 +49,16 @@ const CHAT_SYSTEM_PROMPT =
   '请用温柔、轻松、简洁的中文回答，帮助用户理解记录、任务、积分、伙伴成长和非医学的生活习惯建议。' +
   '不要做医疗诊断，不要提疾病风险、治疗、用药、就医建议，不要制造脱发焦虑。无法确定时，引导用户做轻量记录或完成一个小任务。'
 
+const REPORT_CONTEXT_MAX = 5
+const REPORT_CONTEXT_FIELD_LIMITS = {
+  date: 40,
+  title: 80,
+  summary: 300,
+  daily_task: 120,
+  tag: 40,
+  tags_max: 8,
+}
+
 const SCENARIOS = {
   success: {
     httpStatus: 200,
@@ -427,9 +437,100 @@ function buildResponsesInput(imageContent, note) {
   ]
 }
 
-function buildChatResponsesInput(messages) {
+function clipText(value, maxLen) {
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  return trimmed.slice(0, maxLen)
+}
+
+function normalizeOptionalScore(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.min(100, Math.round(value)))
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value.trim())
+    if (Number.isFinite(parsed)) return Math.max(0, Math.min(100, Math.round(parsed)))
+  }
+  return undefined
+}
+
+function normalizeOptionalDelta(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(-100, Math.min(100, Math.round(value)))
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value.trim())
+    if (Number.isFinite(parsed)) return Math.max(-100, Math.min(100, Math.round(parsed)))
+  }
+  return undefined
+}
+
+/**
+ * Sanitize optional frontend reportHistory summaries for chat injection.
+ * Invalid / oversized values are truncated or dropped; never throws.
+ * Returns [] when absent or unusable so old clients stay compatible.
+ */
+export function normalizeReportContext(value) {
+  if (!Array.isArray(value)) return []
+  const out = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+    const entry = {}
+    const date = clipText(item.date, REPORT_CONTEXT_FIELD_LIMITS.date)
+    const title = clipText(item.title, REPORT_CONTEXT_FIELD_LIMITS.title)
+    const summary = clipText(item.summary, REPORT_CONTEXT_FIELD_LIMITS.summary)
+    const dailyTask = clipText(item.daily_task, REPORT_CONTEXT_FIELD_LIMITS.daily_task)
+    const score = normalizeOptionalScore(item.score)
+    const scoreDelta = normalizeOptionalDelta(item.score_delta)
+    if (date) entry.date = date
+    if (title) entry.title = title
+    if (summary) entry.summary = summary
+    if (dailyTask) entry.daily_task = dailyTask
+    if (score !== undefined) entry.score = score
+    if (scoreDelta !== undefined) entry.score_delta = scoreDelta
+    if (Array.isArray(item.tags)) {
+      const tags = item.tags
+        .map((tag) => clipText(String(tag ?? ''), REPORT_CONTEXT_FIELD_LIMITS.tag))
+        .filter(Boolean)
+        .slice(0, REPORT_CONTEXT_FIELD_LIMITS.tags_max)
+      if (tags.length) entry.tags = tags
+    }
+    if (Object.keys(entry).length) out.push(entry)
+    if (out.length >= REPORT_CONTEXT_MAX) break
+  }
+  return out
+}
+
+function formatReportContextBlock(reportContext) {
+  return reportContext.map((item, index) => {
+    const parts = [`${index + 1}.`]
+    if (item.date) parts.push(`日期=${item.date}`)
+    if (item.title) parts.push(`称号=${item.title}`)
+    if (item.score !== undefined) parts.push(`趣味分=${item.score}`)
+    if (item.score_delta !== undefined) parts.push(`相对变化=${item.score_delta}`)
+    if (item.summary) parts.push(`摘要=${item.summary}`)
+    if (item.daily_task) parts.push(`小任务=${item.daily_task}`)
+    if (Array.isArray(item.tags) && item.tags.length) parts.push(`标签=${item.tags.join('/')}`)
+    return parts.join(' ')
+  }).join('\n')
+}
+
+export function buildChatSystemPrompt(reportContext = []) {
+  if (!Array.isArray(reportContext) || reportContext.length === 0) return CHAT_SYSTEM_PROMPT
+  return (
+    `${CHAT_SYSTEM_PROMPT}\n\n` +
+    '以下是用户本机提供的历史 Scan 报告摘要（最多 5 条，由前端传入，不是后端全库查询）：\n' +
+    `${formatReportContextBlock(reportContext)}\n` +
+    '回答规则：优先依据上述已提供报告回答与历史记录相关的问题；只能引用已提供的称号、分数、摘要、任务或标签；' +
+    '禁止编造未提供的报告、分数或趋势。若用户问起报告但列表里没有对应内容，温柔引导去做一次 Scan 记录。' +
+    '仍然不做医疗诊断，不提疾病风险、治疗、用药或就医建议。'
+  )
+}
+
+function buildChatResponsesInput(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
   return [
-    { role: 'system', content: [{ type: 'input_text', text: CHAT_SYSTEM_PROMPT }] },
+    { role: 'system', content: [{ type: 'input_text', text: systemPrompt }] },
     ...messages.map((message) => ({
       role: message.role,
       content: [{ type: 'input_text', text: message.content }],
@@ -488,12 +589,12 @@ async function callAiProvider(args) {
   return callSiliconFlow(args)
 }
 
-async function callChatProvider(messages) {
-  if (AI_PROVIDER === 'openai_compatible') return callOpenAICompatibleChat(messages)
-  return callSiliconFlowChat(messages)
+async function callChatProvider(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
+  if (AI_PROVIDER === 'openai_compatible') return callOpenAICompatibleChat(messages, systemPrompt)
+  return callSiliconFlowChat(messages, systemPrompt)
 }
 
-async function callOpenAICompatibleChat(messages) {
+async function callOpenAICompatibleChat(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
     const err = new Error('Missing OPENAI_API_KEY')
@@ -507,7 +608,7 @@ async function callOpenAICompatibleChat(messages) {
     apiKey,
     body: {
       model: OPENAI_MODEL,
-      input: buildChatResponsesInput(messages),
+      input: buildChatResponsesInput(messages, systemPrompt),
     },
     timeoutMs: OPENAI_TIMEOUT_MS,
     provider: 'openai_compatible_chat',
@@ -515,7 +616,7 @@ async function callOpenAICompatibleChat(messages) {
   })
 }
 
-async function callSiliconFlowChat(messages) {
+async function callSiliconFlowChat(messages, systemPrompt = CHAT_SYSTEM_PROMPT) {
   const apiKey = process.env.SILICONFLOW_API_KEY?.trim()
   if (!apiKey) {
     const err = new Error('Missing SILICONFLOW_API_KEY')
@@ -530,7 +631,7 @@ async function callSiliconFlowChat(messages) {
     body: {
       model: SILICONFLOW_MODEL,
       messages: [
-        { role: 'system', content: CHAT_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         ...messages,
       ],
       temperature: 0.7,
@@ -972,8 +1073,12 @@ async function handleChat(req, res) {
       return jsonResponse(res, 400, chatFallbackResponse('EMPTY_MESSAGE', '请先输入一句想聊的内容。'))
     }
 
+    // Optional: frontend-local reportHistory summaries. Absent/invalid => base prompt.
+    const reportContext = normalizeReportContext(payload.report_context)
+    const systemPrompt = buildChatSystemPrompt(reportContext)
+
     try {
-      const reply = await callChatProvider(messages)
+      const reply = await callChatProvider(messages, systemPrompt)
       return jsonResponse(res, 200, {
         success: true,
         ai_source: AI_PROVIDER,
@@ -982,6 +1087,7 @@ async function handleChat(req, res) {
         fallback_code: null,
         reply: sanitizeChatReply(reply),
         disclaimer: SAFE_DISCLAIMER,
+        report_context_count: reportContext.length,
       })
     } catch (error) {
       console.warn('[chat] upstream failed, returning fallback:', error?.code || error?.message)
@@ -989,7 +1095,10 @@ async function handleChat(req, res) {
       const message = code === 'MISSING_API_KEY'
         ? `后端还没有配置 ${AI_PROVIDER === 'openai_compatible' ? 'OPENAI_API_KEY' : 'SILICONFLOW_API_KEY'}，当前返回 demo 兜底聊天。`
         : 'AI 聊天服务暂时不可用，当前返回 demo 兜底聊天。'
-      return jsonResponse(res, 200, chatFallbackResponse(code, message))
+      return jsonResponse(res, 200, {
+        ...chatFallbackResponse(code, message),
+        report_context_count: reportContext.length,
+      })
     }
   } catch (error) {
     const code = error?.code === 'BODY_TOO_LARGE' ? 'BODY_TOO_LARGE' : 'BAD_REQUEST'

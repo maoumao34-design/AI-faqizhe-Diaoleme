@@ -289,6 +289,72 @@ npm run dev
 5. Cold start：若首次请求慢/失败，先 `GET /api/health` 预热后再拉历史。
 6. 文案：保持娱乐养成语气；勿展示医疗化字段；可轻提示 Free 盘重启可能丢历史。
 
+## AI 聊天（可选报告上下文）
+
+- 接口名称：AI 助手聊天
+- 接口路径：`POST /api/chat`
+- 请求方法：POST
+- 是否支持 mock / fallback：上游失败时返回 `success:false` + 可展示兜底文案；回复仍做医疗化内容清洗
+- 兼容：旧客户端不传 `report_context` 时行为与现网一致
+
+### 请求字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `message` | string | 可选，单轮用户消息（与 `messages` 可并用） |
+| `messages` | array | 可选，最近对话；项为 `{ role: "user"\|"assistant", content }`，最多保留 10 条，单条 content 截到 800 |
+| `report_context` | array | 可选，前端本机 `reportHistory` 摘要，最多 5 条；非法/过长字段安全截断，不影响旧客户端 |
+
+`report_context[]` 可选子字段：`date`、`title`、`score`、`summary`、`score_delta`、`daily_task`、`tags`。
+
+有 `report_context` 时，后端会注入系统提示：说明这些是用户本地历史报告摘要，要求优先据此回答，禁止编造未提供的报告；无对应内容时引导去 Scan；仍不做医疗诊断。
+
+### 请求示例（带 2 条假报告）
+
+```json
+{
+  "message": "我上次报告称号和分数是什么？",
+  "report_context": [
+    {
+      "date": "2026-07-21",
+      "title": "今日发量守护者",
+      "score": 82,
+      "summary": "挺精神",
+      "score_delta": 10,
+      "daily_task": "早点睡",
+      "tags": ["清爽"]
+    },
+    {
+      "date": "2026-07-20",
+      "title": "模糊也努力奖",
+      "score": 58,
+      "summary": "光线偏暗"
+    }
+  ]
+}
+```
+
+### 返回示例
+
+```json
+{
+  "success": true,
+  "ai_source": "openai_compatible",
+  "source": "api",
+  "source_label": "CC club OpenAI compatible AI 聊天结果",
+  "fallback_code": null,
+  "reply": "根据你提供的历史报告，最近一次是「今日发量守护者」82 分……",
+  "disclaimer": "本结果仅用于娱乐和习惯记录，不构成医疗建议。",
+  "report_context_count": 2
+}
+```
+
+### 前端使用说明
+
+1. 从本机 `reportHistory` 取最近最多 5 条，映射为上述摘要字段后随聊天请求发送。
+2. **不要**让后端自动 `GET /api/records` 全量塞进上下文（共享存储会串用户数据）。
+3. 未做用户鉴权；上下文可信来源是前端本机会话。
+
 ## Mock 场景
 
 如需不走真实 AI，可传 `mock_scenario`：
