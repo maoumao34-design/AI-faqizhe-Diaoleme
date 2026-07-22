@@ -379,11 +379,182 @@ export const prototypeStyle = `
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.88);
   }
 
+  .buddy-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .buddy-main {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  .buddy-hero {
+    position: relative;
+    min-height: 460px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(280px, 0.92fr) minmax(300px, 1.08fr);
+    gap: 18px;
+    align-items: stretch;
+    padding: 28px;
+    background:
+      radial-gradient(circle at 78% 28%, rgba(255, 255, 255, 0.55), transparent 22%),
+      radial-gradient(circle at 62% 18%, rgba(255, 214, 236, 0.42), transparent 28%),
+      linear-gradient(160deg, rgba(214, 204, 255, 0.55) 0%, rgba(255, 236, 246, 0.48) 42%, rgba(214, 236, 176, 0.38) 100%);
+  }
+
+  .buddy-hero-left {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    z-index: 2;
+  }
+
+  .buddy-identity h2 {
+    margin: 0;
+    font-size: clamp(28px, 2.4vw, 40px);
+    line-height: 1.12;
+  }
+
+  .buddy-identity p {
+    margin: 8px 0 14px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .buddy-identity .metric {
+    max-width: 360px;
+    padding: 14px 16px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(14px);
+  }
+
+  .buddy-report {
+    max-width: 360px;
+    padding: 18px;
+    box-shadow: 0 16px 40px rgba(99, 75, 168, 0.12);
+  }
+
+  .buddy-report .big-number {
+    font-size: 42px;
+  }
+
+  .buddy-report .chart {
+    height: 72px;
+    margin-top: 12px;
+  }
+
+  .buddy-tip {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    align-items: start;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 248, 236, 0.88);
+    border: 1px solid rgba(255, 214, 150, 0.45);
+  }
+
+  .buddy-tip b {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .buddy-tip p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 700;
+  }
+
+  .buddy-tip-icon {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
   .buddy-stage {
     min-height: 430px;
     display: grid;
     place-items: end center;
     position: relative;
+  }
+
+  .buddy-hero .buddy-stage {
+    min-height: 100%;
+    align-self: stretch;
+  }
+
+  .buddy-skins .section-title {
+    margin-bottom: 14px;
+  }
+
+  .buddy-skins .skin-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .buddy-actions {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    position: sticky;
+    top: 18px;
+    padding: 16px;
+  }
+
+  .buddy-actions .item {
+    min-height: 84px;
+  }
+
+  .buddy-extra-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  }
+
+  .buddy-summary-stats,
+  .buddy-cheers {
+    display: grid;
+    gap: 12px;
+  }
+
+  .buddy-summary-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .buddy-cheers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .buddy-summary-stats span,
+  .buddy-cheer {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.58);
+    padding: 14px;
+  }
+
+  .buddy-summary-stats b,
+  .buddy-summary-stats small {
+    display: block;
+  }
+
+  .buddy-cheer .avatar {
+    align-items: center;
+    background: linear-gradient(135deg, #ffe4ee, #e8ddff);
+    border-radius: 999px;
+    display: inline-flex;
+    font-weight: 900;
+    height: 36px;
+    justify-content: center;
+    margin-right: 8px;
+    width: 36px;
   }
 
   .ground {
@@ -1004,7 +1175,26 @@ export const prototypeStyle = `
     .hero,
     .home-grid,
     .two-col,
-    .scan-wrap {
+    .scan-wrap,
+    .buddy-layout,
+    .buddy-hero,
+    .buddy-extra-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .buddy-actions {
+      position: static;
+    }
+
+    .buddy-skins .skin-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .buddy-summary-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .buddy-cheers {
       grid-template-columns: 1fr;
     }
 
@@ -1106,6 +1296,20 @@ export const prototypeStyle = `
       font-size: 42px;
     }
 
+    .buddy-hero {
+      min-height: auto;
+      padding: 20px;
+    }
+
+    .buddy-identity h2 {
+      font-size: 30px;
+    }
+
+    .buddy-identity .metric,
+    .buddy-report {
+      max-width: none;
+    }
+
     .buddy-stage {
       min-height: 360px;
     }
@@ -1117,7 +1321,9 @@ export const prototypeStyle = `
     .mini-card-grid,
     .three,
     .shop,
-    .skin-grid {
+    .skin-grid,
+    .buddy-skins .skin-grid,
+    .buddy-summary-stats {
       grid-template-columns: 1fr;
     }
   }

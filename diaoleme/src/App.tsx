@@ -3294,42 +3294,6 @@ const integrationStyle = `
   [data-page="buddy"] .buddy-action.feed { background: rgba(255, 122, 47, .10); }
   [data-page="buddy"] .buddy-action.diary { background: rgba(99, 102, 241, .10); }
   [data-page="buddy"] .buddy-action.growth { background: rgba(101, 201, 130, .12); }
-  .buddy-extra-grid {
-    display: grid;
-    gap: 20px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    margin-top: 20px;
-  }
-  .buddy-summary-stats,
-  .buddy-cheers {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .buddy-summary-stats span,
-  .buddy-cheer {
-    border-radius: 18px;
-    background: rgba(255,255,255,.58);
-    padding: 14px;
-  }
-  .buddy-summary-stats b,
-  .buddy-summary-stats small {
-    display: block;
-  }
-  .buddy-cheers {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .buddy-cheer .avatar {
-    align-items: center;
-    background: linear-gradient(135deg, #ffe4ee, #e8ddff);
-    border-radius: 999px;
-    display: inline-flex;
-    font-weight: 900;
-    height: 36px;
-    justify-content: center;
-    margin-right: 8px;
-    width: 36px;
-  }
   #checkin .pill,
   #shop .pill,
   #timeline .pill,
