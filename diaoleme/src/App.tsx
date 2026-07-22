@@ -2950,34 +2950,62 @@ const integrationStyle = `
     align-items: start;
   }
   [data-page="scan"] .scan-stat-item {
-    display: grid;
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
     min-width: 0;
+    width: 100%;
+    text-align: center;
+  }
+  [data-page="scan"] .scan-stat-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 42px;
   }
   [data-page="scan"] .scan-stat-grid .big-number {
-    display: inline-block;
-    font-size: clamp(28px, 2.6vw, 42px);
+    display: block;
+    width: 100%;
+    font-size: clamp(22px, 2.2vw, 40px);
     line-height: 1;
     max-width: 100%;
-    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-page="scan"] .scan-stat-grid .big-number[data-digits="3"] {
+    font-size: clamp(20px, 1.9vw, 34px);
+  }
+  [data-page="scan"] .scan-stat-grid .big-number[data-digits="4"] {
+    font-size: clamp(18px, 1.6vw, 28px);
   }
   [data-page="scan"] .scan-stat-item small {
     color: var(--ink);
     display: block;
+    width: 100%;
     font-size: 14px;
     font-weight: 700;
     line-height: 1.2;
+    text-align: center;
   }
   [data-page="scan"] .scan-source-stat {
-    margin-top: 8px;
+    margin-top: 0;
     position: relative;
   }
   [data-page="scan"] .scan-source-value {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     height: 34px;
-    line-height: 34px;
-    max-width: 112px;
+    max-width: min(100%, 112px);
     min-width: 0;
+    margin: 0 auto;
     overflow: hidden;
     padding: 0 12px;
     text-overflow: ellipsis;
