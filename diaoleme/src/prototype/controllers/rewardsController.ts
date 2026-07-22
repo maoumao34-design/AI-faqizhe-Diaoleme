@@ -109,6 +109,23 @@ export function purchaseReward(item: RewardMarketItem) {
   return { ok: true, message: `已兑换 ${item.name} · -${item.points} XP` }
 }
 
+function getDisplayPurchaseRecords(): RewardPurchaseRecord[] {
+  const records = loadRewardPurchaseRecords().filter((record) => record.id !== 'empty' && record.name !== '还没有兑换记录')
+  if (records.length) return records.slice(0, 3)
+
+  // 兼容旧数据：已拥有商品但未写入购买日志时，用拥有列表补齐展示
+  const owned = loadOwnedRewards()
+  if (!owned.size) return []
+  return REWARD_MARKET_ITEMS.filter((item) => owned.has(item.id)).slice(0, 3).map((item) => ({
+    id: item.id,
+    name: item.name,
+    date: todayKey(),
+    points: `-${item.points.toLocaleString('en-US')} XP`,
+    status: '已兑换',
+    image: item.image,
+  }))
+}
+
 export function renderRewards(root: HTMLElement) {
   const s = useUserStore.getState()
   const level = getLevelProgress(s.points)
@@ -178,14 +195,17 @@ export function renderRewards(root: HTMLElement) {
     </button>`
   }).join(''))
 
-  const purchaseRecords = loadRewardPurchaseRecords()
-  setHtml(root.querySelector('#rewardsRecords'), (purchaseRecords.length ? purchaseRecords : [
-    { id: 'empty', name: '还没有兑换记录', date: todayKey(), points: '0 XP', status: '去商城看看', image: `${REWARD_ASSET_BASE}reward-flower.svg` },
-  ]).slice(0, 3).map((record) => `
+  const purchaseRecords = getDisplayPurchaseRecords()
+  setHtml(
+    root.querySelector('#rewardsRecords'),
+    purchaseRecords.length
+      ? purchaseRecords.map((record) => `
     <div class="record-item">
       <img src="${escapeHtml(record.image)}" alt="${escapeHtml(record.name)}">
       <div><strong>${escapeHtml(record.name)}</strong><span>${escapeHtml(record.date)}</span></div>
       <div><b>${escapeHtml(record.points)}</b><small>${escapeHtml(record.status)}</small></div>
     </div>
-  `).join(''))
+  `).join('')
+      : `<div class="record-empty">暂无兑换记录，去商城看看吧</div>`,
+  )
 }
