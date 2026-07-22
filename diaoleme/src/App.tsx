@@ -709,13 +709,14 @@ function attachChatAssistant(root: HTMLElement) {
   let startTop = 0
   // Transient wait copy only — keep it light; not product/system policy language.
   const thinkingPlaceholder = '头发丝正在认真想…'
+  const VIEWPORT_MARGIN = 12
   const renderMessages = () => {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
   }
   /** Keep the open panel fully inside the viewport (avoids header-only clip at bottom). */
   const placeOpenPanel = () => {
-    const pad = 12
+    const pad = VIEWPORT_MARGIN
     const width = Math.min(360, window.innerWidth - pad * 2)
     const height = Math.min(520, window.innerHeight - pad * 2)
     widget.style.setProperty('--ai-chat-w', `${width}px`)
@@ -751,8 +752,8 @@ function attachChatAssistant(root: HTMLElement) {
     // Only switch to left/top after a real drag; micro-jitter must not leave bottom/right.
     if (Math.abs(dx) + Math.abs(dy) <= 6) return
     moved = true
-    const nextLeft = Math.max(12, Math.min(window.innerWidth - widget.offsetWidth - 12, startLeft + dx))
-    const nextTop = Math.max(12, Math.min(window.innerHeight - widget.offsetHeight - 12, startTop + dy))
+    const nextLeft = Math.max(VIEWPORT_MARGIN, Math.min(window.innerWidth - widget.offsetWidth - VIEWPORT_MARGIN, startLeft + dx))
+    const nextTop = Math.max(VIEWPORT_MARGIN, Math.min(window.innerHeight - widget.offsetHeight - VIEWPORT_MARGIN, startTop + dy))
     widget.style.left = `${nextLeft}px`
     widget.style.top = `${nextTop}px`
     widget.style.right = 'auto'
