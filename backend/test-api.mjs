@@ -11,6 +11,28 @@ const upstream = createServer(async (req, res) => {
     url: req.url,
     body: JSON.parse(Buffer.concat(chunks).toString('utf8')),
   }
+
+  const isChat = Array.isArray(upstreamRequest.body?.input)
+    && upstreamRequest.body.input.some((item) => item?.role === 'user')
+    && !upstreamRequest.body.input.some((item) => Array.isArray(item?.content)
+      && item.content.some((part) => part?.type === 'input_image'))
+
+  const text = isChat
+    ? '根据你提供的历史报告，最近一次是「今日发量守护者」82 分，状态挺轻松。'
+    : JSON.stringify({
+      score: 91,
+      title: 'Responses API 守护者',
+      summary: '真实上游返回已按 Responses API 解析。',
+      roast: '发丝队形今天很会营业。',
+      encouragement: '继续轻松记录就好。',
+      tags: ['真实AI', 'Responses'],
+      daily_task: '今晚早点睡',
+      count: '少量',
+      thickness: '正常',
+      suggestions: ['保持轻松记录'],
+      disclaimer: '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。',
+    })
+
   res.writeHead(200, { 'content-type': 'application/json' })
   res.end(JSON.stringify({
     output: [{
@@ -18,19 +40,7 @@ const upstream = createServer(async (req, res) => {
       role: 'assistant',
       content: [{
         type: 'output_text',
-        text: JSON.stringify({
-          score: 91,
-          title: 'Responses API 守护者',
-          summary: '真实上游返回已按 Responses API 解析。',
-          roast: '发丝队形今天很会营业。',
-          encouragement: '继续轻松记录就好。',
-          tags: ['真实AI', 'Responses'],
-          daily_task: '今晚早点睡',
-          count: '少量',
-          thickness: '正常',
-          suggestions: ['保持轻松记录'],
-          disclaimer: '本结果仅用于轻松记录和娱乐反馈，不作为医疗用途。',
-        }),
+        text,
       }],
     }],
   }))
@@ -44,7 +54,7 @@ process.env.OPENAI_API_KEY = ' '
 process.env.OPENAI_RESPONSES_URL = `http://127.0.0.1:${upstreamPort}/v1/responses`
 process.env.RECORDS_FILE = `data/test-records-${process.pid}.json`
 
-const { buildAiResponse, createApp } = await import('./server.mjs')
+const { buildAiResponse, createApp, normalizeReportContext, buildChatSystemPrompt } = await import('./server.mjs')
 
 const server = createApp()
 server.listen(0)
@@ -164,6 +174,100 @@ try {
   assert.equal(detail.contract, 'history_detail_v1')
   assert.equal(detail.record.fun_score, 58)
   assert.ok(detail.record.compare)
+
+  // --- report_context normalization (unit) ---
+  const normalized = normalizeReportContext([
+    {
+      date: '2026-07-20',
+      title: '今日发量守护者',
+      score: 82,
+      summary: '看起来挺精神',
+      score_delta: 12,
+      daily_task: '早点睡',
+      tags: ['清爽', '稳定'],
+    },
+    {
+      date: '2026-07-19',
+      title: '模糊也努力奖',
+      score: '999',
+      summary: 'x'.repeat(500),
+      tags: Array.from({ length: 20 }, (_, i) => `tag${i}`),
+      junk: 'ignored',
+    },
+    null,
+    'bad',
+    {},
+    { title: '第三条' },
+    { title: '第四条' },
+    { title: '第五条' },
+    { title: '第六条应被截断' },
+  ])
+  assert.equal(normalized.length, 5)
+  assert.equal(normalized[0].title, '今日发量守护者')
+  assert.equal(normalized[0].score, 82)
+  assert.equal(normalized[1].score, 100)
+  assert.equal(normalized[1].summary.length, 300)
+  assert.equal(normalized[1].tags.length, 8)
+  assert.equal(normalizeReportContext(null).length, 0)
+  assert.equal(normalizeReportContext('nope').length, 0)
+  assert.match(buildChatSystemPrompt(normalized), /今日发量守护者/)
+  assert.match(buildChatSystemPrompt(normalized), /禁止编造/)
+  assert.equal(buildChatSystemPrompt([]).includes('历史 Scan 报告摘要'), false)
+
+  // --- chat without report_context (compat) ---
+  const chatPlain = await postJson({ message: '你好' }, '/api/chat')
+  assert.equal(chatPlain.response.status, 200)
+  assert.equal(chatPlain.data.success, true)
+  assert.equal(chatPlain.data.report_context_count, 0)
+  assert.equal(typeof chatPlain.data.reply, 'string')
+  const plainSystem = upstreamRequest.body.input.find((item) => item.role === 'system')?.content?.[0]?.text || ''
+  assert.equal(plainSystem.includes('历史 Scan 报告摘要'), false)
+
+  // --- chat with 2 fake reports ---
+  const chatWithReports = await postJson({
+    message: '我上次报告称号和分数是什么？',
+    report_context: [
+      {
+        date: '2026-07-21',
+        title: '今日发量守护者',
+        score: 82,
+        summary: '挺精神',
+        score_delta: 10,
+        daily_task: '早点睡',
+        tags: ['清爽'],
+      },
+      {
+        date: '2026-07-20',
+        title: '模糊也努力奖',
+        score: 58,
+        summary: '光线偏暗',
+      },
+      // extras beyond 5 should be ignored if many; here only 2
+    ],
+  }, '/api/chat')
+  assert.equal(chatWithReports.response.status, 200)
+  assert.equal(chatWithReports.data.success, true)
+  assert.equal(chatWithReports.data.report_context_count, 2)
+  assert.match(chatWithReports.data.reply, /今日发量守护者|82/)
+  const withSystem = upstreamRequest.body.input.find((item) => item.role === 'system')?.content?.[0]?.text || ''
+  assert.match(withSystem, /今日发量守护者/)
+  assert.match(withSystem, /趣味分=82/)
+  assert.match(withSystem, /模糊也努力奖/)
+  assert.match(withSystem, /禁止编造/)
+
+  // oversized / illegal fields must not break chat
+  const chatTruncated = await postJson({
+    messages: [{ role: 'user', content: '最近怎么样' }],
+    report_context: [
+      { title: 't'.repeat(200), summary: 's'.repeat(999), score: -5, tags: [1, null, { x: 1 }, 'ok'] },
+    ],
+  }, '/api/chat')
+  assert.equal(chatTruncated.response.status, 200)
+  assert.equal(chatTruncated.data.success, true)
+  assert.equal(chatTruncated.data.report_context_count, 1)
+  const truncSystem = upstreamRequest.body.input.find((item) => item.role === 'system')?.content?.[0]?.text || ''
+  assert.ok(truncSystem.includes('称号=' + 't'.repeat(80)))
+  assert.ok(!truncSystem.includes('称号=' + 't'.repeat(81)))
 
   console.log('All API checks passed')
 } finally {
