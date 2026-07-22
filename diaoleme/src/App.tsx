@@ -1131,7 +1131,7 @@ const integrationStyle = `
 
   [data-page="league"] .rank-area {
     margin-top: 20px;
-    min-height: 560px;
+    min-height: 680px;
   }
 
   [data-page="league"] .rank-toolbar {
@@ -1189,7 +1189,7 @@ const integrationStyle = `
     display: grid;
     gap: 16px;
     grid-template-columns: 160px minmax(0, 1fr);
-    min-height: 520px;
+    min-height: 640px;
   }
 
   [data-page="league"] .category-nav {
@@ -1198,7 +1198,7 @@ const integrationStyle = `
     box-shadow: 0 12px 32px rgba(84, 68, 145, 0.06);
     display: grid;
     grid-template-rows: repeat(5, minmax(0, 1fr));
-    min-height: 520px;
+    min-height: 640px;
     padding: 10px;
   }
 
@@ -1238,7 +1238,7 @@ const integrationStyle = `
     background: rgba(255, 255, 255, 0.73);
     border-radius: 17px;
     box-shadow: 0 12px 34px rgba(79, 64, 137, 0.07);
-    min-height: 520px;
+    min-height: 640px;
     min-width: 0;
     overflow: hidden;
   }
@@ -1251,16 +1251,16 @@ const integrationStyle = `
   [data-page="league"] .league-ranking-row {
     align-items: center;
     display: grid;
-    grid-template-columns: 56px minmax(190px, 1.65fr) minmax(115px, 0.95fr) 115px 65px;
+    grid-template-columns: 64px minmax(210px, 1.7fr) minmax(130px, 1fr) 130px 72px;
   }
 
   [data-page="league"] .table-head {
     border-bottom: 1px solid rgba(110, 100, 166, 0.1);
     color: #8589b1;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
-    height: 40px;
-    padding: 0 9px;
+    height: 48px;
+    padding: 0 12px;
   }
 
   [data-page="league"] .table-head span:not(:nth-child(2)) {
@@ -1269,8 +1269,8 @@ const integrationStyle = `
 
   [data-page="league"] .league-ranking-row {
     border-bottom: 1px solid rgba(110, 100, 166, 0.085);
-    min-height: 68px;
-    padding: 0 9px;
+    min-height: 84px;
+    padding: 8px 12px;
     transition: 0.2s;
   }
 
@@ -1283,8 +1283,8 @@ const integrationStyle = `
     border: 1px solid rgba(133, 96, 231, 0.22);
     border-radius: 13px;
     box-shadow: 0 8px 20px rgba(110, 80, 199, 0.12);
-    margin: 13px 8px 4px;
-    min-height: 59px;
+    margin: 10px 8px 6px;
+    min-height: 90px;
   }
 
   [data-page="league"] .rank-cell,
@@ -1299,11 +1299,11 @@ const integrationStyle = `
     border-radius: 50%;
     color: #777da7;
     display: grid;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 850;
-    height: 26px;
+    height: 32px;
     place-items: center;
-    width: 26px;
+    width: 32px;
   }
 
   [data-page="league"] .rank-badge.gold { background: linear-gradient(145deg, #ffd684, #f1a53f); color: white; }
@@ -1318,7 +1318,7 @@ const integrationStyle = `
   [data-page="league"] .player-cell {
     align-items: center;
     display: flex;
-    gap: 8px;
+    gap: 12px;
     min-width: 0;
   }
 
@@ -1326,9 +1326,9 @@ const integrationStyle = `
   [data-page="league"] .avatar-dot {
     border-radius: 50%;
     flex: 0 0 auto;
-    height: 42px;
+    height: 48px;
     object-fit: cover;
-    width: 42px;
+    width: 48px;
   }
 
   [data-page="league"] .avatar-dot {
@@ -1344,28 +1344,28 @@ const integrationStyle = `
   [data-page="league"] .player-name {
     color: #2b3478;
     display: block;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 850;
     white-space: nowrap;
   }
 
   [data-page="league"] .player-name i {
     color: #dec04c;
-    font-size: 7px;
+    font-size: 9px;
     font-style: normal;
   }
 
   [data-page="league"] .level {
     color: #989bbb;
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 700;
   }
 
   [data-page="league"] .motto {
     color: #9a9dbc;
     display: block;
-    font-size: 8.8px;
-    margin-top: 4px;
+    font-size: 12px;
+    margin-top: 5px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1407,12 +1407,12 @@ const integrationStyle = `
 
   [data-page="league"] .xp-cell {
     color: #263478;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 850;
   }
 
   [data-page="league"] .trend-cell {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 850;
   }
 
@@ -2331,30 +2331,30 @@ const integrationStyle = `
   }
 
   [data-page="league"] .category-nav button {
-    min-height: 0;
+    min-height: 88px;
   }
 
   [data-page="league"] .league-ranking-row {
-    grid-template-columns: 56px minmax(190px, 1.65fr) minmax(115px, 0.95fr) 115px 65px;
-    min-height: 51px;
+    grid-template-columns: 64px minmax(210px, 1.7fr) minmax(130px, 1fr) 130px 72px;
+    min-height: 84px;
   }
 
   [data-page="league"] .league-avatar,
   [data-page="league"] .avatar-dot {
-    height: 34px;
+    height: 48px;
     object-fit: cover;
-    width: 34px;
+    width: 48px;
   }
 
   [data-page="league"] .tier-emblem {
     filter: none;
-    height: 20px;
-    width: 20px;
+    height: 24px;
+    width: 24px;
   }
 
   [data-page="league"] .tier-emblem svg {
-    height: 14px;
-    width: 14px;
+    height: 16px;
+    width: 16px;
   }
 
   [data-page="rewards"] .rewards-dashboard {
