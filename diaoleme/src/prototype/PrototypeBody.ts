@@ -45,7 +45,7 @@ export const prototypeBody = `<div class="app">
             <p id="pageSub">Every hair is a seed.</p>
           </div>
           <div class="actions">
-            <button class="pill" id="guideBtn">分享到 Community</button>
+            <button class="pill" id="guideBtn" data-action="share-to-community">分享到 Community</button>
             <button class="bell" aria-label="Notifications">🔔</button>
             <button class="avatar" aria-label="Profile">🌱</button>
           </div>
