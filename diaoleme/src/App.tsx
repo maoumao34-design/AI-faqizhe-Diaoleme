@@ -1490,6 +1490,10 @@ const integrationStyle = `
     margin: 8px 0;
   }
 
+  [data-page="league"] .league-mock-card.tier-current {
+    text-align: center;
+  }
+
   [data-page="league"] .league-mini-list {
     display: grid;
     gap: 8px;
