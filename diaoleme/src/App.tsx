@@ -3029,12 +3029,23 @@ const integrationStyle = `
   }
   [data-page="scan"] .scan-side-panel {
     align-content: start;
+    align-self: stretch;
     grid-template-rows: auto auto minmax(0, 1fr);
+    min-width: 0;
+    overflow: hidden;
   }
   [data-page="scan"] .scan-history-card {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    flex: 1 1 auto;
+    height: 332px;
+    min-height: 332px;
+    max-height: 332px;
+    overflow: hidden;
+  }
+  [data-page="scan"] .scan-history-card > h3 {
+    flex: 0 0 auto;
+    margin-bottom: 0;
   }
   [data-page="scan"] .feature,
   [data-page="scan"] .scan-wrap > .grid .card,
@@ -3042,6 +3053,12 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap p,
   [data-page="scan"] .scan-wrap b {
     overflow-wrap: anywhere;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-text,
+  [data-page="scan"] .scan-history-card .scan-record-title,
+  [data-page="scan"] .scan-history-card .scan-record-meta {
+    overflow-wrap: normal;
+    word-break: normal;
   }
   [data-page="scan"] .scan-wrap > .grid .three {
     gap: 10px;
@@ -3130,24 +3147,61 @@ const integrationStyle = `
     white-space: normal;
   }
   [data-page="scan"] .scan-history-card .item {
+    align-items: center;
+    box-sizing: border-box;
     gap: 10px;
     grid-template-columns: 32px minmax(0, 1fr) auto;
-    padding: 12px;
+    height: 68px;
+    min-height: 68px;
+    max-height: 68px;
+    overflow: hidden;
+    padding: 10px 12px;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-title,
+  [data-page="scan"] .scan-history-card .scan-record-meta {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-title {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-meta {
+    font-size: 12px;
+    line-height: 1.25;
   }
   [data-page="scan"] .scan-history-card .status {
+    align-self: center;
+    max-width: 118px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
   [data-page="scan"] .scan-record-list {
     display: grid;
-    gap: 12px;
+    flex: 1 1 auto;
+    gap: 10px;
+    grid-auto-rows: 68px;
+    min-height: 224px;
+    overflow: hidden;
   }
   [data-page="scan"] .scan-record-pager {
     align-items: center;
     display: flex;
+    flex: 0 0 auto;
     gap: 10px;
     justify-content: space-between;
     margin-top: auto;
-    padding-top: 14px;
+    padding-top: 12px;
   }
   [data-page="scan"] .scan-record-pager .pill {
     min-height: 36px;
