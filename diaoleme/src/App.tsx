@@ -347,7 +347,8 @@ function attachChatAssistant(root: HTMLElement) {
   const input = widget.querySelector<HTMLInputElement>('[data-chat-input]')!
   const messagesEl = widget.querySelector<HTMLElement>('[data-chat-messages]')!
   const closeBtn = widget.querySelector<HTMLButtonElement>('[data-chat-close]')!
-  const messages: ChatMessage[] = [{ role: 'assistant', content: '你好呀，我是掉了么 AI 助手。可以陪你聊记录、任务和轻松护发习惯，但不会做医疗诊断。' }]
+  const welcomeMessage = '你好呀，我是掉了么 AI 助手。可以陪你聊记录、任务和轻松护发习惯，但不会做医疗诊断。'
+  const messages: ChatMessage[] = [{ role: 'assistant', content: welcomeMessage }]
   let dragging = false
   let moved = false
   let startX = 0
@@ -408,7 +409,9 @@ function attachChatAssistant(root: HTMLElement) {
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
     try {
-      const result = await chatWithAssistant(messages.filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder)).slice(-8))
+      // AIFA-47: upstream 对含本地欢迎语的 messages 会 UPSTREAM_FAILED；只转发用户消息。
+      const outbound = messages.filter((m) => m.role === 'user').slice(-8)
+      const result = await chatWithAssistant(outbound.length ? outbound : [{ role: 'user', content: text }])
       messages[messages.length - 1] = { role: 'assistant', content: result.reply }
     } catch {
       messages[messages.length - 1] = {
