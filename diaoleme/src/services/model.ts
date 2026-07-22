@@ -20,7 +20,27 @@ export interface ChatResult {
 
 export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatResult> {
   try {
-    const resp = await axios.post(CHAT_API_CONFIG.url, { messages }, { timeout: CHAT_API_CONFIG.timeout })
+    // Live openai_compatible Responses upstream rejects assistant-role turns in
+    // `input` (UPSTREAM_FAILED ~10–90s). Pages widget always keeps a greeting
+    // assistant bubble locally — send user turns only so real AI still works
+    // against the current Render deploy without waiting on a backend redeploy.
+    const userMessages = messages
+      .filter((m) => m.role === 'user' && m.content.trim())
+      .slice(-8)
+    const latest = userMessages[userMessages.length - 1]
+    if (!latest) {
+      return {
+        reply: '先随便说一句想聊的内容就好，我在这儿陪你轻松记录。',
+        source: 'fallback',
+        source_label: '本地聊天 fallback（非真实 AI）',
+        fallback_code: 'EMPTY_MESSAGE',
+      }
+    }
+    const resp = await axios.post(
+      CHAT_API_CONFIG.url,
+      { messages: userMessages, message: latest.content },
+      { timeout: CHAT_API_CONFIG.timeout },
+    )
     return normalizeChatResponse(resp.data)
   } catch (err) {
     if (axios.isAxiosError(err) && err.response?.data) {

@@ -432,9 +432,20 @@ function buildChatResponsesInput(messages) {
     { role: 'system', content: [{ type: 'input_text', text: CHAT_SYSTEM_PROMPT }] },
     ...messages.map((message) => ({
       role: message.role,
-      content: [{ type: 'input_text', text: message.content }],
+      // Responses API: assistant history uses output_text; user/system use input_text.
+      // Sending input_text for assistant turns makes CC club / compatible proxies return UPSTREAM_FAILED.
+      content: [{
+        type: message.role === 'assistant' ? 'output_text' : 'input_text',
+        text: message.content,
+      }],
     })),
   ]
+}
+
+function isAbortError(error) {
+  return error?.name === 'AbortError'
+    || error?.code === 'ABORT_ERR'
+    || error?.code === 20
 }
 
 async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extractResponse }) {
@@ -478,6 +489,14 @@ async function postModelRequest({ url, apiKey, body, timeoutMs, provider, extrac
     }
 
     return extractResponse(data)
+  } catch (error) {
+    if (isAbortError(error)) {
+      const err = new Error(`${provider} request timed out after ${timeoutMs}ms`)
+      err.code = 'UPSTREAM_TIMEOUT'
+      err.provider = provider
+      throw err
+    }
+    throw error
   } finally {
     clearTimeout(timeout)
   }
@@ -985,10 +1004,14 @@ async function handleChat(req, res) {
       })
     } catch (error) {
       console.warn('[chat] upstream failed, returning fallback:', error?.code || error?.message)
-      const code = error?.code || 'CHAT_UPSTREAM_FAILED'
+      const code = isAbortError(error)
+        ? 'UPSTREAM_TIMEOUT'
+        : (typeof error?.code === 'string' && error.code ? error.code : 'CHAT_UPSTREAM_FAILED')
       const message = code === 'MISSING_API_KEY'
         ? `后端还没有配置 ${AI_PROVIDER === 'openai_compatible' ? 'OPENAI_API_KEY' : 'SILICONFLOW_API_KEY'}，当前返回 demo 兜底聊天。`
-        : 'AI 聊天服务暂时不可用，当前返回 demo 兜底聊天。'
+        : code === 'UPSTREAM_TIMEOUT'
+          ? 'AI 聊天上游响应超时了，先返回 demo 兜底；请稍后再试一次。'
+          : 'AI 聊天服务暂时不可用，当前返回 demo 兜底聊天。'
       return jsonResponse(res, 200, chatFallbackResponse(code, message))
     }
   } catch (error) {
