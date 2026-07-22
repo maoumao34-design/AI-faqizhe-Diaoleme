@@ -1421,7 +1421,7 @@ export const prototypeStyle = `
   .scene-hero {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center bottom;
     filter: drop-shadow(0 18px 28px rgba(116, 68, 223, 0.14));
     /* freeze for screenshot / overlay self-check */
