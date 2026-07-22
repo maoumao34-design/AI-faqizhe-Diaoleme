@@ -58,8 +58,18 @@ function showPage(id) {
   const meta = pages.find((page) => page[0] === id);
   heading.textContent = meta?.[2] || "Diaoleme";
   sub.textContent = meta?.[3] || "";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.body.classList.toggle("on-home", id === "home");
+  const canvas = document.querySelector("#designCanvas");
+  if (canvas) canvas.scrollTop = 0;
 }
+
+function updatePageScale() {
+  const scale = Math.min(window.innerWidth / 2048, window.innerHeight / 1365);
+  document.documentElement.style.setProperty("--page-scale", String(scale));
+}
+updatePageScale();
+window.addEventListener("resize", updatePageScale);
+document.body.classList.add("on-home");
 
 document.addEventListener("click", (event) => {
   const go = event.target.closest("[data-go]");
@@ -73,21 +83,25 @@ document.querySelectorAll(".chart").forEach((chart) => {
     .join("");
 });
 
-document.querySelector(".compact-quests").innerHTML = quests
-  .slice(0, 4)
-  .map(
-    (q, i) =>
-      \`<div class="item" style="grid-template-columns:34px 1fr auto"><span>\${q[0]}</span><b>\${q[1]}</b><span class="\${i === 2 ? "status" : ""}">\${q[4]}</span></div>\`
-  )
-  .join("");
+document.querySelectorAll(".compact-quests:not(.home-static)").forEach((root) => {
+  root.innerHTML = quests
+    .slice(0, 4)
+    .map(
+      (q, i) =>
+        \`<div class="item" style="grid-template-columns:34px 1fr auto"><span>\${q[0]}</span><b>\${q[1]}</b><span class="\${i === 2 ? "status" : ""}">\${q[4]}</span></div>\`
+    )
+    .join("");
+});
 
-document.querySelector(".small-leaders").innerHTML = leaders
-  .slice(0, 4)
-  .map(
-    (l) =>
-      \`<div class="leader \${l[0] === "12" ? "you" : ""}" style="grid-template-columns:34px 1fr auto"><span class="badge">\${l[0]}</span><b>\${l[1]}</b><span>\${l[3]}</span></div>\`
-  )
-  .join("");
+document.querySelectorAll(".small-leaders:not(.home-static)").forEach((root) => {
+  root.innerHTML = leaders
+    .slice(0, 4)
+    .map(
+      (l) =>
+        \`<div class="leader \${l[0] === "12" ? "you" : ""}" style="grid-template-columns:34px 1fr auto"><span class="badge">\${l[0]}</span><b>\${l[1]}</b><span>\${l[3]}</span></div>\`
+    )
+    .join("");
+});
 
 const skinNames = [
   " 蒲公英蓬蓬头 ",
