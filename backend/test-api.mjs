@@ -200,19 +200,25 @@ try {
     { title: '第三条' },
     { title: '第四条' },
     { title: '第五条' },
-    { title: '第六条应被截断' },
+    { title: '第六条也应保留' },
   ])
-  assert.equal(normalized.length, 5)
+  assert.equal(normalized.length, 6)
   assert.equal(normalized[0].title, '今日发量守护者')
   assert.equal(normalized[0].score, 82)
   assert.equal(normalized[1].score, 100)
   assert.equal(normalized[1].summary.length, 300)
   assert.equal(normalized[1].tags.length, 8)
+  assert.equal(normalized[5].title, '第六条也应保留')
   assert.equal(normalizeReportContext(null).length, 0)
   assert.equal(normalizeReportContext('nope').length, 0)
+  assert.equal(
+    normalizeReportContext(Array.from({ length: 45 }, (_, i) => ({ title: `t${i}` }))).length,
+    40,
+  )
   assert.match(buildChatSystemPrompt(normalized), /今日发量守护者/)
   assert.match(buildChatSystemPrompt(normalized), /禁止编造/)
-  assert.equal(buildChatSystemPrompt([]).includes('历史 Scan 报告摘要'), false)
+  assert.match(buildChatSystemPrompt(normalized), /本周 Scan 报告摘要/)
+  assert.equal(buildChatSystemPrompt([]).includes('本周 Scan 报告摘要'), false)
 
   // --- chat without report_context (compat) ---
   const chatPlain = await postJson({ message: '你好' }, '/api/chat')
@@ -221,7 +227,7 @@ try {
   assert.equal(chatPlain.data.report_context_count, 0)
   assert.equal(typeof chatPlain.data.reply, 'string')
   const plainSystem = upstreamRequest.body.input.find((item) => item.role === 'system')?.content?.[0]?.text || ''
-  assert.equal(plainSystem.includes('历史 Scan 报告摘要'), false)
+  assert.equal(plainSystem.includes('本周 Scan 报告摘要'), false)
 
   // --- chat with 2 fake reports ---
   const chatWithReports = await postJson({
@@ -242,7 +248,7 @@ try {
         score: 58,
         summary: '光线偏暗',
       },
-      // extras beyond 5 should be ignored if many; here only 2
+      // extras beyond 40 should be ignored if many; here only 2
     ],
   }, '/api/chat')
   assert.equal(chatWithReports.response.status, 200)

@@ -778,8 +778,8 @@ function attachChatAssistant(root: HTMLElement) {
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
     try {
-      // AIFA-52: attach this browser's Journey cards (not shared GET /api/records dump).
-      const reportContext = buildReportContext(useUserStore.getState().reportHistory, 5)
+      // AIFA-68: attach this week's local Journey cards (not shared GET /api/records dump).
+      const reportContext = buildReportContext(useUserStore.getState().reportHistory)
       const outbound = messages
         .filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder))
         .slice(-8)

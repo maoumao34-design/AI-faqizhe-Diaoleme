@@ -18,7 +18,7 @@ export interface ChatResult {
   fallback_code: string | null
 }
 
-/** Compact history summary for POST /api/chat (AIFA-50 / AIFA-52). */
+/** Compact history summary for POST /api/chat (AIFA-50 / AIFA-52 / AIFA-68). */
 export interface ReportContextItem {
   date: string
   title: string
@@ -29,19 +29,65 @@ export interface ReportContextItem {
   tags?: string[]
 }
 
-export function buildReportContext(history: ReportRecord[], limit = 5): ReportContextItem[] {
-  return history.slice(0, Math.max(0, limit)).map((r) => {
-    const item: ReportContextItem = {
-      date: r.date,
-      title: r.title,
-      score: r.score,
-      summary: r.summary,
-    }
-    if (r.score_delta != null) item.score_delta = r.score_delta
-    if (r.daily_task) item.daily_task = r.daily_task
-    if (Array.isArray(r.tags) && r.tags.length) item.tags = r.tags.slice(0, 4)
-    return item
-  })
+/** Backend `REPORT_CONTEXT_MAX`; frontend never sends more. */
+export const REPORT_CONTEXT_MAX = 40
+
+function formatLocalYmd(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/**
+ * Local-timezone natural week bounds (Mon 00:00 – Sun 23:59:59) as YYYY-MM-DD inclusive.
+ * Compare report `date` strings directly: start <= date <= end.
+ */
+export function getLocalWeekDateBounds(now = new Date()): { start: string; end: string } {
+  const local = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const day = local.getDay() // 0=Sun … 6=Sat
+  const mondayOffset = day === 0 ? -6 : 1 - day
+  const monday = new Date(local)
+  monday.setDate(local.getDate() + mondayOffset)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  return { start: formatLocalYmd(monday), end: formatLocalYmd(sunday) }
+}
+
+/**
+ * Build chat `report_context` from this browser's reportHistory for the current
+ * local week only (newest → oldest, capped at REPORT_CONTEXT_MAX). Empty when
+ * no Scan reports fall in Mon–Sun this week.
+ */
+export function buildReportContext(
+  history: ReportRecord[],
+  limit = REPORT_CONTEXT_MAX,
+  now = new Date(),
+): ReportContextItem[] {
+  const max = Math.max(0, limit)
+  if (!max || !Array.isArray(history) || history.length === 0) return []
+
+  const { start, end } = getLocalWeekDateBounds(now)
+  return [...history]
+    .filter((r) => typeof r?.date === 'string' && r.date >= start && r.date <= end)
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1
+      // Same calendar day: newer id (timestamp key) first.
+      return String(a.id) < String(b.id) ? 1 : -1
+    })
+    .slice(0, max)
+    .map((r) => {
+      const item: ReportContextItem = {
+        date: r.date,
+        title: r.title,
+        score: r.score,
+        summary: r.summary,
+      }
+      if (r.score_delta != null) item.score_delta = r.score_delta
+      if (r.daily_task) item.daily_task = r.daily_task
+      if (Array.isArray(r.tags) && r.tags.length) item.tags = r.tags.slice(0, 4)
+      return item
+    })
 }
 
 export async function chatWithAssistant(
@@ -65,7 +111,9 @@ export async function chatWithAssistant(
         fallback_code: 'EMPTY_MESSAGE',
       }
     }
-    const report_context = Array.isArray(options?.reportContext) ? options!.reportContext!.slice(0, 5) : []
+    const report_context = Array.isArray(options?.reportContext)
+      ? options!.reportContext!.slice(0, REPORT_CONTEXT_MAX)
+      : []
     const resp = await axios.post(
       CHAT_API_CONFIG.url,
       { messages: userMessages, message: latest.content, report_context },
