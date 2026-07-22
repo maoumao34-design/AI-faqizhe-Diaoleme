@@ -39,31 +39,34 @@ export function renderBuddy(root: HTMLElement, options: BuddyControllerOptions) 
 
   renderBuddyHairStyles(root)
 
-  setHtml(root.querySelector('[data-page="buddy"] .card.item-list'), `
+  setHtml(root.querySelector('[data-buddy-actions]'), `
     <button class="item buddy-action dress" data-buddy-action="dress"><span>👗</span><b>Dress Up<small>装扮你的伙伴，选择或解锁造型</small></b><span>›</span></button>
     <button class="item buddy-action feed" data-buddy-action="feed"><span>🍚</span><b>Feed<small>喂养伙伴，补充爱与能量</small></b><span>›</span></button>
     <button class="item buddy-action diary" data-buddy-action="diary"><span>📖</span><b>Buddy Diary<small>记录我们一起成长的每一天</small></b><span>›</span></button>
     <button class="item buddy-action growth" data-buddy-action="growth"><span>📈</span><b>成长记录<small>查看伙伴的成长轨迹</small></b><span>›</span></button>
   `)
 
-  setHtml(root.querySelector('[data-page="buddy"] .grid:nth-child(2) .card:first-child'), `
+  setHtml(root.querySelector('[data-buddy-report]'), `
     <h3>今日头发报告</h3>
-    <div><span class="big-number">${s.dropScore ?? '--'}</span> ${s.dropScore == null ? '' : '分'}</div>
+    <div><span class="big-number">${s.dropScore ?? '--'}</span> ${s.dropScore == null ? '' : '根'}</div>
     <p>${escapeHtml(latestReport?.summary || '还没有今日报告，完成一次 Scan 后会同步到 Buddy。')}</p>
     <div class="chart">${options.buildTrendBars(s.reportHistory)}</div>
+    <div class="buddy-tip">
+      <span class="buddy-tip-icon">✨</span>
+      <div>
+        <b>小提示</b>
+        <p>记得多喝水和好好睡觉，对头发的成长很重要哦！</p>
+      </div>
+    </div>
   `)
 
-  const buddyPage = root.querySelector<HTMLElement>('[data-page="buddy"]')
-  if (buddyPage && !buddyPage.querySelector('.buddy-extra-grid')) {
-    buddyPage.insertAdjacentHTML('beforeend', '<div class="buddy-extra-grid"><div class="card" data-buddy-summary></div><div class="card" data-buddy-cheers></div></div>')
-  }
   setHtml(root.querySelector('[data-buddy-summary]'), `
     <h3>💗 本周成长小结</h3>
     <p>你的护理表现超过了 ${Math.min(96, 60 + questCount.done * 4 + s.checkinDays.length)}% 的用户，继续保持哦！</p>
     <div class="buddy-summary-stats">
       <span><b>${s.checkinDays.length || 0} 天</b><small>护理天数</small></span>
       <span><b>${questCount.done}/${questCount.total}</b><small>任务完成</small></span>
-      <span><b>${options.avgScore(s.reportHistory) || '--'}</b><small>平均状态分</small></span>
+      <span><b>${options.avgScore(s.reportHistory) != null ? '优秀' : '待记录'}</b><small>均衡饮食</small></span>
       <span><b>${care.energy >= 78 ? '良好' : '待补充'}</b><small>充足睡眠</small></span>
     </div>
   `)
