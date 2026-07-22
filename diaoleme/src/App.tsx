@@ -1503,8 +1503,21 @@ const integrationStyle = `
   [data-page="league"] .league-mini-list div {
     align-items: center;
     display: grid;
-    gap: 10px;
     grid-template-columns: 34px 1fr auto;
+  }
+
+  [data-page="league"] .league-mini-list .avatar-dot {
+    height: 34px;
+    width: 34px;
+  }
+
+  [data-page="league"] .league-mini-list .avatar-dot + b {
+    margin-left: 2cm;
+    min-width: 0;
+  }
+
+  [data-page="league"] .league-mini-list strong {
+    margin-left: 10px;
   }
 
   [data-page="league"] .league-mini-list small {
