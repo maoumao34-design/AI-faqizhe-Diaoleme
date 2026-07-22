@@ -693,7 +693,8 @@ function attachChatAssistant(root: HTMLElement) {
       </form>
     </section>
   `
-  root.appendChild(widget)
+  // Mount on body so app shell overflow never clips the fixed panel.
+  document.body.appendChild(widget)
   const bubble = widget.querySelector<HTMLButtonElement>('.ai-chat-bubble')!
   const form = widget.querySelector<HTMLFormElement>('[data-chat-form]')!
   const input = widget.querySelector<HTMLInputElement>('[data-chat-input]')!
@@ -712,9 +713,25 @@ function attachChatAssistant(root: HTMLElement) {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
   }
+  /** Keep the open panel fully inside the viewport (avoids header-only clip at bottom). */
+  const placeOpenPanel = () => {
+    const pad = 12
+    const width = Math.min(360, window.innerWidth - pad * 2)
+    const height = Math.min(520, window.innerHeight - pad * 2)
+    widget.style.setProperty('--ai-chat-w', `${width}px`)
+    widget.style.setProperty('--ai-chat-h', `${height}px`)
+    widget.style.left = 'auto'
+    widget.style.top = 'auto'
+    widget.style.right = `${pad}px`
+    widget.style.bottom = `${pad}px`
+  }
   const togglePanel = (open?: boolean) => {
-    widget.classList.toggle('open', open ?? !widget.classList.contains('open'))
-    if (widget.classList.contains('open')) input.focus()
+    const nextOpen = open ?? !widget.classList.contains('open')
+    widget.classList.toggle('open', nextOpen)
+    if (nextOpen) {
+      placeOpenPanel()
+      input.focus()
+    }
   }
   const onPointerDown = (event: PointerEvent) => {
     if (widget.classList.contains('open')) return
@@ -731,7 +748,9 @@ function attachChatAssistant(root: HTMLElement) {
     if (!dragging) return
     const dx = event.clientX - startX
     const dy = event.clientY - startY
-    if (Math.abs(dx) + Math.abs(dy) > 6) moved = true
+    // Only switch to left/top after a real drag; micro-jitter must not leave bottom/right.
+    if (Math.abs(dx) + Math.abs(dy) <= 6) return
+    moved = true
     const nextLeft = Math.max(12, Math.min(window.innerWidth - widget.offsetWidth - 12, startLeft + dx))
     const nextTop = Math.max(12, Math.min(window.innerHeight - widget.offsetHeight - 12, startTop + dy))
     widget.style.left = `${nextLeft}px`
@@ -747,6 +766,9 @@ function attachChatAssistant(root: HTMLElement) {
   }
   const onBubbleClick = () => {
     if (!moved) togglePanel(true)
+  }
+  const onResize = () => {
+    if (widget.classList.contains('open')) placeOpenPanel()
   }
   const onSubmit = async (event: SubmitEvent) => {
     event.preventDefault()
@@ -775,12 +797,14 @@ function attachChatAssistant(root: HTMLElement) {
   bubble.addEventListener('click', onBubbleClick)
   closeBtn.addEventListener('click', () => togglePanel(false))
   form.addEventListener('submit', onSubmit)
+  window.addEventListener('resize', onResize)
   return () => {
     bubble.removeEventListener('pointerdown', onPointerDown)
     bubble.removeEventListener('pointermove', onPointerMove)
     bubble.removeEventListener('pointerup', onPointerUp)
     bubble.removeEventListener('click', onBubbleClick)
     form.removeEventListener('submit', onSubmit)
+    window.removeEventListener('resize', onResize)
     widget.remove()
   }
 }
@@ -3265,8 +3289,10 @@ const integrationStyle = `
   .ai-chat-bubble:active { cursor: grabbing; }
   .ai-chat-panel {
     display: none;
-    width: min(360px, calc(100vw - 32px));
-    height: 520px;
+    width: var(--ai-chat-w, min(360px, calc(100vw - 24px)));
+    height: var(--ai-chat-h, min(520px, calc(100dvh - 24px)));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.75);
     border-radius: 28px;
@@ -3276,7 +3302,7 @@ const integrationStyle = `
   .ai-chat-widget.open .ai-chat-bubble { display: none; }
   .ai-chat-widget.open .ai-chat-panel {
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .ai-chat-header {
     display: grid;
@@ -3302,6 +3328,7 @@ const integrationStyle = `
     flex-direction: column;
     gap: 10px;
     overflow: auto;
+    min-height: 0;
     padding: 16px;
   }
   .ai-chat-msg {
@@ -3347,7 +3374,7 @@ const integrationStyle = `
   @media (max-width: 720px) {
     .ai-chat-widget {
       right: 16px;
-      bottom: 88px;
+      bottom: 16px;
     }
   }
   .diary-summary { margin: 16px 0; text-align: center; }
@@ -3457,21 +3484,5 @@ const integrationStyle = `
   .comments-extra { display: grid; gap: 8px; }
   .comments-extra.collapsed { display: none; }
   .comment { border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,.68); color: #65709e; font-size: 14px; }
-  .ai-chat-widget { position: fixed; right: 28px; bottom: 28px; z-index: 40; font-family: inherit; }
-  .ai-chat-bubble { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 14px 18px; background: linear-gradient(135deg,#8b5cf6,#65c982); color: #fff; box-shadow: 0 20px 55px rgba(99,75,168,.32); cursor: grab; font-weight: 900; }
-  .ai-chat-bubble:active { cursor: grabbing; }
-  .ai-chat-panel { display: none; width: min(360px, calc(100vw - 32px)); height: 520px; overflow: hidden; border: 1px solid rgba(255,255,255,.75); border-radius: 28px; background: rgba(255,250,255,.96); box-shadow: 0 26px 80px rgba(19,32,95,.22); }
-  .ai-chat-widget.open .ai-chat-bubble { display: none; }
-  .ai-chat-widget.open .ai-chat-panel { display: grid; grid-template-rows: auto 1fr auto; }
-  .ai-chat-header { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 16px 18px; background: linear-gradient(135deg,rgba(139,92,246,.18),rgba(101,201,130,.18)); }
-  .ai-chat-header small { color: #65709e; }
-  .ai-chat-header button { grid-row: 1 / span 2; grid-column: 2; border: 0; border-radius: 50%; width: 30px; height: 30px; background: #fff; color: #13205f; cursor: pointer; }
-  .ai-chat-messages { display: flex; flex-direction: column; gap: 10px; overflow: auto; padding: 16px; }
-  .ai-chat-msg { max-width: 82%; border-radius: 18px; padding: 10px 12px; line-height: 1.5; white-space: pre-wrap; }
-  .ai-chat-msg.assistant { align-self: flex-start; background: #fff; color: #13205f; }
-  .ai-chat-msg.user { align-self: flex-end; background: #8b5cf6; color: #fff; }
-  .ai-chat-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 14px; border-top: 1px solid rgba(101,112,158,.14); }
-  .ai-chat-form input { min-width: 0; border: 1px solid rgba(101,112,158,.2); border-radius: 999px; padding: 12px 14px; outline: none; }
-  .ai-chat-form button { border: 0; border-radius: 999px; padding: 0 16px; background: #65c982; color: #fff; font-weight: 900; cursor: pointer; }
 
 `
