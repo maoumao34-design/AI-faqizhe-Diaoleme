@@ -137,11 +137,20 @@ function normalizeHistoryRecord(raw: any): ReportRecord | null {
 
 function normalizeChatResponse(payload: any): ChatResult {
   const source = normalizeSource(payload?.source, payload?.ai_source, payload?.success)
+  const fallback_code = safeNullableText(payload?.fallback_code ?? payload?.fallbackCode)
+  // Backend may return 200 + fallback_code when upstream/key path fails; avoid key-blaming copy.
+  const friendlyFallback =
+    '上游模型这会儿有点忙或偏慢，请再发一次试试～也可以先去做一次轻量 Scan。'
+  const rawReply = safeText(payload?.reply, '我收到啦。今天先保持轻松记录，不做医学判断，只陪你养成一点点好习惯。')
+  const reply =
+    fallback_code && source === 'fallback'
+      ? friendlyFallback
+      : rawReply
   return {
-    reply: safeText(payload?.reply, '我收到啦。今天先保持轻松记录，不做医学判断，只陪你养成一点点好习惯。'),
+    reply,
     source,
     source_label: safeText(payload?.source_label, sourceLabel(source)),
-    fallback_code: safeNullableText(payload?.fallback_code ?? payload?.fallbackCode),
+    fallback_code,
   }
 }
 
