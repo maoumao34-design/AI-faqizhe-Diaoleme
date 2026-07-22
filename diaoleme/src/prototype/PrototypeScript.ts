@@ -2,19 +2,18 @@ export const prototypeScript = `
 const primaryPages = [
   ["home", "⌂", "Home", "Every hair is a seed."],
   ["scan", "▢", "Scan", " 陪你轻松记一记头发小队今天的状态"],
-  ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"]
-];
-const secondaryPages = [
   ["buddy", "☁", "Buddy", " 每个人拥有自己的生命伙伴 "],
   ["quests", "✿", "Quests", " 完成护发任务，获得经验值和能量 "],
   ["league", "♛", "League", " 和伙伴们一起成长，赢取荣誉与奖励 "],
   ["rewards", "□", "Rewards", " 用成长兑换惊喜，奖励每一次认真生活 "],
-  ["diary", "▤", "Diary", " 记录每一个小瞬间，见证成长的每一步 💜"]
+  ["me", "◎", "Me", " 你的成长档案 "],
 ];
 const laterPages = [
+  ["journey", "✧", "Journey", " 每一步成长，都值得被记录 ✨"],
+  ["diary", "▤", "Diary", " 记录每一个小瞬间，见证成长的每一步 💜"],
   ["community", "☷", "Community", " 在这里，分享治愈，收获力量 "]
 ];
-const pages = [...primaryPages, ...secondaryPages, ...laterPages];
+const pages = [...primaryPages, ...laterPages];
 
 const quests = [
   ["💧", " 喝够 8 杯水 ", " 充足的水分让头发更健康 ", "6/8", "+50 XP"],
@@ -42,8 +41,7 @@ const renderNavButton = ([id, icon, label], extraClass = "") =>
 
 nav.innerHTML = [
   ...primaryPages.map((page) => renderNavButton(page, "nav-primary")),
-  ...secondaryPages.map((page) => renderNavButton(page)),
-  \`<div class="nav-later" aria-label="后续"><span class="nav-later-label">后续</span>\${laterPages
+  \`<div class="nav-later" aria-label="更多"><span class="nav-later-label">更多</span>\${laterPages
     .map((page) => renderNavButton(page, "nav-later-item"))
     .join("")}</div>\`,
 ].join("");

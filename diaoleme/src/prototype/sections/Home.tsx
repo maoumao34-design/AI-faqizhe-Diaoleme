@@ -1,80 +1,74 @@
 export const homeSection = `<section class="page active home-page" data-page="home">
-          <div class="home-hero">
-            <div class="hero-copy">
-              <h2 class="hero-title">
-                <span class="line">Every hair is a <em>seed,</em></span>
-                <span class="line">every care</span>
-                <span class="line">brings it to <strong>life.</strong></span>
-              </h2>
-              <p class="hero-body">
-                Diaoleme is your AI hair companion.<br />
-                We understand, support, and grow with you —<br />
-                turning every fallen hair into a seed<br />
-                and every day into a step of growth. ✨
-              </p>
-              <div class="hero-buttons">
-                <button class="cta primary home-cta-scan" data-go="scan" type="button">📷 Scan Hair Now</button>
-                <button class="cta ghost home-cta-buddy" data-go="buddy" type="button">🌱 Meet Your Buddy</button>
-              </div>
-              <div class="trust-row">
-                <span class="trust-heart" aria-hidden="true">💗</span>
-                <span class="trust-text">Trusted by 100,000+ users</span>
-                <div class="avatar-stack" aria-hidden="true">
-                  <span style="background:#f4b8a8"></span>
-                  <span style="background:#e8a8c8"></span>
-                  <span style="background:#c8b4f0"></span>
-                  <span style="background:#f0d0a0"></span>
-                  <span style="background:#a8d0f0"></span>
-                  <span style="background:#d8c0f8"></span>
-                </div>
-                <span class="trust-pill">+99K</span>
-              </div>
+          <div class="hero-copy">
+            <h2 class="hero-title">
+              <span class="line">Every hair is a <em>seed,</em></span>
+              <span class="line">every care</span>
+              <span class="line">brings it to <strong>life.</strong></span>
+            </h2>
+            <p class="hero-body">
+              Diaoleme is your AI hair companion.<br />
+              We understand, support, and grow with you —<br />
+              turning every fallen hair into a seed<br />
+              and every day into a step of growth. ✨
+            </p>
+            <div class="hero-buttons">
+              <button class="cta primary home-cta-scan" data-go="scan" type="button">📷 Scan Hair Now</button>
+              <button class="cta ghost home-cta-buddy" data-go="buddy" type="button">🌱 Meet Your Buddy</button>
             </div>
-
-            <div class="hero-scene" aria-hidden="true">
-              <img class="scene-cloud" src="./home-assets/decor-cloud.png" alt="" />
-              <img class="scene-seed s1" src="./home-assets/decor-sparkle.png" alt="" />
-              <img class="scene-seed s2" src="./home-assets/decor-sparkle.png" alt="" />
-              <img class="scene-buddy" src="./home-assets/ip-sit.png" alt="Fluffy Seedling" />
-              <img class="scene-moss" src="./home-assets/decor-moss.png" alt="" />
-            </div>
-
-            <aside class="seed-report card glass">
-              <h3>Today's Seed Report ✨</h3>
-              <div class="report-stat"><span class="big-number">12</span><span>seeds fallen</span></div>
-              <p class="report-status">Mostly healthy &amp; full of life</p>
-              <svg class="seed-line" viewBox="0 0 280 88" role="img" aria-label="Weekly seed trend">
-                <defs>
-                  <linearGradient id="seedStroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#7444df"/>
-                    <stop offset="100%" stop-color="#ee5b96"/>
-                  </linearGradient>
-                </defs>
-                <polyline fill="none" stroke="url(#seedStroke)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"
-                  points="16,58 54,42 92,48 130,64 168,28 206,34 248,18"/>
-                <g fill="#7444df">
-                  <circle cx="16" cy="58" r="4.5"/><circle cx="54" cy="42" r="4.5"/><circle cx="92" cy="48" r="4.5"/>
-                  <circle cx="130" cy="64" r="4.5"/><circle cx="168" cy="28" r="4.5"/><circle cx="206" cy="34" r="4.5"/><circle cx="248" cy="18" r="4.5"/>
-                </g>
-                <g fill="#8a8fb0" font-size="11" font-weight="700" font-family="Nunito, sans-serif">
-                  <text x="8" y="84">Mon</text><text x="46" y="84">Tue</text><text x="84" y="84">Wed</text>
-                  <text x="122" y="84">Thu</text><text x="160" y="84">Fri</text><text x="198" y="84">Sat</text><text x="236" y="84">Sun</text>
-                </g>
-              </svg>
-              <div class="cheer-card">
-                <img src="./home-assets/ip-head.png" alt="" />
-                <div>
-                  <b>Good job!</b>
-                  <p>Your care this week is better than 72% users!</p>
-                </div>
+            <div class="trust-row">
+              <span class="trust-heart" aria-hidden="true">💗</span>
+              <span class="trust-text">Trusted by 100,000+ users</span>
+              <div class="avatar-stack" aria-hidden="true">
+                <span style="background:#f4b8a8"></span>
+                <span style="background:#e8a8c8"></span>
+                <span style="background:#c8b4f0"></span>
+                <span style="background:#f0d0a0"></span>
+                <span style="background:#a8d0f0"></span>
+                <span style="background:#d8c0f8"></span>
               </div>
-            </aside>
+              <span class="trust-pill">+99K</span>
+            </div>
           </div>
+
+          <div class="hero-scene" aria-hidden="true">
+            <img class="scene-hero" src="./home-assets/hero-scene.png" alt="" />
+          </div>
+
+          <aside class="seed-report card glass">
+            <h3>Today's Seed Report ✨</h3>
+            <div class="report-stat"><span class="big-number">12</span><span>seeds fallen</span></div>
+            <p class="report-status">Mostly healthy &amp; full of life</p>
+            <svg class="seed-line" viewBox="0 0 280 88" role="img" aria-label="Weekly seed trend">
+              <defs>
+                <linearGradient id="seedStroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#7444df"/>
+                  <stop offset="100%" stop-color="#ee5b96"/>
+                </linearGradient>
+              </defs>
+              <polyline fill="none" stroke="url(#seedStroke)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"
+                points="16,58 54,42 92,48 130,64 168,28 206,34 248,18"/>
+              <g fill="#7444df">
+                <circle cx="16" cy="58" r="4.5"/><circle cx="54" cy="42" r="4.5"/><circle cx="92" cy="48" r="4.5"/>
+                <circle cx="130" cy="64" r="4.5"/><circle cx="168" cy="28" r="4.5"/><circle cx="206" cy="34" r="4.5"/><circle cx="248" cy="18" r="4.5"/>
+              </g>
+              <g fill="#8a8fb0" font-size="11" font-weight="700" font-family="Nunito, sans-serif">
+                <text x="8" y="84">Mon</text><text x="46" y="84">Tue</text><text x="84" y="84">Wed</text>
+                <text x="122" y="84">Thu</text><text x="160" y="84">Fri</text><text x="198" y="84">Sat</text><text x="236" y="84">Sun</text>
+              </g>
+            </svg>
+            <div class="cheer-card">
+              <img src="./home-assets/ip-head-hq.png" alt="" />
+              <div>
+                <b>Good job!</b>
+                <p>Your care this week is better than 72% users!</p>
+              </div>
+            </div>
+          </aside>
 
           <div class="home-dashboard">
             <article class="card glass dash-card">
               <h3>💗 My Hair Buddy <span class="badge solid">Lv.5</span></h3>
-              <img class="dash-avatar" src="./home-assets/ip-avatar.png" alt="Fluffy Seedling" />
+              <img class="dash-avatar" src="./home-assets/ip-avatar-hq.png" alt="Fluffy Seedling" />
               <h4>Fluffy Seedling</h4>
               <div class="meter thick"><div class="fill hp" style="--w:86%"></div></div>
               <p class="dash-meta">HP 86 / 100</p>
@@ -117,12 +111,12 @@ export const homeSection = `<section class="page active home-page" data-page="ho
             </article>
           </div>
 
-          <div class="home-bottom card glass">
+          <div class="home-bottom">
             <div class="encourage">
-              <img src="./home-assets/ip-head.png" alt="" />
+              <img src="./home-assets/ip-head-hq.png" alt="" />
               <div>
                 <p>It's okay to have difficult days.</p>
-                <p>We're in this together. 🌱💜</p>
+                <p>We're in this together.</p>
               </div>
             </div>
             <div class="service-row">
@@ -138,7 +132,7 @@ export const homeSection = `<section class="page active home-page" data-page="ho
                 <button class="cta primary home-cta-scan sm" data-go="community" type="button" id="homeCreatePoster">Create Poster</button>
               </div>
               <div class="poster-stack">
-                <img src="./home-assets/ip-sit-b.png" alt="" />
+                <img src="./home-assets/ip-sit-hq.png" alt="" />
               </div>
             </div>
           </div>

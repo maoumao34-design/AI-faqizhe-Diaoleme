@@ -14,7 +14,7 @@ export const prototypeBody = `<div class="viewport-shell">
     <div class="app">
       <aside class="sidebar">
         <div class="brand">
-          <img class="brand-buddy" src="./home-assets/ip-head.png" alt="" />
+          <img class="brand-buddy" src="./home-assets/ip-head-hq.png" alt="" />
           <div>
             <h1>掉了么</h1>
             <span>Diaoleme</span>
@@ -23,21 +23,18 @@ export const prototypeBody = `<div class="viewport-shell">
         <nav class="nav" id="nav">
           <button data-go="home" class="active nav-primary"><span class="icon">⌂</span><label>Home</label></button>
           <button data-go="scan" class="nav-primary"><span class="icon">▢</span><label>Scan</label></button>
-          <button data-go="journey" class="nav-primary"><span class="icon">✧</span><label>Journey</label></button>
-          <button data-go="buddy"><span class="icon">☁</span><label>Buddy</label></button>
-          <button data-go="quests"><span class="icon">✿</span><label>Quests</label></button>
-          <button data-go="league"><span class="icon">♛</span><label>League</label></button>
-          <button data-go="rewards"><span class="icon">□</span><label>Rewards</label></button>
-          <button data-go="diary"><span class="icon">▤</span><label>Diary</label></button>
-          <div class="nav-later" aria-label="后续">
-            <span class="nav-later-label">后续</span>
+          <button data-go="buddy" class="nav-primary"><span class="icon">☁</span><label>Buddy</label></button>
+          <button data-go="quests" class="nav-primary"><span class="icon">✿</span><label>Quests</label></button>
+          <button data-go="league" class="nav-primary"><span class="icon">♛</span><label>League</label></button>
+          <button data-go="rewards" class="nav-primary"><span class="icon">□</span><label>Rewards</label></button>
+          <button data-go="me" class="nav-primary"><span class="icon">◎</span><label>Me</label></button>
+          <div class="nav-later" aria-label="更多">
+            <span class="nav-later-label">更多</span>
+            <button data-go="journey" class="nav-later-item"><span class="icon">✧</span><label>Journey</label></button>
+            <button data-go="diary" class="nav-later-item"><span class="icon">▤</span><label>Diary</label></button>
             <button data-go="community" class="nav-later-item"><span class="icon">☷</span><label>Community</label></button>
           </div>
         </nav>
-        <div class="profile" data-go="me">
-          <img alt="" src="./home-assets/ip-avatar.png">
-          <label>Me<br><small>Lv.5</small></label>
-        </div>
       </aside>
 
       <main class="main">
