@@ -55,8 +55,8 @@ export const MODEL_API_CONFIG = {
   /** public/config.js or VITE_API_BASE_URL can switch deployments without rebuilding page business code. */
   url: resolveApiUrl(),
 
-  /** 请求超时（毫秒） */
-  timeout: 45000,
+  /** 请求超时（毫秒）；相册原图更大，对齐上游 AI 90s（AIFA-61） */
+  timeout: 90000,
 }
 
 export const CHAT_API_CONFIG = {
