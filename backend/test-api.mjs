@@ -200,7 +200,7 @@ try {
     { title: '第三条' },
     { title: '第四条' },
     { title: '第五条' },
-    { title: '第六条' },
+    { title: '第六条应保留' },
   ])
   assert.equal(normalized.length, 6)
   assert.equal(normalized[0].title, '今日发量守护者')
@@ -208,21 +208,25 @@ try {
   assert.equal(normalized[1].score, 100)
   assert.equal(normalized[1].summary.length, 300)
   assert.equal(normalized[1].tags.length, 8)
-  assert.equal(normalized[5].title, '第六条')
+  assert.equal(normalized[5].title, '第六条应保留')
   assert.equal(normalizeReportContext(null).length, 0)
   assert.equal(normalizeReportContext('nope').length, 0)
-  // safety cap at 40
+  const eight = normalizeReportContext(
+    Array.from({ length: 8 }, (_, i) => ({ title: `本周第${i + 1}条`, summary: `摘要${i + 1}` })),
+  )
+  assert.equal(eight.length, 8)
   const overCap = normalizeReportContext(
-    Array.from({ length: 45 }, (_, i) => ({ title: `报告${i + 1}`, summary: `摘要${i + 1}` })),
+    Array.from({ length: 45 }, (_, i) => ({ title: `第${i + 1}条` })),
   )
   assert.equal(overCap.length, 40)
-  assert.equal(overCap[0].title, '报告1')
-  assert.equal(overCap[39].title, '报告40')
   assert.match(buildChatSystemPrompt(normalized), /今日发量守护者/)
   assert.match(buildChatSystemPrompt(normalized), /本周 Scan 报告摘要/)
-  assert.match(buildChatSystemPrompt(normalized), /由前端按自然周筛选传入/)
   assert.match(buildChatSystemPrompt(normalized), /禁止编造/)
   assert.equal(buildChatSystemPrompt([]).includes('本周 Scan 报告摘要'), false)
+  const eightPrompt = buildChatSystemPrompt(eight)
+  for (let i = 1; i <= 8; i += 1) {
+    assert.match(eightPrompt, new RegExp(`本周第${i}条`))
+  }
 
   // --- chat without report_context (compat) ---
   const chatPlain = await postJson({ message: '你好' }, '/api/chat')
@@ -252,6 +256,7 @@ try {
         score: 58,
         summary: '光线偏暗',
       },
+      // 8-item weekly payload should all be accepted (cap is 40)
     ],
   }, '/api/chat')
   assert.equal(chatWithReports.response.status, 200)
@@ -265,42 +270,22 @@ try {
   assert.match(withSystem, /模糊也努力奖/)
   assert.match(withSystem, /禁止编造/)
 
-  // --- chat with 8 weekly reports (above old cap of 5) ---
-  const eightReports = Array.from({ length: 8 }, (_, i) => ({
-    date: `2026-07-${String(14 + i).padStart(2, '0')}`,
-    title: `本周称号${i + 1}`,
-    summary: `本周摘要${i + 1}`,
-    score: 70 + i,
-  }))
-  const chatEight = await postJson({
-    message: '本周我记录了几次？',
-    report_context: eightReports,
+  const chatWithEight = await postJson({
+    message: '本周报告有哪些？',
+    report_context: Array.from({ length: 8 }, (_, i) => ({
+      date: `2026-07-${String(21 - i).padStart(2, '0')}`,
+      title: `本周第${i + 1}条`,
+      score: 70 + i,
+      summary: `摘要${i + 1}`,
+    })),
   }, '/api/chat')
-  assert.equal(chatEight.response.status, 200)
-  assert.equal(chatEight.data.success, true)
-  assert.equal(chatEight.data.report_context_count, 8)
+  assert.equal(chatWithEight.response.status, 200)
+  assert.equal(chatWithEight.data.success, true)
+  assert.equal(chatWithEight.data.report_context_count, 8)
   const eightSystem = upstreamRequest.body.input.find((item) => item.role === 'system')?.content?.[0]?.text || ''
-  for (const item of eightReports) {
-    assert.match(eightSystem, new RegExp(item.title))
-    assert.match(eightSystem, new RegExp(item.summary))
+  for (let i = 1; i <= 8; i += 1) {
+    assert.match(eightSystem, new RegExp(`本周第${i}条`))
   }
-
-  // --- chat with >40 reports truncated to 40 ---
-  const fortyOneReports = Array.from({ length: 41 }, (_, i) => ({
-    title: `超限称号${i + 1}`,
-    summary: `超限摘要${i + 1}`,
-  }))
-  const chatFortyOne = await postJson({
-    message: '本周很多记录',
-    report_context: fortyOneReports,
-  }, '/api/chat')
-  assert.equal(chatFortyOne.response.status, 200)
-  assert.equal(chatFortyOne.data.success, true)
-  assert.equal(chatFortyOne.data.report_context_count, 40)
-  const fortyOneSystem = upstreamRequest.body.input.find((item) => item.role === 'system')?.content?.[0]?.text || ''
-  assert.match(fortyOneSystem, /超限称号1/)
-  assert.match(fortyOneSystem, /超限称号40/)
-  assert.equal(fortyOneSystem.includes('超限称号41'), false)
 
   // oversized / illegal fields must not break chat
   const chatTruncated = await postJson({

@@ -49,6 +49,7 @@ const CHAT_SYSTEM_PROMPT =
   '请用温柔、轻松、简洁的中文回答，帮助用户理解记录、任务、积分、伙伴成长和非医学的生活习惯建议。' +
   '不要做医疗诊断，不要提疾病风险、治疗、用药、就医建议，不要制造脱发焦虑。无法确定时，引导用户做轻量记录或完成一个小任务。'
 
+/** Safety cap for frontend-supplied weekly Scan summaries (week filter is client-side). */
 const REPORT_CONTEXT_MAX = 40
 const REPORT_CONTEXT_FIELD_LIMITS = {
   date: 40,
