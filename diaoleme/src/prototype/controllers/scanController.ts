@@ -269,21 +269,20 @@ export function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
   old?.remove()
   scanCard.classList.add('has-analysis-result')
   const sourceLabel = result.source_label || '未知来源'
-  const sourceDetail = result.fallback_code ? `fallback: ${result.fallback_code}` : result.record_id ? `记录编号: ${result.record_id}` : '已生成新的扫描记录'
+  const fallbackDetail = result.fallback_code
+    ? `<p class="analysis-source-detail">当前为明确 fallback（${escapeHtml(result.fallback_code)}），不是实时 AI 分析</p>`
+    : ''
   const orbit = scanCard.querySelector<HTMLElement>('.scan-orbit')
   if (orbit) orbit.style.filter = 'saturate(1.08)'
   const resultHtml = `
     <div class="card soft scan-result-card" data-analysis-result>
-      <div class="scan-result-head">
-        <div>
-          <span class="badge analysis-source-badge">${escapeHtml(sourceLabel)}</span>
-          <h3>${escapeHtml(result.title)}</h3>
-        </div>
-        <div class="scan-score-chip">${escapeHtml(String(result.score))}</div>
+      <div class="scan-result-source">
+        <span class="analysis-source-badge">${escapeHtml(sourceLabel)}</span>
       </div>
-      <p class="analysis-source-detail">${escapeHtml(sourceDetail)}</p>
-      <p>${escapeHtml(result.summary)}</p>
-      <div class="analysis-grid three grid">
+      ${fallbackDetail}
+      <h3 class="scan-result-title">${escapeHtml(result.title)}</h3>
+      <p class="scan-result-summary">${escapeHtml(result.summary)}</p>
+      <div class="analysis-metrics">
         <div class="analysis-metric"><span class="big-number">${escapeHtml(result.count)}</span><small>掉发量</small></div>
         <div class="analysis-metric"><span class="big-number">${escapeHtml(result.thickness)}</span><small>发质观感</small></div>
         <div class="analysis-metric"><span class="big-number">${escapeHtml(result.score)}</span><small>趣味分数</small></div>
