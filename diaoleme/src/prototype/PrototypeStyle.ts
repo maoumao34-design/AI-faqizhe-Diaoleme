@@ -274,13 +274,27 @@ export const prototypeStyle = `
   body.on-home .topbar {
     position: absolute;
     top: 42px;
-    right: 48px;
+    right: 40px;
     left: auto;
     z-index: 30;
     margin: 0;
     min-height: 54px;
     width: auto;
     justify-content: flex-end;
+  }
+
+  body.on-home .actions {
+    gap: 14px;
+  }
+
+  body.on-home #guideBtn {
+    min-width: 200px;
+    padding: 0 28px;
+  }
+
+  body.on-home #loginBtn {
+    min-width: 370px;
+    padding: 0 36px;
   }
 
   body.on-home .page-title {
@@ -1229,20 +1243,22 @@ export const prototypeStyle = `
 
   .home-page .hero-copy {
     position: absolute;
-    left: 98px;
-    top: 130px;
-    width: 520px;
+    /* lock-art title ink ≈ (241,193) */
+    left: 107px;
+    top: 191px;
+    width: 620px;
     z-index: 5;
   }
 
   .hero-title {
     margin: 0;
     font-family: Kalam, "Comic Sans MS", cursive;
-    font-size: 72px;
-    line-height: 1.02;
+    font-size: 70px;
+    line-height: 1.0;
     letter-spacing: -0.02em;
     color: #14245e;
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .hero-title .line { display: block; }
@@ -1261,16 +1277,16 @@ export const prototypeStyle = `
   }
 
   .hero-body {
-    margin: 14px 0 0;
+    margin: 8px 0 0;
     color: #60648a;
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: 15px;
+    line-height: 1.45;
     font-weight: 700;
-    max-width: 460px;
+    max-width: 480px;
   }
 
   .hero-buttons {
-    margin-top: 22px;
+    margin-top: 12px;
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
@@ -1393,10 +1409,11 @@ export const prototypeStyle = `
 
   .home-page .hero-scene {
     position: absolute;
-    left: 620px;
-    top: 40px;
-    width: 720px;
-    height: 740px;
+    /* feet band ≈ y802; cx tuned vs lock-art */
+    left: 410px;
+    top: 92px;
+    width: 750px;
+    height: 710px;
     z-index: 2;
     pointer-events: none;
   }
@@ -1407,7 +1424,8 @@ export const prototypeStyle = `
     object-fit: contain;
     object-position: center bottom;
     filter: drop-shadow(0 18px 28px rgba(116, 68, 223, 0.14));
-    animation: homeFloat 4.8s ease-in-out infinite;
+    /* freeze for screenshot / overlay self-check */
+    animation: none;
   }
 
   @keyframes homeFloat {
@@ -1416,8 +1434,9 @@ export const prototypeStyle = `
 
   .home-page .seed-report {
     position: absolute;
-    left: 1390px;
-    top: 160px;
+    /* lock-art Seed Report TL ≈ (1661,186) */
+    left: 1533px;
+    top: 191px;
     width: 340px;
     height: 480px;
     z-index: 6;
@@ -1485,8 +1504,8 @@ export const prototypeStyle = `
     position: absolute;
     left: 48px;
     right: 48px;
-    top: 740px;
-    height: 300px;
+    top: 800px;
+    height: 280px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
