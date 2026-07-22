@@ -833,20 +833,50 @@ function attachChatAssistant(root: HTMLElement) {
     const text = input.value.trim()
     if (!text) return
     input.value = ''
+    input.disabled = true
+    const submitBtn = form.querySelector('button')
+    if (submitBtn) submitBtn.disabled = true
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
+    const slowHint = window.setTimeout(() => {
+      if (messages[messages.length - 1]?.content === thinkingPlaceholder) {
+        messages[messages.length - 1] = {
+          role: 'assistant',
+          content: '还在连线中～演示服务器可能刚睡醒，再等几秒就好。',
+        }
+        renderMessages()
+      }
+    }, 3000)
     try {
       // AIFA-68: attach this week's local Scan reports (not last-5 / not shared API dump).
       const reportContext = buildReportContext(useUserStore.getState().reportHistory)
       const outbound = messages
-        .filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder))
+        .filter((m) => !(m.role === 'assistant' && (
+          m.content === thinkingPlaceholder
+          || m.content.startsWith('还在连线中')
+        )))
         .slice(-8)
       const result = await chatWithAssistant(outbound, { reportContext })
-      messages[messages.length - 1] = { role: 'assistant', content: result.reply }
+      window.clearTimeout(slowHint)
+      if (result.fallback_code === 'CHAT_BACKEND_UNREACHABLE') {
+        messages[messages.length - 1] = {
+          role: 'assistant',
+          content: `${result.reply}\n\n（后端暂时连不上，可能在冷启动。你可以稍后再发一句试试。）`,
+        }
+      } else {
+        messages[messages.length - 1] = { role: 'assistant', content: result.reply }
+      }
     } catch {
-      messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }
+      window.clearTimeout(slowHint)
+      messages[messages.length - 1] = {
+        role: 'assistant',
+        content: '我这边暂时没有连上 AI 服务（可能在冷启动）。先完成一次轻松记录也很好；想再聊的话，稍后再发一句就行。',
+      }
     }
+    input.disabled = false
+    if (submitBtn) submitBtn.disabled = false
     renderMessages()
+    input.focus()
   }
   renderMessages()
   bubble.addEventListener('pointerdown', onPointerDown)
@@ -3336,6 +3366,36 @@ const integrationStyle = `
   }
   [data-page="scan"] .has-analysis-result > h3 {
     margin-top: 12px;
+  }
+  .scan-analysis-status {
+    margin: 12px auto 0;
+    max-width: 420px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 248, 236, 0.92);
+    border: 1px solid rgba(210, 168, 110, 0.35);
+    text-align: center;
+  }
+  .scan-analysis-status.is-waiting {
+    background: rgba(236, 244, 255, 0.95);
+    border-color: rgba(120, 160, 220, 0.4);
+  }
+  .scan-analysis-status.is-error {
+    background: rgba(255, 240, 236, 0.96);
+    border-color: rgba(220, 140, 120, 0.45);
+  }
+  .scan-analysis-status.is-success {
+    background: rgba(236, 250, 240, 0.95);
+    border-color: rgba(120, 190, 140, 0.4);
+  }
+  .scan-analysis-status-text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #5a4a3a;
+  }
+  .scan-analysis-retry {
+    margin-top: 10px;
   }
   .scan-result-card {
     margin: 0 auto 12px;

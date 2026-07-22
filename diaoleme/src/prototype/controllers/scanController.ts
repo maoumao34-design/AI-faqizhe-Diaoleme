@@ -33,14 +33,24 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
   prepareInput(cameraInput, true)
   prepareInput(galleryInput)
 
-  const setStatus = (message: string, tone: 'idle' | 'error' | 'success' = 'idle') => {
+  const setStatus = (message: string, tone: 'idle' | 'error' | 'success' | 'waiting' = 'idle', withRetry = false) => {
     const existing = scanCard?.querySelector<HTMLElement>('[data-analysis-status]')
-    const status = existing || document.createElement('p')
+    const status = existing || document.createElement('div')
     status.dataset.analysisStatus = 'true'
-    status.textContent = message
-    status.style.color = tone === 'error' ? '#ff7a2f' : tone === 'success' ? '#65c982' : '#65709e'
-    status.style.fontWeight = '800'
+    status.className = `scan-analysis-status is-${tone}`
+    status.innerHTML = `<p class="scan-analysis-status-text">${escapeHtml(message)}</p>${
+      withRetry ? '<button type="button" class="pill primary scan-analysis-retry" data-analysis-retry>再试一次</button>' : ''
+    }`
     if (!existing) scanCard?.appendChild(status)
+    const retryBtn = status.querySelector<HTMLButtonElement>('[data-analysis-retry]')
+    retryBtn?.addEventListener('click', () => {
+      void runAnalysis()
+    }, { once: true })
+  }
+
+  const clearWaitTimers = (timers: number[]) => {
+    timers.forEach((id) => window.clearTimeout(id))
+    timers.length = 0
   }
 
   const showPreview = (file: File) => {
@@ -162,9 +172,16 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
     scanBtn && (scanBtn.disabled = true)
     uploadBtn && (uploadBtn.disabled = true)
     completeBtn && (completeBtn.disabled = true)
-    setStatus('分析中，正在调用后端 AI 代理...')
+    setStatus('分析中，正在叫醒后端小助手…', 'waiting')
     let value = 10
     if (percent) percent.textContent = '10%'
+    const waitTimers: number[] = []
+    waitTimers.push(window.setTimeout(() => {
+      setStatus('还在路上～演示服务器可能刚睡醒（冷启动），再等几秒就好。', 'waiting')
+    }, 3000))
+    waitTimers.push(window.setTimeout(() => {
+      setStatus('还在努力分析中，请再稍等一下，不要离开本页哦。', 'waiting')
+    }, 8000))
     const timer = window.setInterval(() => {
       value = Math.min(value + 8, 96)
       if (percent) percent.textContent = `${value}%`
@@ -173,14 +190,23 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
       const result = await analyzePhoto(selectedFile)
       saveAnalysisResult(result)
       window.clearInterval(timer)
+      clearWaitTimers(waitTimers)
       renderAnalysisCard(root, result)
       options.renderStatefulSections()
-      setStatus(result.fallback_code ? '已生成 fallback 结果，可继续演示完整流程。' : 'AI 分析完成，结果已写入报告和历史记录。', 'success')
+      if (result.fallback_code === 'BACKEND_UNREACHABLE') {
+        if (percent) percent.textContent = '兜底'
+        setStatus('后端暂时连不上（可能在冷启动）。已给你一份轻松兜底结果，也可以点下面再试一次。', 'error', true)
+      } else if (result.fallback_code) {
+        setStatus('已生成 fallback 结果，可继续演示完整流程。', 'success')
+      } else {
+        setStatus('AI 分析完成，结果已写入报告和历史记录。', 'success')
+      }
     } catch (error) {
       console.error('[prototype] analyze failed:', error)
       window.clearInterval(timer)
+      clearWaitTimers(waitTimers)
       if (percent) percent.textContent = '失败'
-      setStatus('分析接口暂时不可用，请稍后重试。', 'error')
+      setStatus('分析接口暂时不可用，可能是冷启动或网络抖动。点「再试一次」或稍后再上传就好。', 'error', true)
     } finally {
       scanBtn && (scanBtn.disabled = false)
       uploadBtn && (uploadBtn.disabled = false)
