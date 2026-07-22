@@ -37,9 +37,11 @@ export const rewardsSection = `<section class="page" data-page="rewards">
 
               <section class="growth-panel">
                 <div class="growth-heading"><strong>成长等级奖励</strong><span>达到相应等级即可领取专属奖励</span></div>
-                <button type="button" class="round-arrow" aria-label="上一页">‹</button>
-                <div class="growth-track" id="rewardsGrowth"></div>
-                <button type="button" class="round-arrow" aria-label="下一页">›</button>
+                <div class="growth-carousel">
+                  <button type="button" class="round-arrow" data-growth-scroll="-1" aria-label="上一页">‹</button>
+                  <div class="growth-track" id="rewardsGrowth"></div>
+                  <button type="button" class="round-arrow" data-growth-scroll="1" aria-label="下一页">›</button>
+                </div>
               </section>
             </main>
 
