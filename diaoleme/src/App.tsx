@@ -2971,7 +2971,8 @@ const integrationStyle = `
   [data-page="rewards"] .check-circle,
   [data-page="rewards"] .gift-circle {
     border-radius: 50%;
-    display: flex;
+    display: inline-flex;
+    flex-shrink: 0;
     height: 30px;
     object-fit: contain;
     width: 30px;
@@ -2981,14 +2982,18 @@ const integrationStyle = `
     align-items: center;
     background: #3ecf7a;
     color: #fff;
-    font-size: 15px;
-    font-weight: 800;
     justify-content: center;
-    line-height: 1;
+  }
+
+  [data-page="rewards"] .check-circle.done .check-mark {
+    display: block;
+    flex-shrink: 0;
   }
 
   [data-page="rewards"] .check-circle.pending {
     background: rgba(232, 228, 255, 0.9);
+    border: 2px solid rgba(167, 156, 230, 0.55);
+    box-sizing: border-box;
   }
 
   [data-page="rewards"] .checkin-panel p {
