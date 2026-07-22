@@ -4,7 +4,23 @@ import { getLeagueTierProgress, getLevelProgress } from './progress'
 import { escapeHtml, publicAssetUrl, setHtml } from './ui'
 
 const leagueAvatar = (name: string) => publicAssetUrl(`league-avatars/${name}.png`)
+const leagueAsset = (name: string) => publicAssetUrl(`league-assets/${name}`)
 const leagueRankMetricKey = () => 'diaoleme-league-rank-metric'
+
+const TIER_SHIELD_BY_NAME: Record<string, string> = {
+  青铜: 'shield-bronze.svg',
+  白银: 'shield-silver.svg',
+  黄金: 'shield-gold.svg',
+  铂金: 'shield-platinum.svg',
+  '钻石 III': 'shield-diamond.svg',
+  '钻石 II': 'shield-diamond-ii.svg',
+  '钻石 I': 'shield-diamond-i.svg',
+  王者: 'shield-king.svg',
+}
+
+function tierShieldSrc(name: string) {
+  return leagueAsset(TIER_SHIELD_BY_NAME[name] || 'shield-bronze.svg')
+}
 
 export type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
 export type LeagueRankMetric = 'total_xp' | 'hair_care' | 'active_star' | 'streak' | 'kindness'
@@ -356,6 +372,7 @@ function renderTierProgressTab() {
     <div class="league-tier-board">
       <section class="league-mock-card tier-current">
         <span>当前段位</span>
+        <img class="league-tier-current-shield" src="${escapeHtml(tierShieldSrc(tier.name))}" alt="${escapeHtml(tier.name)}">
         <b>${escapeHtml(tier.name)}</b>
         <p>当前总 XP ${s.points.toLocaleString('en-US')} · Lv.${level.level}${tier.nextNeed > 0 ? `，再获得 ${tier.nextNeed} XP 可晋升` : '，已达演示段位上限'}。</p>
         <div class="league-mock-progress"><i style="width:${tier.percent}%"></i></div>
@@ -363,7 +380,7 @@ function renderTierProgressTab() {
       <section class="league-tier-road">
         ${tiers.map(([name, rule, done]) => `
           <div class="${done ? 'done' : ''}">
-            <span>${done ? '✓' : '·'}</span>
+            <img class="league-tier-road-shield" src="${escapeHtml(tierShieldSrc(String(name)))}" alt="${escapeHtml(String(name))}">
             <b>${escapeHtml(String(name))}<small>${escapeHtml(String(rule))}</small></b>
           </div>
         `).join('')}
