@@ -49,7 +49,8 @@ const CHAT_SYSTEM_PROMPT =
   '请用温柔、轻松、简洁的中文回答，帮助用户理解记录、任务、积分、伙伴成长和非医学的生活习惯建议。' +
   '不要做医疗诊断，不要提疾病风险、治疗、用药、就医建议，不要制造脱发焦虑。无法确定时，引导用户做轻量记录或完成一个小任务。'
 
-const REPORT_CONTEXT_MAX = 5
+/** Safety cap for frontend-supplied weekly Scan summaries (week filter is client-side). */
+const REPORT_CONTEXT_MAX = 40
 const REPORT_CONTEXT_FIELD_LIMITS = {
   date: 40,
   title: 80,
@@ -520,7 +521,7 @@ export function buildChatSystemPrompt(reportContext = []) {
   if (!Array.isArray(reportContext) || reportContext.length === 0) return CHAT_SYSTEM_PROMPT
   return (
     `${CHAT_SYSTEM_PROMPT}\n\n` +
-    '以下是用户本机提供的历史 Scan 报告摘要（最多 5 条，由前端传入，不是后端全库查询）：\n' +
+    '以下是用户本机提供的本周 Scan 报告摘要（由前端按自然周筛选传入，不是后端全库查询）：\n' +
     `${formatReportContextBlock(reportContext)}\n` +
     '回答规则：优先依据上述已提供报告回答与历史记录相关的问题；只能引用已提供的称号、分数、摘要、任务或标签；' +
     '禁止编造未提供的报告、分数或趋势。若用户问起报告但列表里没有对应内容，温柔引导去做一次 Scan 记录。' +
