@@ -714,8 +714,8 @@ function attachChatAssistant(root: HTMLElement) {
   let startY = 0
   let startLeft = 0
   let startTop = 0
-  // Transient wait copy only — keep it light; not product/system policy language.
-  const thinkingPlaceholder = '想一想怎么轻松回你，稍等一下下～'
+  // Transient wait copy (AIFA-56): light companion tone, not policy meta-language.
+  const thinkingPlaceholder = '头发丝正在认真想…'
   const renderMessages = () => {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
