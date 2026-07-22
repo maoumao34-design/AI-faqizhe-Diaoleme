@@ -3023,18 +3023,28 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap > .grid {
     min-width: 0;
   }
+  /* AIFA-80: pin column height so history line-wrap cannot resize the page shell */
   [data-page="scan"] .scan-wrap > .card,
+  [data-page="scan"] .scan-wrap > .grid,
   [data-page="scan"] .scan-side-panel {
+    height: min(74vh, 860px);
+    max-height: min(74vh, 860px);
     min-height: min(74vh, 860px);
+  }
+  [data-page="scan"] .scan-wrap > .card {
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   [data-page="scan"] .scan-side-panel {
     align-content: start;
     grid-template-rows: auto auto minmax(0, 1fr);
+    overflow: hidden;
   }
   [data-page="scan"] .scan-history-card {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
   }
   [data-page="scan"] .feature,
   [data-page="scan"] .scan-wrap > .grid .card,
@@ -3042,6 +3052,10 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap p,
   [data-page="scan"] .scan-wrap b {
     overflow-wrap: anywhere;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-title,
+  [data-page="scan"] .scan-history-card .scan-record-meta {
+    overflow-wrap: normal;
   }
   [data-page="scan"] .scan-wrap > .grid .three {
     gap: 10px;
@@ -3130,20 +3144,58 @@ const integrationStyle = `
     white-space: normal;
   }
   [data-page="scan"] .scan-history-card .item {
+    box-sizing: border-box;
     gap: 10px;
     grid-template-columns: 32px minmax(0, 1fr) auto;
-    padding: 12px;
+    height: 68px;
+    min-height: 68px;
+    max-height: 68px;
+    padding: 10px 12px;
   }
   [data-page="scan"] .scan-history-card .status {
+    flex-shrink: 0;
     white-space: nowrap;
   }
+  [data-page="scan"] .scan-record-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    justify-content: center;
+    min-width: 0;
+  }
+  [data-page="scan"] .scan-record-title,
+  [data-page="scan"] .scan-record-meta {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-page="scan"] .scan-record-title {
+    font-weight: 800;
+    line-height: 1.25;
+  }
+  [data-page="scan"] .scan-record-meta {
+    color: var(--muted);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  /* Always reserve 3-row viewport (page size) so paging / short titles cannot resize the shell */
   [data-page="scan"] .scan-record-list {
     display: grid;
+    align-content: start;
+    flex: 1 1 auto;
     gap: 12px;
+    height: calc(3 * 68px + 2 * 12px);
+    max-height: calc(3 * 68px + 2 * 12px);
+    min-height: calc(3 * 68px + 2 * 12px);
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   [data-page="scan"] .scan-record-pager {
     align-items: center;
     display: flex;
+    flex-shrink: 0;
     gap: 10px;
     justify-content: space-between;
     margin-top: auto;
@@ -3156,6 +3208,18 @@ const integrationStyle = `
   [data-page="scan"] .scan-record-pager .pill:disabled {
     cursor: not-allowed;
     opacity: .45;
+  }
+  @media (max-width: 1180px) {
+    [data-page="scan"] .scan-wrap > .card,
+    [data-page="scan"] .scan-wrap > .grid,
+    [data-page="scan"] .scan-side-panel {
+      height: auto;
+      max-height: none;
+      min-height: 0;
+    }
+    [data-page="scan"] .scan-side-panel {
+      overflow: visible;
+    }
   }
   [data-page="scan"] .has-analysis-result {
     padding: 18px;
