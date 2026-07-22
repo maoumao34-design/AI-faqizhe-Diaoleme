@@ -2964,6 +2964,16 @@ const integrationStyle = `
     gap: 10px;
   }
 
+  [data-page="rewards"] .record-empty {
+    background: rgba(248, 245, 255, 0.72);
+    border-radius: 15px;
+    color: #9297bd;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 18px 14px;
+    text-align: center;
+  }
+
   [data-page="rewards"] .record-item {
     align-items: center;
     background: rgba(248, 245, 255, 0.86);
