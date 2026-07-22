@@ -921,6 +921,29 @@ const integrationStyle = `
     position: relative;
   }
 
+  [data-page="league"] .league-hero-sky,
+  [data-page="league"] .league-hero-flowers {
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    z-index: 0;
+  }
+
+  [data-page="league"] .league-hero-sky {
+    height: 58%;
+    object-fit: cover;
+    opacity: 0.55;
+    top: 0;
+  }
+
+  [data-page="league"] .league-hero-flowers {
+    bottom: 0;
+    height: 42%;
+    object-fit: cover;
+    opacity: 0.7;
+  }
+
   [data-page="league"] .league-season-hero::before {
     background: radial-gradient(circle at 14% 22%, rgba(255, 255, 255, 0.7), transparent 24%), linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
     content: "";
@@ -992,60 +1015,65 @@ const integrationStyle = `
   [data-page="league"] .league-hero-characters {
     align-items: end;
     display: flex;
-    gap: 22px;
+    gap: 10px;
     justify-content: center;
-    padding-bottom: 34px;
+    padding-bottom: 18px;
     position: relative;
     z-index: 2;
   }
 
   [data-page="league"] .podium {
     align-items: center;
-    border-radius: 50% 50% 16px 16px;
-    box-shadow: 0 18px 30px rgba(85, 72, 148, 0.12);
+    background: transparent;
+    box-shadow: none;
     display: grid;
     justify-items: center;
     position: relative;
-    width: 84px;
-  }
-
-  [data-page="league"] .podium::before {
-    background: rgba(255, 255, 255, 0.88);
-    border-radius: 50%;
-    content: "";
-    height: 72px;
-    position: absolute;
-    top: -46px;
-    width: 72px;
-  }
-
-  [data-page="league"] .podium i {
-    align-items: center;
-    background: rgba(255, 255, 255, 0.72);
-    border-radius: 50%;
-    display: flex;
-    font-style: normal;
-    font-weight: 900;
-    height: 32px;
-    justify-content: center;
-    margin-top: 20px;
-    width: 32px;
-  }
-
-  [data-page="league"] .podium.first {
-    background: linear-gradient(180deg, #ffd77b, #f5aa33);
-    height: 112px;
     width: 110px;
   }
 
-  [data-page="league"] .podium.second {
-    background: linear-gradient(180deg, #dfe6ff, #9eaee2);
-    height: 86px;
+  [data-page="league"] .podium::before {
+    display: none;
   }
 
+  [data-page="league"] .podium i {
+    display: none;
+  }
+
+  [data-page="league"] .podium-char {
+    height: auto;
+    object-fit: contain;
+    position: relative;
+    width: 78px;
+    z-index: 2;
+  }
+
+  [data-page="league"] .podium-base {
+    margin-top: -10px;
+    object-fit: contain;
+    width: 100%;
+    z-index: 1;
+  }
+
+  [data-page="league"] .podium.first {
+    background: transparent;
+    height: auto;
+    width: 130px;
+  }
+
+  [data-page="league"] .podium.first .podium-char {
+    width: 96px;
+  }
+
+  [data-page="league"] .podium.second,
   [data-page="league"] .podium.third {
-    background: linear-gradient(180deg, #ffc7a7, #e3906d);
-    height: 76px;
+    background: transparent;
+    height: auto;
+  }
+
+  [data-page="league"] .podium.second .podium-char,
+  [data-page="league"] .podium.third .podium-char {
+    width: 72px;
   }
 
   [data-page="league"] .league-hero-rank {
@@ -1078,15 +1106,13 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-hero-badge {
-    background: linear-gradient(145deg, #d9c9ff, #7c65e8);
-    clip-path: polygon(50% 0, 86% 16%, 100% 54%, 75% 92%, 50% 100%, 25% 92%, 0 54%, 14% 16%);
-    color: white;
-    display: grid;
-    font-size: 30px;
-    height: 67px;
-    margin: auto;
-    place-items: center;
-    width: 67px;
+    background: transparent;
+    clip-path: none;
+    display: block;
+    height: 78px;
+    margin: 4px auto 0;
+    object-fit: contain;
+    width: 78px;
   }
 
   [data-page="league"] .league-hero-rank b,
@@ -1557,17 +1583,21 @@ const integrationStyle = `
   [data-page="league"] .league-shield-placeholder,
   [data-page="league"] .league-battle-badge,
   [data-page="league"] .award-dot {
-    align-items: center;
-    border-radius: 50%;
-    display: inline-flex;
-    justify-content: center;
+    background: transparent;
+    border-radius: 0;
+    display: inline-block;
+    object-fit: contain;
   }
 
   [data-page="league"] .league-shield-placeholder {
-    background: linear-gradient(145deg, #d9c9ff, #7c65e8);
-    color: white;
     height: 74px;
     width: 74px;
+  }
+
+  [data-page="league"] .league-vs {
+    height: 36px;
+    object-fit: contain;
+    width: 36px;
   }
 
   [data-page="league"] .league-alliance-main b,
@@ -1642,16 +1672,10 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-battle-badge {
-    color: white;
-    height: 58px;
-    width: 58px;
+    height: 48px;
+    margin: 0 auto 4px;
+    width: 48px;
   }
-
-  [data-page="league"] .league-battle-badge.purple,
-  [data-page="league"] .award-dot.purple { background: linear-gradient(145deg, #d9c9ff, #7c65e8); }
-  [data-page="league"] .league-battle-badge.green { background: linear-gradient(145deg, #cdf2d2, #54ae68); }
-  [data-page="league"] .award-dot.pink { background: linear-gradient(145deg, #ffd4e2, #f06f96); }
-  [data-page="league"] .award-dot.blue { background: linear-gradient(145deg, #d7e8ff, #6b96e8); }
 
   [data-page="league"] .league-battle-grid b,
   [data-page="league"] .league-battle-grid strong {
@@ -2509,17 +2533,11 @@ const integrationStyle = `
 
   [data-page="rewards"] .earn-icon {
     border-radius: 50%;
-    color: #fff;
-    display: grid;
-    height: 26px;
-    place-items: center;
-    width: 26px;
+    display: block;
+    height: 28px;
+    object-fit: contain;
+    width: 28px;
   }
-
-  [data-page="rewards"] .earn-icon.amber { background: #f8b752; }
-  [data-page="rewards"] .earn-icon.green { background: #68c990; }
-  [data-page="rewards"] .earn-icon.blue { background: #79a7f7; }
-  [data-page="rewards"] .earn-icon.violet { background: #9175ef; }
 
   [data-page="rewards"] .reward-market {
     min-height: 420px;
@@ -2635,18 +2653,16 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .lock-icon {
-    align-items: center;
-    background: rgba(31, 38, 96, 0.74);
-    border-radius: 50%;
-    color: #fff;
-    display: flex;
-    font-size: 13px;
-    height: 24px;
-    justify-content: center;
+    background: rgba(255, 255, 255, 0.88);
+    border-radius: 8px;
+    display: block;
+    height: 26px;
+    object-fit: contain;
+    padding: 3px;
     position: absolute;
-    right: 9px;
-    top: 9px;
-    width: 24px;
+    right: 8px;
+    top: 8px;
+    width: 26px;
   }
 
   [data-page="rewards"] .reward-copy {
@@ -2872,21 +2888,20 @@ const integrationStyle = `
 
   [data-page="rewards"] .check-circle,
   [data-page="rewards"] .gift-circle {
-    align-items: center;
     border-radius: 50%;
+    display: block;
+    height: 30px;
+    object-fit: contain;
+    width: 30px;
+  }
+
+  [data-page="rewards"] .check-circle.pending {
+    align-items: center;
+    background: rgba(232, 228, 255, 0.9);
+    color: #9aa0c4;
     display: flex;
-    height: 26px;
+    font-size: 16px;
     justify-content: center;
-    width: 26px;
-  }
-
-  [data-page="rewards"] .check-circle {
-    background: linear-gradient(135deg, #8d6cf6, #ff9dc9);
-    color: #fff;
-  }
-
-  [data-page="rewards"] .gift-circle {
-    background: #fff;
   }
 
   [data-page="rewards"] .checkin-panel p {
