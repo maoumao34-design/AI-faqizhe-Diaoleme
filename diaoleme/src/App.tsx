@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { chatWithAssistant, fetchHistoryRecords, HAIRSTYLE_CATALOG } from './services/model'
+import { buildReportContext, chatWithAssistant, fetchHistoryRecords, HAIRSTYLE_CATALOG } from './services/model'
 import { useUserStore, type ReportRecord } from './store/UserStore'
 import type { ChatMessage } from './services/model'
 import { prototypeBody } from './prototype/PrototypeBody'
@@ -763,7 +763,12 @@ function attachChatAssistant(root: HTMLElement) {
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
     try {
-      const result = await chatWithAssistant(messages.filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder)).slice(-8))
+      // AIFA-52: attach this browser's Journey cards (not shared GET /api/records dump).
+      const reportContext = buildReportContext(useUserStore.getState().reportHistory, 5)
+      const outbound = messages
+        .filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder))
+        .slice(-8)
+      const result = await chatWithAssistant(outbound, { reportContext })
       messages[messages.length - 1] = { role: 'assistant', content: result.reply }
     } catch {
       messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }

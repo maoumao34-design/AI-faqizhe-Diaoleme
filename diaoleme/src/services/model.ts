@@ -18,9 +18,59 @@ export interface ChatResult {
   fallback_code: string | null
 }
 
-export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatResult> {
+/** Compact history summary for POST /api/chat (AIFA-50 / AIFA-52). */
+export interface ReportContextItem {
+  date: string
+  title: string
+  score: number
+  summary: string
+  score_delta?: number | null
+  daily_task?: string
+  tags?: string[]
+}
+
+export function buildReportContext(history: ReportRecord[], limit = 5): ReportContextItem[] {
+  return history.slice(0, Math.max(0, limit)).map((r) => {
+    const item: ReportContextItem = {
+      date: r.date,
+      title: r.title,
+      score: r.score,
+      summary: r.summary,
+    }
+    if (r.score_delta != null) item.score_delta = r.score_delta
+    if (r.daily_task) item.daily_task = r.daily_task
+    if (Array.isArray(r.tags) && r.tags.length) item.tags = r.tags.slice(0, 4)
+    return item
+  })
+}
+
+export async function chatWithAssistant(
+  messages: ChatMessage[],
+  options?: { reportContext?: ReportContextItem[] },
+): Promise<ChatResult> {
   try {
-    const resp = await axios.post(CHAT_API_CONFIG.url, { messages }, { timeout: CHAT_API_CONFIG.timeout })
+    // Live openai_compatible Responses upstream rejects assistant-role turns in
+    // `input` (UPSTREAM_FAILED). Local widget keeps a greeting assistant bubble —
+    // send user turns only (AIFA-47). Optionally attach local Journey report
+    // summaries so the backend can ground answers (AIFA-52).
+    const userMessages = messages
+      .filter((m) => m.role === 'user' && m.content.trim())
+      .slice(-8)
+    const latest = userMessages[userMessages.length - 1]
+    if (!latest) {
+      return {
+        reply: '先随便说一句想聊的内容就好，我在这儿陪你轻松记录。',
+        source: 'fallback',
+        source_label: '本地聊天 fallback（非真实 AI）',
+        fallback_code: 'EMPTY_MESSAGE',
+      }
+    }
+    const report_context = Array.isArray(options?.reportContext) ? options!.reportContext!.slice(0, 5) : []
+    const resp = await axios.post(
+      CHAT_API_CONFIG.url,
+      { messages: userMessages, message: latest.content, report_context },
+      { timeout: CHAT_API_CONFIG.timeout },
+    )
     return normalizeChatResponse(resp.data)
   } catch (err) {
     if (axios.isAxiosError(err) && err.response?.data) {
