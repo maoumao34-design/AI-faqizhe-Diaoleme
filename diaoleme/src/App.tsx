@@ -2661,7 +2661,7 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .reward-card.locked {
-    opacity: 0.78;
+    opacity: 0.9;
   }
 
   [data-page="rewards"] .reward-image-wrap {
@@ -2679,19 +2679,6 @@ const integrationStyle = `
     height: 108px;
     object-fit: contain;
     width: 108px;
-  }
-
-  [data-page="rewards"] .lock-icon {
-    background: rgba(255, 255, 255, 0.88);
-    border-radius: 8px;
-    display: block;
-    height: 26px;
-    object-fit: contain;
-    padding: 3px;
-    position: absolute;
-    right: 8px;
-    top: 8px;
-    width: 26px;
   }
 
   [data-page="rewards"] .reward-copy {
@@ -2918,19 +2905,24 @@ const integrationStyle = `
   [data-page="rewards"] .check-circle,
   [data-page="rewards"] .gift-circle {
     border-radius: 50%;
-    display: block;
+    display: flex;
     height: 30px;
     object-fit: contain;
     width: 30px;
   }
 
-  [data-page="rewards"] .check-circle.pending {
+  [data-page="rewards"] .check-circle.done {
     align-items: center;
-    background: rgba(232, 228, 255, 0.9);
-    color: #9aa0c4;
-    display: flex;
-    font-size: 16px;
+    background: #3ecf7a;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
     justify-content: center;
+    line-height: 1;
+  }
+
+  [data-page="rewards"] .check-circle.pending {
+    background: rgba(232, 228, 255, 0.9);
   }
 
   [data-page="rewards"] .checkin-panel p {

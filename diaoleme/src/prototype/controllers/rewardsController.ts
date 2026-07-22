@@ -142,12 +142,12 @@ export function renderRewards(root: HTMLElement) {
 
   setHtml(root.querySelector('#rewardsCheckin'), WEEKDAY_LABELS.map((day, index) => {
     const done = index < Math.min(streak, 6) || (index === 6 && checkedToday && streak >= 7)
-    if (index === 6 && !checkedToday) {
+    if (index === 6 && !done) {
       return `<button type="button" data-action="checkin"><img class="gift-circle" src="${REWARD_ASSET_BASE}gift-day.svg" alt="礼物"><small>${day}</small></button>`
     }
-    const mark = done || index < streak
-      ? `<img class="check-circle" src="${REWARD_ASSET_BASE}check-day.svg" alt="已打卡">`
-      : `<span class="check-circle pending">·</span>`
+    const mark = done
+      ? `<span class="check-circle done" aria-label="已打卡">✓</span>`
+      : `<span class="check-circle pending" aria-label="未打卡"></span>`
     return `<div>${mark}<small>${day}</small></div>`
   }).join(''))
 
@@ -159,7 +159,6 @@ export function renderRewards(root: HTMLElement) {
     return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${ownedItem ? 'disabled' : ''}>
       <div class="reward-image-wrap">
         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
-        ${ownedItem ? '' : `<img class="lock-icon" src="${REWARD_ASSET_BASE}lock-icon.svg" alt="锁定">`}
       </div>
       <div class="reward-copy">
         <strong>${escapeHtml(item.name)}</strong>
