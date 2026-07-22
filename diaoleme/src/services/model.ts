@@ -204,11 +204,14 @@ export const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
  */
 export async function prepareAnalyzeImage(file: File): Promise<File> {
   validateImageFile(file)
-  // Already a modest JPEG — keep as-is to avoid quality loss.
-  if (file.type === 'image/jpeg' && file.size <= 1.5 * 1024 * 1024) return file
+  const source = withInferredMime(file)
+  // Already a modest JPEG — keep as-is to avoid quality loss (same class as camera canvas).
+  if (source.type === 'image/jpeg' && source.size <= 1.5 * 1024 * 1024) {
+    return ensureAsciiJpegName(source)
+  }
 
   try {
-    const bitmap = await createImageBitmap(file)
+    const bitmap = await createImageBitmap(source)
     const maxEdge = 1600
     const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
     const width = Math.max(1, Math.round(bitmap.width * scale))
@@ -219,17 +222,19 @@ export async function prepareAnalyzeImage(file: File): Promise<File> {
     const ctx = canvas.getContext('2d')
     if (!ctx) {
       bitmap.close()
-      return file
+      return ensureAsciiJpegName(source)
     }
     ctx.drawImage(bitmap, 0, 0, width, height)
     bitmap.close()
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
-    if (!blob) return file
-    const base = (file.name || 'album').replace(/\.[^.]+$/, '') || 'album'
-    return new File([blob], `${base}-normalized.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
+    if (!blob) return ensureAsciiJpegName(source)
+    return new File([blob], `diaoleme-album-${Date.now()}.jpg`, {
+      type: 'image/jpeg',
+      lastModified: Date.now(),
+    })
   } catch (err) {
     console.warn('[model] 图片规范化失败，回退原文件上传。', err)
-    return file
+    return ensureAsciiJpegName(source)
   }
 }
 
@@ -238,7 +243,7 @@ export async function prepareAnalyzeImage(file: File): Promise<File> {
  */
 export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMode()): Promise<AnalysisResult> {
   validateImageFile(file)
-  const uploadFile = mode === 'auto' ? await prepareAnalyzeImage(file) : file
+  const uploadFile = mode === 'auto' ? await prepareAnalyzeImage(file) : withInferredMime(file)
 
   if (mode === 'mock-fail') {
     await wait(900)
@@ -251,13 +256,24 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
 
   try {
     const form = new FormData()
-    form.append('image', uploadFile)
+    // Explicit filename keeps multipart Content-Disposition ASCII-stable (album paths).
+    form.append('image', uploadFile, uploadFile.name || `diaoleme-album-${Date.now()}.jpg`)
     const resp = await axios.post(MODEL_API_CONFIG.url, form, {
       timeout: MODEL_API_CONFIG.timeout,
     })
 
     return normalizeResponse(resp.data)
   } catch (err) {
+    // Prefer backend-authored fallback body over inventing BACKEND_UNREACHABLE.
+    if (axios.isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
+      console.warn('[model] 分析接口返回非 2xx，使用响应体（非本地静默兜底）。', {
+        status: err.response.status,
+        name: uploadFile.name,
+        type: uploadFile.type,
+        size: uploadFile.size,
+      })
+      return normalizeResponse(err.response.data)
+    }
     console.warn('[model] 后端分析代理不可达，返回明确的本地 fallback。', {
       err,
       name: uploadFile.name,
@@ -296,6 +312,28 @@ function guessImageMime(name: string) {
   if (lower.endsWith('.gif')) return 'image/gif'
   if (lower.endsWith('.heic') || lower.endsWith('.heif')) return 'image/heic'
   return ''
+}
+
+/** Rewrap album File when browser left type empty but extension is image. */
+function withInferredMime(file: File): File {
+  if (file.type) return file
+  const mime = guessImageMime(file.name)
+  if (!mime) return file
+  return new File([file], file.name || `diaoleme-album-${Date.now()}.jpg`, {
+    type: mime,
+    lastModified: file.lastModified,
+  })
+}
+
+function ensureAsciiJpegName(file: File): File {
+  const asciiName = /^[\x20-\x7E]+$/.test(file.name || '') && /\.jpe?g$/i.test(file.name)
+  if (file.type === 'image/jpeg' && asciiName) return file
+  const type = file.type || 'image/jpeg'
+  const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'
+  return new File([file], `diaoleme-album-${Date.now()}.${ext}`, {
+    type,
+    lastModified: file.lastModified || Date.now(),
+  })
 }
 
 /** 保留后端顶层状态，避免把 fallback 或 mock 响应误标成真实 AI。 */
