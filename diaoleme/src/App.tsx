@@ -135,6 +135,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
     const rewardBuyBtn = target.closest<HTMLElement>('[data-reward-buy]')
+    const growthScrollBtn = target.closest<HTMLElement>('[data-growth-scroll]')
     const viewReportBtn = target.closest<HTMLElement>('[data-view-report]')
     const viewDayBtn = target.closest<HTMLElement>('[data-view-day]')
     const shareReportBtn = target.closest<HTMLElement>('[data-share-report]')
@@ -175,6 +176,15 @@ function attachPrototypeFeatures(root: HTMLElement) {
           anchorSelector: '[data-page="rewards"] .reward-market',
           className: 'prototype-toast-shop',
         })
+      }
+    }
+    if (growthScrollBtn?.dataset.growthScroll) {
+      const direction = Number(growthScrollBtn.dataset.growthScroll)
+      const track = root.querySelector<HTMLElement>('#rewardsGrowth')
+      if (track && Number.isFinite(direction) && direction !== 0) {
+        const card = track.querySelector<HTMLElement>('.growth-reward')
+        const step = (card?.offsetWidth || 112) + 10
+        track.scrollBy({ left: direction * step, behavior: 'smooth' })
       }
     }
     if (communityTabBtn?.dataset.communityTab && isCommunityTab(communityTabBtn.dataset.communityTab)) {
@@ -2716,10 +2726,8 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .growth-panel {
-    align-items: center;
     display: grid;
-    gap: 12px;
-    grid-template-columns: minmax(155px, 0.8fr) 36px minmax(0, 1fr) 36px;
+    gap: 14px;
     padding: 18px;
   }
 
@@ -2741,21 +2749,46 @@ const integrationStyle = `
     font-weight: 700;
   }
 
+  [data-page="rewards"] .growth-carousel {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 36px minmax(0, 1fr) 36px;
+    min-width: 0;
+  }
+
   [data-page="rewards"] .round-arrow {
+    align-items: center;
     background: #fff;
     border: 1px solid rgba(139, 126, 218, 0.14);
     border-radius: 50%;
     color: #7f6be9;
     cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
     font-size: 24px;
     height: 36px;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
     width: 36px;
+    z-index: 1;
   }
 
   [data-page="rewards"] .growth-track {
-    display: grid;
+    display: flex;
     gap: 10px;
-    grid-template-columns: repeat(5, minmax(88px, 1fr));
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-page="rewards"] .growth-track::-webkit-scrollbar {
+    display: none;
   }
 
   [data-page="rewards"] .growth-reward {
@@ -2763,9 +2796,12 @@ const integrationStyle = `
     border: 1px solid rgba(226, 219, 255, 0.82);
     border-radius: 16px;
     display: grid;
+    flex: 0 0 112px;
     justify-items: center;
     min-height: 150px;
     padding: 14px 8px;
+    scroll-snap-align: start;
+    width: 112px;
   }
 
   [data-page="rewards"] .growth-reward.active {
@@ -3035,14 +3071,14 @@ const integrationStyle = `
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    [data-page="rewards"] .growth-panel,
     [data-page="rewards"] .overview-content,
     [data-page="rewards"] .rewards-right-rail {
       grid-template-columns: 1fr;
     }
 
-    [data-page="rewards"] .growth-track {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    [data-page="rewards"] .growth-reward {
+      flex-basis: 104px;
+      width: 104px;
     }
   }
 
