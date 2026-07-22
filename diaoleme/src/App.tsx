@@ -354,7 +354,8 @@ function attachChatAssistant(root: HTMLElement) {
   let startY = 0
   let startLeft = 0
   let startTop = 0
-  const thinkingPlaceholder = '正在思考一个轻松、不焦虑的回答...'
+  const thinkingPlaceholder = '思考中…若稍慢，多半是服务唤醒中，请稍等～'
+  let sending = false
   const renderMessages = () => {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
@@ -398,15 +399,27 @@ function attachChatAssistant(root: HTMLElement) {
   const onSubmit = async (event: SubmitEvent) => {
     event.preventDefault()
     const text = input.value.trim()
-    if (!text) return
+    if (!text || sending) return
+    sending = true
     input.value = ''
+    input.disabled = true
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null
+    if (submitBtn) submitBtn.disabled = true
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
     try {
       const result = await chatWithAssistant(messages.filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder)).slice(-8))
       messages[messages.length - 1] = { role: 'assistant', content: result.reply }
     } catch {
-      messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }
+      messages[messages.length - 1] = {
+        role: 'assistant',
+        content: '这边有点慢，请再试一次～先去做一次记录也可以，我随时在。',
+      }
+    } finally {
+      sending = false
+      input.disabled = false
+      if (submitBtn) submitBtn.disabled = false
+      input.focus()
     }
     renderMessages()
   }

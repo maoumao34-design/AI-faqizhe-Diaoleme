@@ -52,20 +52,27 @@ function appendRecordsPath(value: string) {
 }
 
 export const MODEL_API_CONFIG = {
-  /** public/config.js or VITE_API_BASE_URL can switch deployments without rebuilding page business code. */
-  url: resolveApiUrl(),
+  /** Resolve at call time so public/config.js can override without stale module init. */
+  get url() {
+    return resolveApiUrl()
+  },
 
-  /** 请求超时（毫秒） */
-  timeout: 45000,
+  /** 请求超时（毫秒）— Scan 分析可略长 */
+  timeout: 90000,
 }
 
 export const CHAT_API_CONFIG = {
-  url: appendChatPath(resolveApiUrl()),
-  timeout: 45000,
+  get url() {
+    return appendChatPath(resolveApiUrl())
+  },
+  /** Render 冷启动常见 >45s；助手链路放宽避免误报「连不上」 */
+  timeout: 90000,
 }
 
 /** Canonical history API (AIFA-30): GET /api/records — no /api/history. */
 export const RECORDS_API_CONFIG = {
-  url: appendRecordsPath(resolveApiUrl()),
+  get url() {
+    return appendRecordsPath(resolveApiUrl())
+  },
   timeout: 20000,
 }

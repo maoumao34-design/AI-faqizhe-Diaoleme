@@ -26,9 +26,9 @@ export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatRe
     if (axios.isAxiosError(err) && err.response?.data) {
       return normalizeChatResponse(err.response.data)
     }
-    console.warn('[model] 聊天接口不可达，返回本地客服兜底。', err)
+    console.warn('[model] 聊天接口暂不可达，返回本地客服兜底。', err)
     return {
-      reply: '我现在暂时连不上后端 AI，但可以先陪你记录：今天先完成一次轻量 Scan，再根据结果选择一个小任务就好。',
+      reply: '这边有点慢（服务可能在唤醒），请再发一次试试～也可以先去做一次轻量 Scan，我稍后再陪你聊。',
       source: 'fallback',
       source_label: '本地聊天 fallback（非真实 AI）',
       fallback_code: 'CHAT_BACKEND_UNREACHABLE',
