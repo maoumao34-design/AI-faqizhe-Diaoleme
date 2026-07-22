@@ -3109,38 +3109,66 @@ const integrationStyle = `
   .scan-result-card {
     margin: 0 auto 12px;
     max-width: 620px;
-    padding: 16px;
+    padding: 18px 16px 16px;
     text-align: left;
-    overflow: hidden;
+    overflow: visible;
   }
-  .scan-result-head {
-    align-items: flex-start;
-    display: flex;
-    gap: 12px;
-    justify-content: space-between;
-  }
-  .scan-result-head h3 {
-    margin: 0;
-    min-width: 0;
+  .scan-result-source {
+    margin-bottom: 10px;
   }
   .analysis-source-badge {
-    flex: 0 0 auto;
-    max-width: 104px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .analysis-source-detail {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+    min-height: 28px;
+    min-width: 0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.12);
     color: #65709e;
     font-size: 12px;
-    font-weight: 800;
-    margin: 8px 0 0;
+    font-weight: 700;
+    line-height: 1.35;
+    white-space: normal;
     overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .analysis-source-detail {
+    color: #ff7a2f;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin: 0 0 10px;
+    overflow-wrap: anywhere;
+  }
+  .scan-result-title {
+    color: #6d4bd6;
+    font-size: clamp(24px, 5.2vw, 34px);
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    margin: 0 0 10px;
+  }
+  .scan-result-summary {
+    color: #3d4670;
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 0 0 14px;
+  }
+  .scan-result-card > p {
+    margin: 10px 0;
+    line-height: 1.5;
+  }
+  .scan-result-card > small {
+    color: #8a93b8;
+    display: block;
+    margin-top: 12px;
   }
   .analysis-metrics {
     display: grid;
     gap: 10px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0 0 4px;
     text-align: center;
   }
   .analysis-metric {
@@ -3164,6 +3192,7 @@ const integrationStyle = `
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 12px;
   }
 
   [data-page="buddy"] .metric-row {
@@ -3280,12 +3309,8 @@ const integrationStyle = `
     .analysis-metrics {
       grid-template-columns: 1fr;
     }
-    .scan-result-head {
-      display: block;
-    }
-    .analysis-source-badge {
-      display: inline-block;
-      margin-top: 8px;
+    .scan-result-title {
+      font-size: clamp(22px, 7vw, 30px);
     }
     #timeline .journey-record,
     #timeline .journey-empty {
