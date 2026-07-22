@@ -303,11 +303,11 @@ npm run dev
 | --- | --- | --- |
 | `message` | string | 可选，单轮用户消息（与 `messages` 可并用） |
 | `messages` | array | 可选，最近对话；项为 `{ role: "user"\|"assistant", content }`，最多保留 10 条，单条 content 截到 800 |
-| `report_context` | array | 可选，前端本机 `reportHistory` 摘要，最多 5 条；非法/过长字段安全截断，不影响旧客户端 |
+| `report_context` | array | 可选，前端本机按自然周筛选后的本周 `reportHistory` 摘要，最多 40 条（安全上限）；非法/过长字段安全截断，不影响旧客户端 |
 
 `report_context[]` 可选子字段：`date`、`title`、`score`、`summary`、`score_delta`、`daily_task`、`tags`。
 
-有 `report_context` 时，后端会注入系统提示：说明这些是用户本地历史报告摘要，要求优先据此回答，禁止编造未提供的报告；无对应内容时引导去 Scan；仍不做医疗诊断。
+有 `report_context` 时，后端会注入系统提示：说明这些是用户本机提供的**本周** Scan 报告摘要（由前端按自然周筛选传入，不是后端全库查询），要求优先据此回答，禁止编造未提供的报告；无对应内容时引导去 Scan；仍不做医疗诊断。
 
 ### 请求示例（带 2 条假报告）
 
@@ -351,8 +351,8 @@ npm run dev
 
 ### 前端使用说明
 
-1. 从本机 `reportHistory` 取最近最多 5 条，映射为上述摘要字段后随聊天请求发送。
-2. **不要**让后端自动 `GET /api/records` 全量塞进上下文（共享存储会串用户数据）。
+1. 从本机 `reportHistory` 按自然周筛选本周报告后映射为上述摘要字段，随聊天请求发送（条数可少于或多于 5；后端安全上限 40）。
+2. **不要**让后端自动 `GET /api/records` 全量塞进上下文（共享存储会串用户数据）；周界筛选在前端完成。
 3. 未做用户鉴权；上下文可信来源是前端本机会话。
 
 ## Mock 场景
