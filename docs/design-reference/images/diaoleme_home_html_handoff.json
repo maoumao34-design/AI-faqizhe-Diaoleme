@@ -1,0 +1,272 @@
+{
+  "project": "掉了么（Diaoleme）现有首页视觉精修与还原度提升",
+  "version": "1.1",
+  "language": "zh-CN",
+  "task_definition": {
+    "task_type": "visual_fidelity_refinement",
+    "primary_goal": "基于参考图的视觉规范修正现有 HTML 设计，提高视觉还原度、完整度和整体完成度。",
+    "not_a_rebuild": true,
+    "existing_implementation_is_baseline": true,
+    "implementation_rules": [
+      "优先保留现有 HTML 结构、功能、路由和技术栈",
+      "先检查现有实现，再修改 CSS、布局参数和视觉素材",
+      "仅在参考图无法通过现有 DOM 准确还原时，才进行最小范围的结构调整",
+      "不得另起一套页面、重新设计信息架构或重复实现已有功能",
+      "每轮修改后在固定视口截图，并与参考图叠加对比后继续微调"
+    ]
+  },
+  "objective": {
+    "goal": "在现有首页 HTML 基础上进行视觉修正，使其尽可能接近参考效果图，而不是新建或重做一个 HTML 页面。",
+    "source_of_truth": "Hero.jpg",
+    "asset_source": "Home.png",
+    "critical_rule": "图1决定现有页面需要被修正成什么样；图2只提供可裁切的视觉素材。禁止把任务理解为新建页面或按素材板重新设计。"
+  },
+  "source_files": [
+    {
+      "file": "Hero.jpg",
+      "role": "最终效果图与唯一布局、构图、视觉标准",
+      "dimensions_px": { "width": 2048, "height": 1365 },
+      "path": "/workspace/scratch/a097c55d5446/upload/Hero.jpg",
+      "github_repository_path": "docs/design-reference/images/01-desktop-home-dashboard/Hero.jpg"
+    },
+    {
+      "file": "Home.png",
+      "role": "视觉素材来源板，仅用于逐项提取素材",
+      "dimensions_px": { "width": 1382, "height": 1138 },
+      "color_mode": "RGBA",
+      "path": "/workspace/scratch/a097c55d5446/upload/Home.png",
+      "github_repository_path": "docs/design-reference/images/asset package/home/Home.png"
+    }
+  ],
+  "repository_locations": {
+    "visual_reference_directory": "docs/design-reference/images/01-desktop-home-dashboard",
+    "asset_package_directory": "docs/design-reference/images/asset package/home",
+    "file_mapping": {
+      "Hero.jpg": "docs/design-reference/images/01-desktop-home-dashboard/Hero.jpg",
+      "Home.png": "docs/design-reference/images/asset package/home/Home.png"
+    },
+    "path_note": "仓库目录名 asset package 含空格，命令行引用路径时需要加引号。"
+  },
+  "deliverables": {
+    "preferred_action": "直接修正仓库中已有首页实现及其现有样式/素材文件，不创建平行的新页面版本。",
+    "asset_directories": ["assets/characters/", "assets/decoration/", "assets/icons/", "assets/avatars/", "assets/ui-reference/"],
+    "requirements": [
+      "沿用项目现有技术栈、启动方式和目录结构",
+      "保留现有页面功能、路由及可工作的交互",
+      "页面打开无控制台报错",
+      "素材全部使用相对路径，不依赖本机绝对路径",
+      "不得使用外部热链图片",
+      "不得直接把 Hero.jpg 作为整个网页背景伪装完成",
+      "修正后的页面仍须保持可维护的组件与视觉素材分层",
+      "不得为了交付而新增与现有首页并行的 index.html 或独立 demo"
+    ]
+  },
+  "canvas": {
+    "design_width_px": 2048,
+    "design_height_px": 1365,
+    "desktop_first": true,
+    "strategy": "优先固定设计画布并根据视口等比缩放，避免响应式重排破坏构图。",
+    "css_reference": ".design-canvas { width: 2048px; height: 1365px; transform: scale(var(--page-scale)); transform-origin: top left; }",
+    "overflow": "参考视口下不得出现横向或纵向滚动条"
+  },
+  "asset_extraction": {
+    "extract_from_home_png": [
+      "4种IP角色形态", "草地/苔藓底座", "云朵", "蒲公英种子", "星光与爱心装饰",
+      "左侧导航图标", "顶部按钮相关图标", "主标题装饰字", "用户头像组",
+      "水滴/月亮/食物/手掌图标", "底部功能图标", "奖杯与排名奖牌",
+      "状态标识", "Seed Report 小IP", "Good job 与 Share Journey 可复用视觉"
+    ],
+    "rules": [
+      "逐项裁切，禁止整张素材板放入页面",
+      "移除中文分类标题、棋盘背景、相邻素材残影及多余白边",
+      "透明素材导出为 PNG 或 WebP",
+      "角色、草地、蒲公英不得用粗糙 CSS 图形替代",
+      "普通卡片、文字、图表与进度条优先使用 HTML/CSS 重建",
+      "去背景时保留白色或极浅色的蒲公英绒毛、星光和角色发丝"
+    ]
+  },
+  "visual_tokens": {
+    "colors": {
+      "navy": "#14245e",
+      "purple": "#7444df",
+      "purple_light": "#ad72ef",
+      "pink": "#ee5b96",
+      "green": "#52c98a",
+      "orange": "#f7a243",
+      "yellow": "#ffc54a",
+      "text_primary": "#17225c",
+      "text_secondary": "#60648a",
+      "card_background": "rgba(255,255,255,0.70)",
+      "card_border": "rgba(255,255,255,0.82)"
+    },
+    "background": ["淡粉、淡紫、淡蓝渐变", "大面积柔光云雾", "中间角色区域更亮", "少量蒲公英和闪光点", "左下与右侧轻微景深模糊"],
+    "card": {
+      "style": "半透明玻璃质感",
+      "background": "rgba(255,255,255,0.68)",
+      "border": "2px solid rgba(255,255,255,0.76)",
+      "border_radius_px": 28,
+      "backdrop_filter": "blur(18px)",
+      "box_shadow": "0 16px 40px rgba(103,75,160,0.10), inset 0 1px 0 rgba(255,255,255,0.85)",
+      "warning": "禁止做成纯白实心卡片"
+    },
+    "fonts": {
+      "body": ["Nunito", "Quicksand", "Arial Rounded MT Bold", "sans-serif"],
+      "handwritten_title": ["Kalam", "Comic Sans MS", "cursive"],
+      "fallback_required": true
+    }
+  },
+  "page_tree": {
+    "App": [
+      "Background",
+      { "Sidebar": ["Brand", "Navigation"] },
+      "Header Actions",
+      { "Hero Section": ["Copy Area", "Hero Character Scene", "Seed Report"] },
+      { "Dashboard Row": ["My Hair Buddy", "Today’s Quests", "Growth Journey", "Hair Growth League"] },
+      { "Bottom Strip": ["Encouragement", "Service Features", "Share Journey"] }
+    ]
+  },
+  "layout": {
+    "sidebar": {
+      "position": "fixed left",
+      "width_px_approx": 132,
+      "height": "100%",
+      "style": "半透明乳白背景，右边缘柔和，无明显分割线",
+      "logo_size_px_approx": { "width": 120, "height": 95 },
+      "nav_items": ["Home", "Scan", "Buddy", "Quests", "League", "Rewards", "Me"],
+      "active_item": "Home",
+      "active_style": "淡紫圆角底板、紫色实心图标与文字",
+      "inactive_style": "灰紫线性图标、深蓝或灰紫文字"
+    },
+    "header_actions": {
+      "position": "top right",
+      "buttons": ["Share Journey", "Login / Sign up"],
+      "height_px_approx": 54,
+      "right_margin_px_approx": 40,
+      "style": "胶囊圆角、柔和投影；Share 为半透明白底，Login 为紫色渐变底"
+    },
+    "hero_copy": {
+      "origin_px_approx": { "x": 210, "y": 155 },
+      "title_lines": ["Every hair is a seed,", "every care", "brings it to life."],
+      "title_size_px_range": [70, 78],
+      "title_style": "深蓝手写体，life. 为粉色，seed, 可使用蓝紫渐变，紧凑行高",
+      "body_lines": [
+        "Diaoleme is your AI hair companion.",
+        "We understand, support, and grow with you —",
+        "turning every fallen hair into a seed",
+        "and every day into a step of growth. ✨"
+      ],
+      "cta_buttons": [
+        { "label": "Scan Hair Now", "style": "紫粉渐变、白字、相机图标、较强柔光投影" },
+        { "label": "Meet Your Buddy", "style": "半透明白底、紫字、绿色嫩芽图标" }
+      ],
+      "trust_row": ["粉色爱心", "Trusted by 100,000+ users", "6个重叠头像", "+99K 紫色胶囊"]
+    },
+    "hero_scene": {
+      "bounds_px_approx": { "x_min": 780, "x_max": 1530, "y_min": 80, "y_max": 790 },
+      "layers": ["背景柔光", "草地/苔藓平台", "大号坐姿蒲公英角色", "蒲公英种子", "星光", "前景轻微模糊种子"],
+      "rules": ["角色保持原比例", "草地自然覆盖脚下且无明显裁切边", "主场景不得做成规整矩形图片框", "装饰需体现前中后景层次"]
+    },
+    "seed_report": {
+      "bounds_px_approx": { "x": 1540, "y": 180, "width": 340, "height": 480 },
+      "content": ["Today’s Seed Report", "12 seeds fallen", "状态文案", "七日趋势折线图", "Good job 子卡片", "小IP头像"],
+      "implementation": "外层、文字和图表使用 HTML/CSS 重建；小IP从素材板裁切"
+    },
+    "dashboard": {
+      "top_y_px_approx": 760,
+      "alignment": "四张卡片横向排列且顶部对齐",
+      "cards": [
+        {
+          "name": "My Hair Buddy",
+          "content": ["爱心图标", "Lv.5", "圆形IP角色图", "Fluffy Seedling", "HP进度条", "View Details →"]
+        },
+        {
+          "name": "Today’s Quests",
+          "quests": [
+            { "task": "Drink 8 cups of water", "reward": "+50 XP", "icon": "water", "state": "completed-purple" },
+            { "task": "Sleep before 23:30", "reward": "+80 XP", "icon": "moon", "state": "completed-green" },
+            { "task": "Eat a healthy meal", "reward": "+100 XP", "icon": "food", "state": "0/1" },
+            { "task": "Scalp massage 5 mins", "reward": "+50 XP", "icon": "hand", "state": "0/1" }
+          ],
+          "footer": "More Quests →"
+        },
+        {
+          "name": "Growth Journey",
+          "content": ["叶片图标", "420 / 800 XP", "Lv.5", "紫色进度条", "380 XP to unlock new hairstyle", "紫色提示卡", "发型问号剪影"],
+          "implementation": "进度条和文字必须用 HTML/CSS 实现"
+        },
+        {
+          "name": "Hair Growth League",
+          "header": ["奖杯", "See all →"],
+          "ranking": [
+            { "rank": 1, "name": "Luna", "xp": "36,250 XP" },
+            { "rank": 2, "name": "Mia", "xp": "28,760 XP" },
+            { "rank": 3, "name": "Ray", "xp": "25,480 XP" },
+            { "rank": 12, "name": "You", "xp": "12,360 XP", "highlight": "purple-gradient" }
+          ]
+        }
+      ]
+    },
+    "bottom_strip": {
+      "style": "连续的半透明白色区域",
+      "sections": [
+        {
+          "name": "Encouragement",
+          "content": ["小IP头像", "It’s okay to have difficult days.", "We’re in this together.", "星光与爱心装饰"]
+        },
+        {
+          "name": "Service Features",
+          "items": ["AI Hair Analysis", "Personalized Care", "Emotional Support", "Fun & Growth"],
+          "item_structure": ["彩色图标", "英文标题", "两行说明文字"]
+        },
+        {
+          "name": "Share Journey",
+          "content": ["Share your journey", "Get a poster & inspire others!", "Create Poster", "倾斜叠放的角色海报", "爱心装饰"]
+        }
+      ]
+    }
+  },
+  "interactions": {
+    "required": ["左侧导航可点击切换选中态", "CTA与顶部按钮具备 hover/active", "View Details、More Quests、See all、Create Poster 可点击", "卡片 hover 轻微上浮并增强阴影"],
+    "optional": "蒲公英可做幅度小于8px的轻微漂浮",
+    "forbidden": ["参考图中不存在的大幅动画", "强烈粒子特效", "导致页面重排的交互", "干扰截图对比的运动"]
+  },
+  "validation": {
+    "viewport_px": { "width": 2048, "height": 1365 },
+    "method": "在目标视口截图，与 Hero.jpg 以50%透明度叠加对照并迭代微调。",
+    "priority_checks": [
+      "左侧栏宽度", "Hero标题位置与换行", "主角色大小与视觉重心", "Seed Report位置",
+      "四张Dashboard卡片顶部对齐", "卡片宽度比例", "底部条完整显示",
+      "无素材白边或棋盘背景", "半透明与模糊质感", "整体色调不过紫、过灰或过度饱和"
+    ],
+    "acceptance_criteria": [
+      "2048×1365下整体构图高度吻合",
+      "核心组件位置误差尽量控制在10px以内",
+      "角色和装饰无明显裁切瑕疵",
+      "文字完整且无错字",
+      "无横向或纵向滚动条",
+      "页面为可维护的分层HTML而非单张截图",
+      "常见桌面窗口中保持原比例并居中展示"
+    ]
+  },
+  "prohibitions": [
+    "新建一套页面替代现有首页",
+    "脱离现有代码结构重新实现已有模块",
+    "按图2素材板布局制作网页",
+    "擅自改变卡片结构或重新设计配色",
+    "用随机图标替换已有素材",
+    "把页面改成普通Dashboard",
+    "为了响应式适配破坏桌面端比例",
+    "将整张Hero.jpg作为网页主体"
+  ],
+  "execution_order": [
+    "定位并运行仓库中现有首页，确认当前技术栈、入口文件、样式文件和已有素材",
+    "在2048×1365视口截取当前实现，作为修改前基线",
+    "将当前截图与Hero.jpg叠加，列出位置、尺寸、间距、字体、色彩、透明度、阴影和素材差异",
+    "优先通过现有CSS与布局参数逐项修正，不改变功能与信息架构",
+    "从Home.png裁切并清理确实需要替换的独立透明素材，接入现有素材目录",
+    "仅在现有DOM无法满足参考图时进行最小必要结构调整",
+    "每轮修改后重新截图叠加比对，按照视觉影响从大到小持续校准",
+    "运行现有项目检查功能与控制台，确保视觉精修未引入回归",
+    "达到验收标准后提交对现有页面的修改，不额外创建新页面或新设计方案"
+  ]
+}
