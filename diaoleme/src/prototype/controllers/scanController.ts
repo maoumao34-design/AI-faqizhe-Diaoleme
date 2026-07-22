@@ -1,3 +1,8 @@
+import {
+  SCAN_WAIT_COPY,
+  scanFailureMessage,
+  startSlowWaitFeedback,
+} from '../../services/apiWaitFeedback'
 import { analyzePhoto, MAX_IMAGE_SIZE_BYTES, validateImageFile } from '../../services/model'
 import { useUserStore } from '../../store/UserStore'
 import type { AnalysisResult } from '../../types'
@@ -21,6 +26,7 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
   let selectedFile: File | null = null
   let previewUrl: string | null = null
   let cameraStream: MediaStream | null = null
+  let analyzing = false
 
   const prepareInput = (input: HTMLInputElement, capture = false) => {
     input.type = 'file'
@@ -33,6 +39,10 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
   prepareInput(cameraInput, true)
   prepareInput(galleryInput)
 
+  const clearRetryAction = () => {
+    scanCard?.querySelector('[data-analysis-retry]')?.remove()
+  }
+
   const setStatus = (message: string, tone: 'idle' | 'error' | 'success' = 'idle') => {
     const existing = scanCard?.querySelector<HTMLElement>('[data-analysis-status]')
     const status = existing || document.createElement('p')
@@ -40,7 +50,25 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
     status.textContent = message
     status.style.color = tone === 'error' ? '#ff7a2f' : tone === 'success' ? '#65c982' : '#65709e'
     status.style.fontWeight = '800'
+    status.style.lineHeight = '1.45'
+    status.style.maxWidth = '28rem'
+    status.style.margin = '12px auto 0'
     if (!existing) scanCard?.appendChild(status)
+  }
+
+  const showRetryAction = (label = '再试一次') => {
+    clearRetryAction()
+    if (!scanCard || !selectedFile) return
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'cta ghost'
+    btn.dataset.analysisRetry = 'true'
+    btn.textContent = label
+    btn.style.marginTop = '10px'
+    btn.addEventListener('click', () => {
+      void runAnalysis()
+    })
+    scanCard.appendChild(btn)
   }
 
   const showPreview = (file: File) => {
@@ -68,6 +96,7 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
       percent.style.zIndex = '4'
     }
     if (completeBtn) completeBtn.style.display = ''
+    clearRetryAction()
     setStatus(`已选择：${file.name}，点击“完成”确认并开始 AI 分析。`)
   }
 
@@ -154,34 +183,54 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
   }
 
   const runAnalysis = async () => {
+    if (analyzing) return
     if (!selectedFile) {
       chooseFile()
       setStatus('请先选择或拍摄一张图片。')
       return
     }
+    analyzing = true
+    clearRetryAction()
     scanBtn && (scanBtn.disabled = true)
     uploadBtn && (uploadBtn.disabled = true)
     completeBtn && (completeBtn.disabled = true)
-    setStatus('分析中，正在调用后端 AI 代理...')
     let value = 10
     if (percent) percent.textContent = '10%'
     const timer = window.setInterval(() => {
       value = Math.min(value + 8, 96)
       if (percent) percent.textContent = `${value}%`
     }, 140)
+    const waitFeedback = startSlowWaitFeedback((phase) => {
+      setStatus(SCAN_WAIT_COPY[phase])
+    })
     try {
       const result = await analyzePhoto(selectedFile)
+      waitFeedback.clear()
       saveAnalysisResult(result)
       window.clearInterval(timer)
       renderAnalysisCard(root, result)
       options.renderStatefulSections()
-      setStatus(result.fallback_code ? '已生成 fallback 结果，可继续演示完整流程。' : 'AI 分析完成，结果已写入报告和历史记录。', 'success')
+      if (result.fallback_code === 'BACKEND_UNREACHABLE') {
+        setStatus(
+          '暂时连不上分析服务，已用本地兜底继续演示（非真实 AI）。可点「再试一次」等服务醒来后再分析。',
+          'success',
+        )
+        showRetryAction('再试一次（等服务醒来）')
+      } else if (result.fallback_code) {
+        setStatus(`已生成明确兜底结果（${result.fallback_code}），可继续演示完整流程。`, 'success')
+        showRetryAction('再试一次')
+      } else {
+        setStatus('AI 分析完成，结果已写入报告和历史记录。', 'success')
+      }
     } catch (error) {
       console.error('[prototype] analyze failed:', error)
+      waitFeedback.clear()
       window.clearInterval(timer)
       if (percent) percent.textContent = '失败'
-      setStatus('分析接口暂时不可用，请稍后重试。', 'error')
+      setStatus(scanFailureMessage('unknown'), 'error')
+      showRetryAction()
     } finally {
+      analyzing = false
       scanBtn && (scanBtn.disabled = false)
       uploadBtn && (uploadBtn.disabled = false)
       completeBtn && (completeBtn.disabled = false)

@@ -1,9 +1,10 @@
 import axios from 'axios'
 import type { AnalysisResult, AnalysisSource } from '../types'
 import type { ReportRecord } from '../store/UserStore'
+import { chatFallbackReply } from './apiWaitFeedback'
 import { CHAT_API_CONFIG, MODEL_API_CONFIG, RECORDS_API_CONFIG } from './config'
 
-export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
+export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail' | 'mock-slow' | 'mock-slow-fail'
 
 
 export interface ChatMessage {
@@ -113,9 +114,9 @@ export async function chatWithAssistant(
     if (axios.isAxiosError(err) && err.response?.data) {
       return normalizeChatResponse(err.response.data)
     }
-    console.warn('[model] 聊天接口不可达，返回本地客服兜底。', err)
+    console.warn('[model] 聊天接口暂不可达，返回本地客服兜底。', err)
     return {
-      reply: '我现在暂时连不上后端 AI，但可以先陪你记录：今天先完成一次轻量 Scan，再根据结果选择一个小任务就好。',
+      reply: chatFallbackReply('CHAT_BACKEND_UNREACHABLE'),
       source: 'fallback',
       source_label: '本地聊天 fallback（非真实 AI）',
       fallback_code: 'CHAT_BACKEND_UNREACHABLE',
@@ -287,6 +288,17 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
     throw new Error('mock_fail')
   }
 
+  // Demo: simulate Render cold-start delay so UI can show >3s wait copy (AIFA-86).
+  if (mode === 'mock-slow') {
+    await wait(4500)
+    return mockResult(uploadFile, 'mock')
+  }
+
+  if (mode === 'mock-slow-fail') {
+    await wait(4500)
+    throw new Error('mock_fail')
+  }
+
   if (mode === 'mock-success') {
     return mockResult(uploadFile, 'mock')
   }
@@ -329,6 +341,8 @@ export function getAnalyzeMode(): AnalyzeMode {
   const mode = params?.get('mock')
   if (mode === 'success') return 'mock-success'
   if (mode === 'fail') return 'mock-fail'
+  if (mode === 'slow') return 'mock-slow'
+  if (mode === 'slow-fail') return 'mock-slow-fail'
   return 'auto'
 }
 

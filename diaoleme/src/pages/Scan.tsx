@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import StickerCard from '../components/Layout/StickerCard'
 import { useUserStore } from '../store/UserStore'
+import { SCAN_WAIT_COPY, scanFailureMessage, startSlowWaitFeedback } from '../services/apiWaitFeedback'
 import { MAX_IMAGE_SIZE_BYTES, analyzePhoto, validateImageFile } from '../services/model'
 
 const MAX_IMAGE_SIZE_MB = Math.round(MAX_IMAGE_SIZE_BYTES / 1024 / 1024)
@@ -37,6 +38,7 @@ export default function Scan() {
   const nav = useNavigate()
   const setAnalysis = useUserStore((s) => s.setAnalysis)
   const [busy, setBusy] = useState(false)
+  const [busyHint, setBusyHint] = useState(SCAN_WAIT_COPY.immediate)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -86,7 +88,11 @@ export default function Scan() {
     }
 
     setBusy(true)
+    setBusyHint(SCAN_WAIT_COPY.immediate)
     setErrorMsg(null)
+    const waitFeedback = startSlowWaitFeedback((phase) => {
+      setBusyHint(SCAN_WAIT_COPY[phase])
+    })
     try {
       const result = await analyzePhoto(selectedFile)
       setAnalysis(result)
@@ -113,8 +119,9 @@ export default function Scan() {
       nav('/tab/report')
     } catch (err: any) {
       console.error('[scan] analyzePhoto failed:', err)
-      setErrorMsg('分析接口暂时打盹了，请稍后重试，或用 ?mock=success 演示成功兜底。')
+      setErrorMsg(scanFailureMessage('unknown'))
     } finally {
+      waitFeedback.clear()
       setBusy(false)
     }
   }
@@ -185,6 +192,12 @@ export default function Scan() {
             </div>
           </div>
 
+          {busy && (
+            <p className="relative z-10 mt-4 text-sm leading-relaxed text-coffee/65">
+              {busyHint}
+            </p>
+          )}
+
           <h3 className="mt-5 font-display text-xl text-coffee">请将头发平铺在对比清晰的背景上</h3>
           <p className="mt-2 text-sm text-coffee/55">确保光线充足，避免阴影和反光</p>
 
@@ -229,7 +242,7 @@ export default function Scan() {
           className="mt-3 w-full active:scale-[0.98] transition-all font-medium py-4 rounded-2xl flex items-center justify-center gap-2 bg-moss text-coffee shadow-md shadow-moss/25 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? <Loader2 size={19} className="animate-spin" /> : <ImagePlus size={19} />}
-          {busy ? '分析中，黏土小人正在眯眼观察...' : '完成'}
+          {busy ? '分析中…' : '完成'}
         </button>
 
         {selectedFile && !busy && (

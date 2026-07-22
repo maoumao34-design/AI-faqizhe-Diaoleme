@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { buildReportContext, chatWithAssistant, fetchHistoryRecords, HAIRSTYLE_CATALOG } from './services/model'
+import { CHAT_WAIT_COPY, chatFallbackReply, startSlowWaitFeedback } from './services/apiWaitFeedback'
 import { useUserStore, type ReportRecord } from './store/UserStore'
 import type { ChatMessage } from './services/model'
 import { prototypeBody } from './prototype/PrototypeBody'
@@ -755,8 +756,9 @@ function attachChatAssistant(root: HTMLElement) {
   let startY = 0
   let startLeft = 0
   let startTop = 0
+  let sending = false
   // Transient wait copy only — keep it light; not product/system policy language.
-  const thinkingPlaceholder = '头发丝正在认真想…'
+  let thinkingPlaceholder = CHAT_WAIT_COPY.immediate
   const renderMessages = () => {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
@@ -821,22 +823,47 @@ function attachChatAssistant(root: HTMLElement) {
   const onSubmit = async (event: SubmitEvent) => {
     event.preventDefault()
     const text = input.value.trim()
-    if (!text) return
+    if (!text || sending) return
+    sending = true
     input.value = ''
+    input.disabled = true
+    const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]')
+    if (submitBtn) submitBtn.disabled = true
+    thinkingPlaceholder = CHAT_WAIT_COPY.immediate
     messages.push({ role: 'user', content: text }, { role: 'assistant', content: thinkingPlaceholder })
     renderMessages()
+    const waitFeedback = startSlowWaitFeedback((phase) => {
+      thinkingPlaceholder = CHAT_WAIT_COPY[phase]
+      const last = messages[messages.length - 1]
+      if (last?.role === 'assistant') {
+        last.content = thinkingPlaceholder
+        renderMessages()
+      }
+    })
     try {
       // AIFA-68: attach this week's local Scan reports (not last-5 / not shared API dump).
       const reportContext = buildReportContext(useUserStore.getState().reportHistory)
       const outbound = messages
-        .filter((m) => !(m.role === 'assistant' && m.content === thinkingPlaceholder))
+        .filter((m) => !(m.role === 'assistant' && Object.values(CHAT_WAIT_COPY).includes(m.content)))
         .slice(-8)
       const result = await chatWithAssistant(outbound, { reportContext })
-      messages[messages.length - 1] = { role: 'assistant', content: result.reply }
+      const reply = result.fallback_code === 'CHAT_BACKEND_UNREACHABLE'
+        ? chatFallbackReply(result.fallback_code)
+        : result.reply
+      messages[messages.length - 1] = { role: 'assistant', content: reply }
     } catch {
-      messages[messages.length - 1] = { role: 'assistant', content: '我这边暂时没有连上 AI 服务，先给你一个小建议：今天先完成一次记录，再选一个最轻量的任务。' }
+      messages[messages.length - 1] = {
+        role: 'assistant',
+        content: chatFallbackReply('CHAT_BACKEND_UNREACHABLE'),
+      }
+    } finally {
+      waitFeedback.clear()
+      sending = false
+      input.disabled = false
+      if (submitBtn) submitBtn.disabled = false
+      input.focus()
+      renderMessages()
     }
-    renderMessages()
   }
   renderMessages()
   bubble.addEventListener('pointerdown', onPointerDown)
@@ -3758,6 +3785,11 @@ const integrationStyle = `
     color: #fff;
     font-weight: 900;
     cursor: pointer;
+  }
+  .ai-chat-form button:disabled,
+  .ai-chat-form input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
   @media (max-width: 720px) {
     .ai-chat-widget {
