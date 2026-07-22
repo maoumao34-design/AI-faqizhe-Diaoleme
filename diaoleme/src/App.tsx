@@ -2838,6 +2838,18 @@ const integrationStyle = `
     margin-top: 8px;
   }
 
+  [data-page="rewards"] .growth-reward b {
+    color: #5b6294;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 2px;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+  }
+
   [data-page="rewards"] .growth-reward span {
     color: #8a90bb;
     font-size: 10px;

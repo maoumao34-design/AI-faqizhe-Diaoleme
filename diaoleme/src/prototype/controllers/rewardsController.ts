@@ -31,6 +31,22 @@ export const REWARD_MARKET_ITEMS: Array<{
 
 export type RewardMarketItem = (typeof REWARD_MARKET_ITEMS)[number]
 
+/** Demo 用成长等级奖励：多造几条，保证横向滑动可看完全部 */
+const GROWTH_LEVEL_REWARDS: Array<{ level: number; name: string; image: string }> = [
+  { level: 1, name: '樱花发箍', image: `${REWARD_ASSET_BASE}reward-flower.svg` },
+  { level: 2, name: '星光泡泡', image: `${REWARD_ASSET_BASE}reward-starlight.svg` },
+  { level: 3, name: '生发精华', image: `${REWARD_ASSET_BASE}reward-serum.svg` },
+  { level: 4, name: '蘑菇小帽', image: `${REWARD_ASSET_BASE}reward-healing.svg` },
+  { level: 5, name: '护发礼盒', image: `${REWARD_ASSET_BASE}reward-gift.svg` },
+  { level: 6, name: '蒲公英灯', image: `${REWARD_ASSET_BASE}reward-lamp.svg` },
+  { level: 7, name: '嫩芽发型', image: `${REWARD_ASSET_BASE}reward-sprout.svg` },
+  { level: 8, name: '按摩木梳', image: `${REWARD_ASSET_BASE}reward-brush.svg` },
+  { level: 9, name: '银河披风', image: `${REWARD_ASSET_BASE}reward-cape.svg` },
+  { level: 10, name: '7天特权', image: `${REWARD_ASSET_BASE}reward-vip.svg` },
+  { level: 11, name: '花瓣发卡', image: `${REWARD_ASSET_BASE}reward-flower.svg` },
+  { level: 12, name: '星尘徽章', image: `${REWARD_ASSET_BASE}reward-starlight.svg` },
+]
+
 type RewardPurchaseRecord = {
   id: string
   name: string
@@ -185,13 +201,16 @@ export function renderRewards(root: HTMLElement) {
     </button>`
   }).join(''))
 
-  setHtml(root.querySelector('#rewardsGrowth'), [1, 2, 3, 4, 5].map((lv) => {
-    const reached = level.level >= lv
-    const image = REWARD_MARKET_ITEMS[lv - 1]?.image || `${REWARD_ASSET_BASE}reward-sprout.svg`
+  setHtml(root.querySelector('#rewardsGrowth'), GROWTH_LEVEL_REWARDS.map((reward) => {
+    const reached = level.level >= reward.level
+    const status = reached
+      ? (level.level > reward.level ? '已领取' : '当前等级')
+      : `差 ${Math.max(0, reward.level * XP_PER_LEVEL - s.points)} XP`
     return `<button type="button" class="growth-reward ${reached ? 'active' : ''}">
-      <img src="${escapeHtml(image)}" alt="Lv.${lv} 奖励">
-      <strong>Lv.${lv}</strong>
-      <span>${reached ? (level.level > lv ? '已领取' : '当前等级') : `差 ${Math.max(0, lv * XP_PER_LEVEL - s.points)} XP`}</span>
+      <img src="${escapeHtml(reward.image)}" alt="Lv.${reward.level} ${escapeHtml(reward.name)}">
+      <strong>Lv.${reward.level}</strong>
+      <b>${escapeHtml(reward.name)}</b>
+      <span>${escapeHtml(status)}</span>
     </button>`
   }).join(''))
 
