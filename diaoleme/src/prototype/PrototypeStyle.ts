@@ -273,8 +273,8 @@ export const prototypeStyle = `
 
   body.on-home .topbar {
     position: absolute;
-    top: 28px;
-    right: 40px;
+    top: 42px;
+    right: 48px;
     left: auto;
     z-index: 30;
     margin: 0;
@@ -1229,8 +1229,8 @@ export const prototypeStyle = `
 
   .home-page .hero-copy {
     position: absolute;
-    left: 78px;
-    top: 148px;
+    left: 98px;
+    top: 130px;
     width: 520px;
     z-index: 5;
   }
@@ -1393,10 +1393,10 @@ export const prototypeStyle = `
 
   .home-page .hero-scene {
     position: absolute;
-    left: 648px;
-    top: 60px;
-    width: 700px;
-    height: 720px;
+    left: 620px;
+    top: 40px;
+    width: 720px;
+    height: 740px;
     z-index: 2;
     pointer-events: none;
   }
@@ -1416,8 +1416,8 @@ export const prototypeStyle = `
 
   .home-page .seed-report {
     position: absolute;
-    left: 1408px;
-    top: 180px;
+    left: 1390px;
+    top: 160px;
     width: 340px;
     height: 480px;
     z-index: 6;
@@ -1483,9 +1483,9 @@ export const prototypeStyle = `
 
   .home-page .home-dashboard {
     position: absolute;
-    left: 36px;
-    right: 40px;
-    top: 760px;
+    left: 48px;
+    right: 48px;
+    top: 740px;
     height: 300px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
