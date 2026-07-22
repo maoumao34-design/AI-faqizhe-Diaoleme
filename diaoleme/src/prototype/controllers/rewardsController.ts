@@ -179,7 +179,7 @@ export function renderRewards(root: HTMLElement) {
       return `<button type="button" data-action="checkin"><img class="gift-circle" src="${REWARD_ASSET_BASE}gift-day.svg" alt="礼物"><small>${day}</small></button>`
     }
     const mark = done
-      ? `<span class="check-circle done" aria-label="已打卡">✓</span>`
+      ? `<span class="check-circle done" aria-label="已打卡"><svg class="check-mark" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M3.2 8.2l3.2 3.2 6.4-6.8"/></svg></span>`
       : `<span class="check-circle pending" aria-label="未打卡"></span>`
     return `<div>${mark}<small>${day}</small></div>`
   }).join(''))
