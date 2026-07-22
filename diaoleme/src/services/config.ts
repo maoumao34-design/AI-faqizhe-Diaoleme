@@ -61,7 +61,8 @@ export const MODEL_API_CONFIG = {
 
 export const CHAT_API_CONFIG = {
   url: appendChatPath(resolveApiUrl()),
-  timeout: 45000,
+  /** Align with backend OPENAI_TIMEOUT_MS default (90s) so cold start ≠ silent local fallback. */
+  timeout: 90000,
 }
 
 /** Canonical history API (AIFA-30): GET /api/records — no /api/history. */

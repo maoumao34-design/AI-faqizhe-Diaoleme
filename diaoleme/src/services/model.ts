@@ -11,6 +11,17 @@ export interface ChatMessage {
   content: string
 }
 
+/** Summary rows for POST /api/chat `report_context` (AIFA-50/52). Max 5 on the wire. */
+export interface ReportContextItem {
+  date: string
+  title: string
+  score: number
+  summary: string
+  score_delta?: number
+  daily_task?: string
+  tags?: string[]
+}
+
 export interface ChatResult {
   reply: string
   source: AnalysisSource
@@ -18,9 +29,50 @@ export interface ChatResult {
   fallback_code: string | null
 }
 
-export async function chatWithAssistant(messages: ChatMessage[]): Promise<ChatResult> {
+/** Build assistant report_context from local zustand reportHistory (not shared GET /api/records). */
+export function buildReportContext(history: ReportRecord[], limit = 5): ReportContextItem[] {
+  const max = Math.max(0, Math.min(5, limit))
+  return history.slice(0, max).map((row) => {
+    const item: ReportContextItem = {
+      date: row.date,
+      title: row.title,
+      score: row.score,
+      summary: row.summary,
+    }
+    if (typeof row.score_delta === 'number') item.score_delta = row.score_delta
+    if (row.daily_task?.trim()) item.daily_task = row.daily_task.trim()
+    if (Array.isArray(row.tags) && row.tags.length) item.tags = row.tags.slice(0, 4).map(String)
+    return item
+  })
+}
+
+export async function chatWithAssistant(
+  messages: ChatMessage[],
+  reportContext?: ReportContextItem[],
+): Promise<ChatResult> {
   try {
-    const resp = await axios.post(CHAT_API_CONFIG.url, { messages }, { timeout: CHAT_API_CONFIG.timeout })
+    // Live openai_compatible Responses upstream rejects assistant-role turns in
+    // `input` (UPSTREAM_FAILED ~10–90s). Pages widget always keeps a greeting
+    // assistant bubble locally — send user turns only so real AI still works
+    // against the current Render deploy without waiting on a backend redeploy.
+    const userMessages = messages
+      .filter((m) => m.role === 'user' && m.content.trim())
+      .slice(-8)
+    const latest = userMessages[userMessages.length - 1]
+    if (!latest) {
+      return {
+        reply: '先随便说一句想聊的内容就好，我在这儿陪你轻松记录。',
+        source: 'fallback',
+        source_label: '本地聊天 fallback（非真实 AI）',
+        fallback_code: 'EMPTY_MESSAGE',
+      }
+    }
+    const report_context = Array.isArray(reportContext) ? reportContext.slice(0, 5) : []
+    const resp = await axios.post(
+      CHAT_API_CONFIG.url,
+      { messages: userMessages, message: latest.content, report_context },
+      { timeout: CHAT_API_CONFIG.timeout },
+    )
     return normalizeChatResponse(resp.data)
   } catch (err) {
     if (axios.isAxiosError(err) && err.response?.data) {
