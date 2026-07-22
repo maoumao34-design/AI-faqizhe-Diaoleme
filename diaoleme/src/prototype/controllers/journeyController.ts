@@ -8,7 +8,9 @@ function formatShortDate(date: string) {
 }
 
 function renderRecordItems(records: ReportRecord[], timeline = false) {
-  if (!records.length) return `<div class="item"><span>📷</span><b>暂无记录<small>上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
+  if (!records.length) {
+    return `<div class="item"><span>📷</span><span class="scan-record-text"><b class="scan-record-title" title="暂无记录">暂无记录</b><small class="scan-record-meta" title="上传图片后会出现在这里。">上传图片后会出现在这里。</small></span><span class="status">--</span></div>`
+  }
   return records.map((r) => {
     const recordId = escapeHtml(r.id)
     const itemAttrs = timeline ? '' : ` data-view-report="${recordId}" role="button" tabindex="0"`
@@ -16,10 +18,14 @@ function renderRecordItems(records: ReportRecord[], timeline = false) {
       ? r.score_delta > 0 ? `↑${r.score_delta}` : r.score_delta < 0 ? `↓${Math.abs(r.score_delta)}` : '→0'
       : null
     const growth = typeof r.exp_added === 'number' && r.exp_added > 0 ? ` · +${r.exp_added}XP` : ''
-    const compareNote = delta
-      ? `<small>${escapeHtml(r.prev_title ? `对比「${r.prev_title}」 ${delta}${growth}` : `较上次 ${delta}${growth}`)}</small>`
-      : `<small>${escapeHtml(r.summary)}</small>`
-    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}${compareNote}</b><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
+    const metaText = delta
+      ? (r.prev_title ? `对比「${r.prev_title}」 ${delta}${growth}` : `较上次 ${delta}${growth}`)
+      : (r.summary || '')
+    const titleText = escapeHtml(r.title)
+    const metaHtml = metaText
+      ? `<small class="scan-record-meta" title="${escapeHtml(metaText)}">${escapeHtml(metaText)}</small>`
+      : ''
+    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><span class="scan-record-text"><b class="scan-record-title" title="${titleText}">${titleText}</b>${metaHtml}</span><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
   }).join('')
 }
 
