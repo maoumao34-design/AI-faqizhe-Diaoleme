@@ -17,16 +17,16 @@ export const REWARD_MARKET_ITEMS: Array<{
   category: string
   unlockId?: string
 }> = [
-  { id: 'flower', name: '樱花发箍', subtitle: '发型装扮', points: 200, image: `${REWARD_ASSET_BASE}reward-flower.png`, category: '发型装扮', unlockId: 'medium' },
-  { id: 'starlight', name: '星光泡泡发型', subtitle: '发型装扮', points: 350, image: `${REWARD_ASSET_BASE}reward-starlight.png`, category: '发型装扮', unlockId: 'curly' },
-  { id: 'serum', name: '生发精华液 30ml', subtitle: '实物好物', points: 480, image: `${REWARD_ASSET_BASE}reward-serum.png`, category: '护发好物' },
-  { id: 'healing', name: '治愈蘑菇帽', subtitle: '陪伴道具', points: 280, image: `${REWARD_ASSET_BASE}reward-healing.png`, category: '陪伴道具' },
-  { id: 'gift', name: '护发礼盒套装', subtitle: '实物好物', points: 650, image: `${REWARD_ASSET_BASE}reward-gift.png`, category: '护发好物' },
-  { id: 'lamp', name: '蒲公英小夜灯', subtitle: '限量周边', points: 320, image: `${REWARD_ASSET_BASE}reward-lamp.png`, category: '定制周边' },
-  { id: 'sprout', name: '嫩芽发型', subtitle: '发型装扮', points: 250, image: `${REWARD_ASSET_BASE}reward-sprout.png`, category: '发型装扮', unlockId: 'long' },
-  { id: 'brush', name: '头皮按摩梳', subtitle: '实物好物', points: 420, image: `${REWARD_ASSET_BASE}reward-brush.png`, category: '护发好物' },
-  { id: 'cape', name: '银河披风', subtitle: '陪伴道具', points: 500, image: `${REWARD_ASSET_BASE}reward-cape.png`, category: '陪伴道具' },
-  { id: 'vip', name: '7天特权卡', subtitle: '成长特权', points: 800, image: `${REWARD_ASSET_BASE}reward-vip.png`, category: '成长特权' },
+  { id: 'flower', name: '樱花发箍', subtitle: '发型装扮', points: 200, image: `${REWARD_ASSET_BASE}reward-flower.svg`, category: '发型装扮', unlockId: 'medium' },
+  { id: 'starlight', name: '星光泡泡发型', subtitle: '发型装扮', points: 350, image: `${REWARD_ASSET_BASE}reward-starlight.svg`, category: '发型装扮', unlockId: 'curly' },
+  { id: 'serum', name: '生发精华液 30ml', subtitle: '实物好物', points: 480, image: `${REWARD_ASSET_BASE}reward-serum.svg`, category: '护发好物' },
+  { id: 'healing', name: '治愈蘑菇帽', subtitle: '陪伴道具', points: 280, image: `${REWARD_ASSET_BASE}reward-healing.svg`, category: '陪伴道具' },
+  { id: 'gift', name: '护发礼盒套装', subtitle: '实物好物', points: 650, image: `${REWARD_ASSET_BASE}reward-gift.svg`, category: '护发好物' },
+  { id: 'lamp', name: '蒲公英小夜灯', subtitle: '限量周边', points: 320, image: `${REWARD_ASSET_BASE}reward-lamp.svg`, category: '定制周边' },
+  { id: 'sprout', name: '嫩芽发型', subtitle: '发型装扮', points: 250, image: `${REWARD_ASSET_BASE}reward-sprout.svg`, category: '发型装扮', unlockId: 'long' },
+  { id: 'brush', name: '头皮按摩梳', subtitle: '实物好物', points: 420, image: `${REWARD_ASSET_BASE}reward-brush.svg`, category: '护发好物' },
+  { id: 'cape', name: '银河披风', subtitle: '陪伴道具', points: 500, image: `${REWARD_ASSET_BASE}reward-cape.svg`, category: '陪伴道具' },
+  { id: 'vip', name: '7天特权卡', subtitle: '成长特权', points: 800, image: `${REWARD_ASSET_BASE}reward-vip.svg`, category: '成长特权' },
 ]
 
 export type RewardMarketItem = (typeof REWARD_MARKET_ITEMS)[number]
@@ -143,9 +143,12 @@ export function renderRewards(root: HTMLElement) {
   setHtml(root.querySelector('#rewardsCheckin'), WEEKDAY_LABELS.map((day, index) => {
     const done = index < Math.min(streak, 6) || (index === 6 && checkedToday && streak >= 7)
     if (index === 6 && !checkedToday) {
-      return `<button type="button" data-action="checkin"><span class="gift-circle">🎁</span><small>${day}</small></button>`
+      return `<button type="button" data-action="checkin"><img class="gift-circle" src="${REWARD_ASSET_BASE}gift-day.svg" alt="礼物"><small>${day}</small></button>`
     }
-    return `<div><span class="check-circle">${done || index < streak ? '✓' : '·'}</span><small>${day}</small></div>`
+    const mark = done || index < streak
+      ? `<img class="check-circle" src="${REWARD_ASSET_BASE}check-day.svg" alt="已打卡">`
+      : `<span class="check-circle pending">·</span>`
+    return `<div>${mark}<small>${day}</small></div>`
   }).join(''))
 
   setHtml(root.querySelector('#shop'), REWARD_MARKET_ITEMS.map((item) => {
@@ -156,7 +159,7 @@ export function renderRewards(root: HTMLElement) {
     return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${ownedItem ? 'disabled' : ''}>
       <div class="reward-image-wrap">
         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
-        ${ownedItem ? '' : '<span class="lock-icon">⌕</span>'}
+        ${ownedItem ? '' : `<img class="lock-icon" src="${REWARD_ASSET_BASE}lock-icon.svg" alt="锁定">`}
       </div>
       <div class="reward-copy">
         <strong>${escapeHtml(item.name)}</strong>
@@ -168,7 +171,7 @@ export function renderRewards(root: HTMLElement) {
 
   setHtml(root.querySelector('#rewardsGrowth'), [1, 2, 3, 4, 5].map((lv) => {
     const reached = level.level >= lv
-    const image = REWARD_MARKET_ITEMS[lv - 1]?.image || `${REWARD_ASSET_BASE}reward-sprout.png`
+    const image = REWARD_MARKET_ITEMS[lv - 1]?.image || `${REWARD_ASSET_BASE}reward-sprout.svg`
     return `<button type="button" class="growth-reward ${reached ? 'active' : ''}">
       <img src="${escapeHtml(image)}" alt="Lv.${lv} 奖励">
       <strong>Lv.${lv}</strong>
@@ -178,7 +181,7 @@ export function renderRewards(root: HTMLElement) {
 
   const purchaseRecords = loadRewardPurchaseRecords()
   setHtml(root.querySelector('#rewardsRecords'), (purchaseRecords.length ? purchaseRecords : [
-    { id: 'empty', name: '还没有兑换记录', date: todayKey(), points: '0 XP', status: '去商城看看', image: `${REWARD_ASSET_BASE}reward-flower.png` },
+    { id: 'empty', name: '还没有兑换记录', date: todayKey(), points: '0 XP', status: '去商城看看', image: `${REWARD_ASSET_BASE}reward-flower.svg` },
   ]).slice(0, 3).map((record) => `
     <div class="record-item">
       <img src="${escapeHtml(record.image)}" alt="${escapeHtml(record.name)}">

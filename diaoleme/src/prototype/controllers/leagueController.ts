@@ -109,61 +109,62 @@ function myLeagueMetricNote(metric: LeagueRankMetric) {
 }
 
 export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeader[] {
-  const profiles = [
-    { name: 'Luna', level: 'Lv.6', tier: '王者 I', tierTone: 'gold' as const, avatarSrc: leagueAvatar('luna') },
-    { name: 'Mia', level: 'Lv.5', tier: '王者 II', tierTone: 'gold' as const, avatarSrc: leagueAvatar('mia') },
-    { name: 'Ray', level: 'Lv.5', tier: '钻石 I', tierTone: 'purple' as const, avatarSrc: leagueAvatar('ray') },
-    { name: 'Sophia', level: 'Lv.5', tier: '钻石 II', tierTone: 'purple' as const, avatarSrc: leagueAvatar('sophia') },
-    { name: 'Bella', level: 'Lv.4', tier: '铂金 I', tierTone: 'blue' as const, avatarSrc: leagueAvatar('bella') },
-    { name: 'Aria', level: 'Lv.4', tier: '铂金 II', tierTone: 'blue' as const, avatarSrc: leagueAvatar('aria') },
-  ]
+  const profileByName = {
+    Luna: { name: 'Luna', level: 'Lv.6', tier: '王者 I', tierTone: 'gold' as const, avatarSrc: leagueAvatar('luna') },
+    Mia: { name: 'Mia', level: 'Lv.5', tier: '王者 II', tierTone: 'gold' as const, avatarSrc: leagueAvatar('mia') },
+    Ray: { name: 'Ray', level: 'Lv.5', tier: '钻石 I', tierTone: 'purple' as const, avatarSrc: leagueAvatar('ray') },
+    Sophia: { name: 'Sophia', level: 'Lv.5', tier: '钻石 II', tierTone: 'purple' as const, avatarSrc: leagueAvatar('sophia') },
+    Bella: { name: 'Bella', level: 'Lv.4', tier: '铂金 I', tierTone: 'blue' as const, avatarSrc: leagueAvatar('bella') },
+    Aria: { name: 'Aria', level: 'Lv.4', tier: '铂金 II', tierTone: 'blue' as const, avatarSrc: leagueAvatar('aria') },
+  } as const
 
-  const metricRows: Record<LeagueRankMetric, Array<{ note: string; points: number; trend: string; trendTone: 'up' | 'down' | 'flat' }>> = {
+  // 各指标独立名次，避免切换榜单时玩家顺序看起来一模一样
+  const metricRows: Record<LeagueRankMetric, Array<{ name: keyof typeof profileByName; note: string; points: number; trend: string; trendTone: 'up' | 'down' | 'flat' }>> = {
     total_xp: [
-      { note: '头发是生命的种子 🌱', points: 28760, trend: '↑ 1', trendTone: 'up' },
-      { note: '每天进步 1% ✨', points: 25480, trend: '↓ 1', trendTone: 'down' },
-      { note: '慢慢来，比较更重要 💜', points: 22140, trend: '—', trendTone: 'flat' },
-      { note: '关注头皮，从现在开始', points: 18900, trend: '↑ 2', trendTone: 'up' },
-      { note: '保持心情愉悦～', points: 16520, trend: '↓ 1', trendTone: 'down' },
-      { note: '爱自己，从发起 ❤️', points: 15320, trend: '—', trendTone: 'flat' },
+      { name: 'Luna', note: '头发是生命的种子 🌱', points: 28760, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Mia', note: '每天进步 1% ✨', points: 25480, trend: '↓ 1', trendTone: 'down' },
+      { name: 'Ray', note: '慢慢来，比较更重要 💜', points: 22140, trend: '—', trendTone: 'flat' },
+      { name: 'Sophia', note: '关注头皮，从现在开始', points: 18900, trend: '↑ 2', trendTone: 'up' },
+      { name: 'Bella', note: '保持心情愉悦～', points: 16520, trend: '↓ 1', trendTone: 'down' },
+      { name: 'Aria', note: '爱自己，从发起 ❤️', points: 15320, trend: '—', trendTone: 'flat' },
     ],
     hair_care: [
-      { note: '本周平均状态分 96', points: 96, trend: '↑ 2', trendTone: 'up' },
-      { note: '光线稳、角度好，记录很轻松', points: 93, trend: '↑ 1', trendTone: 'up' },
-      { note: '连续 5 次保持 90+', points: 91, trend: '—', trendTone: 'flat' },
-      { note: '洗护节奏稳定', points: 88, trend: '↓ 1', trendTone: 'down' },
-      { note: '记录质量持续提升', points: 85, trend: '↑ 3', trendTone: 'up' },
-      { note: '保持轻松观察就好', points: 82, trend: '—', trendTone: 'flat' },
+      { name: 'Sophia', note: '本周平均状态分 96', points: 96, trend: '↑ 2', trendTone: 'up' },
+      { name: 'Aria', note: '光线稳、角度好，记录很轻松', points: 93, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Luna', note: '连续 5 次保持 90+', points: 91, trend: '—', trendTone: 'flat' },
+      { name: 'Bella', note: '洗护节奏稳定', points: 88, trend: '↓ 1', trendTone: 'down' },
+      { name: 'Mia', note: '记录质量持续提升', points: 85, trend: '↑ 3', trendTone: 'up' },
+      { name: 'Ray', note: '保持轻松观察就好', points: 82, trend: '—', trendTone: 'flat' },
     ],
     active_star: [
-      { note: '本周完成 42 个任务', points: 42, trend: '↑ 1', trendTone: 'up' },
-      { note: '每日任务全点亮', points: 38, trend: '↑ 2', trendTone: 'up' },
-      { note: '成长任务推进很快', points: 35, trend: '—', trendTone: 'flat' },
-      { note: '特别任务也不落下', points: 31, trend: '↓ 1', trendTone: 'down' },
-      { note: '每周任务完成率 90%', points: 28, trend: '↑ 1', trendTone: 'up' },
-      { note: '任务节奏刚刚好', points: 24, trend: '—', trendTone: 'flat' },
+      { name: 'Ray', note: '本周完成 42 个任务', points: 42, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Bella', note: '每日任务全点亮', points: 38, trend: '↑ 2', trendTone: 'up' },
+      { name: 'Mia', note: '成长任务推进很快', points: 35, trend: '—', trendTone: 'flat' },
+      { name: 'Aria', note: '特别任务也不落下', points: 31, trend: '↓ 1', trendTone: 'down' },
+      { name: 'Sophia', note: '每周任务完成率 90%', points: 28, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Luna', note: '任务节奏刚刚好', points: 24, trend: '—', trendTone: 'flat' },
     ],
     streak: [
-      { note: '连续打卡 46 天', points: 46, trend: '↑ 1', trendTone: 'up' },
-      { note: '连续打卡 39 天', points: 39, trend: '—', trendTone: 'flat' },
-      { note: '连续打卡 33 天', points: 33, trend: '↑ 2', trendTone: 'up' },
-      { note: '连续打卡 27 天', points: 27, trend: '↓ 1', trendTone: 'down' },
-      { note: '连续打卡 21 天', points: 21, trend: '↑ 1', trendTone: 'up' },
-      { note: '连续打卡 18 天', points: 18, trend: '—', trendTone: 'flat' },
+      { name: 'Aria', note: '连续打卡 46 天', points: 46, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Sophia', note: '连续打卡 39 天', points: 39, trend: '—', trendTone: 'flat' },
+      { name: 'Bella', note: '连续打卡 33 天', points: 33, trend: '↑ 2', trendTone: 'up' },
+      { name: 'Ray', note: '连续打卡 27 天', points: 27, trend: '↓ 1', trendTone: 'down' },
+      { name: 'Luna', note: '连续打卡 21 天', points: 21, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Mia', note: '连续打卡 18 天', points: 18, trend: '—', trendTone: 'flat' },
     ],
     kindness: [
-      { note: '本周帮助伙伴 36 次', points: 36, trend: '↑ 3', trendTone: 'up' },
-      { note: '给队友点赞从不缺席', points: 31, trend: '↑ 1', trendTone: 'up' },
-      { note: '联盟里最会鼓励人', points: 28, trend: '—', trendTone: 'flat' },
-      { note: '分享任务小技巧', points: 24, trend: '↓ 1', trendTone: 'down' },
-      { note: '暖心留言达人', points: 21, trend: '↑ 2', trendTone: 'up' },
-      { note: '默默给大家加能量', points: 17, trend: '—', trendTone: 'flat' },
+      { name: 'Mia', note: '本周帮助伙伴 36 次', points: 36, trend: '↑ 3', trendTone: 'up' },
+      { name: 'Ray', note: '给队友点赞从不缺席', points: 31, trend: '↑ 1', trendTone: 'up' },
+      { name: 'Aria', note: '联盟里最会鼓励人', points: 28, trend: '—', trendTone: 'flat' },
+      { name: 'Luna', note: '分享任务小技巧', points: 24, trend: '↓ 1', trendTone: 'down' },
+      { name: 'Sophia', note: '暖心留言达人', points: 21, trend: '↑ 2', trendTone: 'up' },
+      { name: 'Bella', note: '默默给大家加能量', points: 17, trend: '—', trendTone: 'flat' },
     ],
   }
 
   const rows = metricRows[metric]
-  const leaders = profiles.map((profile, index) => {
-    const row = rows[index]
+  const leaders: LeagueLeader[] = rows.map((row, index) => {
+    const profile = profileByName[row.name]
     return {
       rank: index + 1,
       name: profile.name,

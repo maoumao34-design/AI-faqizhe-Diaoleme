@@ -8,14 +8,14 @@ export const rewardsSection = `<section class="page" data-page="rewards">
                   <p data-rewards-next-level>距离下一等级还需 -- XP</p>
                   <div class="rewards-level-progress"><i data-rewards-level-fill style="width:0%"></i></div>
                 </div>
-                <img class="rewards-hero-character" src="./rewards-assets/hero-character.png" alt="蒲公英角色">
+                <img class="rewards-hero-character" src="./rewards-assets/hero-character.svg" alt="蒲公英角色">
                 <div class="rewards-earn-card">
                   <h3>积分获取方式</h3>
                   <ul>
-                    <li><span class="earn-icon amber">★</span><b>完成任务</b><strong>+2 ~ 35 XP</strong></li>
-                    <li><span class="earn-icon green">✓</span><b>每日打卡</b><strong>+5 XP</strong></li>
-                    <li><span class="earn-icon blue">●</span><b>每日建议全完成</b><strong>+10 XP</strong></li>
-                    <li><span class="earn-icon violet">⚑</span><b>参与联盟活动</b><strong>+100 ~ 500 XP</strong></li>
+                    <li><img class="earn-icon" src="./rewards-assets/earn-task-icon.svg" alt=""><b>完成任务</b><strong>+2 ~ 35 XP</strong></li>
+                    <li><img class="earn-icon" src="./rewards-assets/earn-checkin-icon.svg" alt=""><b>每日打卡</b><strong>+5 XP</strong></li>
+                    <li><img class="earn-icon" src="./rewards-assets/earn-growth-icon.svg" alt=""><b>每日建议全完成</b><strong>+10 XP</strong></li>
+                    <li><img class="earn-icon" src="./rewards-assets/earn-league-icon.svg" alt=""><b>参与联盟活动</b><strong>+100 ~ 500 XP</strong></li>
                   </ul>
                 </div>
               </section>
