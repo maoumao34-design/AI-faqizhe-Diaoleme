@@ -3370,8 +3370,128 @@ const integrationStyle = `
     margin-top: 12px;
   }
 
+  [data-page="buddy"] .buddy-dashboard {
+    display: grid;
+    gap: 20px;
+  }
+  [data-page="buddy"] .buddy-row {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
+  }
+  [data-page="buddy"] .buddy-row-top {
+    grid-template-columns: minmax(240px, 0.95fr) minmax(220px, 0.8fr) minmax(260px, 1.15fr);
+    align-items: stretch;
+  }
+  [data-page="buddy"] .buddy-row-mid {
+    grid-template-columns: minmax(0, 1.65fr) minmax(240px, 0.7fr);
+    align-items: stretch;
+  }
+  [data-page="buddy"] .buddy-row-bottom {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  }
+  [data-page="buddy"] .buddy-identity,
+  [data-page="buddy"] .buddy-report,
+  [data-page="buddy"] .buddy-hero-slot,
+  [data-page="buddy"] .buddy-skins,
+  [data-page="buddy"] .buddy-actions {
+    min-width: 0;
+  }
+  [data-page="buddy"] .buddy-identity {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+  }
+  [data-page="buddy"] .buddy-kicker {
+    color: #8b7bb8;
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  [data-page="buddy"] .buddy-identity h2 {
+    font-size: clamp(28px, 2.4vw, 38px);
+    line-height: 1.15;
+    margin: 0;
+  }
+  [data-page="buddy"] .buddy-identity [data-buddy-days] {
+    margin: 8px 0 0;
+  }
+  [data-page="buddy"] .buddy-report {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+  }
+  [data-page="buddy"] .buddy-report-score {
+    align-items: end;
+    display: flex;
+    gap: 10px;
+  }
+  [data-page="buddy"] .buddy-report-score small {
+    color: var(--muted);
+    font-weight: 700;
+    padding-bottom: 8px;
+  }
+  [data-page="buddy"] .buddy-hero-slot {
+    display: grid;
+    padding: 14px;
+  }
+  [data-page="buddy"] .buddy-hero-placeholder {
+    align-content: center;
+    aspect-ratio: 4 / 5;
+    background:
+      radial-gradient(circle at 50% 28%, rgba(255,255,255,.72), transparent 42%),
+      linear-gradient(165deg, #efe7ff 0%, #f7f1ff 42%, #e8f7ef 100%);
+    border-radius: 28px;
+    color: #6f64a8;
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+    min-height: 280px;
+    place-content: center;
+    text-align: center;
+  }
+  [data-page="buddy"] .buddy-hero-placeholder span {
+    font-size: 18px;
+    font-weight: 900;
+  }
+  [data-page="buddy"] .buddy-hero-placeholder small {
+    color: #9085b8;
+    font-weight: 700;
+  }
+  [data-page="buddy"] .buddy-skins {
+    display: grid;
+    gap: 14px;
+    min-height: 0;
+  }
+  [data-page="buddy"] .skin-rail {
+    margin: 0 -4px;
+    overflow-x: auto;
+    padding: 2px 4px 8px;
+  }
+  [data-page="buddy"] .buddy-skins .skin-grid {
+    display: flex;
+    gap: 14px;
+    grid-template-columns: none;
+    min-width: max-content;
+    width: max-content;
+  }
+  [data-page="buddy"] .buddy-skins .skin {
+    flex: 0 0 148px;
+    width: 148px;
+  }
+  [data-page="buddy"] .buddy-actions {
+    display: grid;
+    gap: 12px;
+    grid-auto-rows: 1fr;
+  }
+  [data-page="buddy"] .buddy-actions .item {
+    min-height: 72px;
+  }
   [data-page="buddy"] .metric-row {
-    grid-template-columns: 42px 72px minmax(120px, 1fr) 72px;
+    grid-template-columns: 36px 64px minmax(90px, 1fr) 64px;
   }
   [data-page="buddy"] .skin {
     position: relative;
@@ -3392,11 +3512,11 @@ const integrationStyle = `
   [data-page="buddy"] .buddy-action.feed { background: rgba(255, 122, 47, .10); }
   [data-page="buddy"] .buddy-action.diary { background: rgba(99, 102, 241, .10); }
   [data-page="buddy"] .buddy-action.growth { background: rgba(101, 201, 130, .12); }
-  .buddy-extra-grid {
+  [data-page="buddy"] .buddy-extra-grid {
     display: grid;
     gap: 20px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    margin-top: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    margin-top: 0;
   }
   .buddy-summary-stats,
   .buddy-cheers {
@@ -3427,6 +3547,28 @@ const integrationStyle = `
     justify-content: center;
     margin-right: 8px;
     width: 36px;
+  }
+  @media (max-width: 1180px) {
+    [data-page="buddy"] .buddy-row-top {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    [data-page="buddy"] .buddy-hero-slot {
+      grid-column: 1 / -1;
+    }
+    [data-page="buddy"] .buddy-row-mid,
+    [data-page="buddy"] .buddy-row-bottom,
+    [data-page="buddy"] .buddy-extra-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 760px) {
+    [data-page="buddy"] .buddy-row-top {
+      grid-template-columns: 1fr;
+    }
+    .buddy-summary-stats,
+    .buddy-cheers {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   #checkin .pill,
   #shop .pill,
