@@ -133,6 +133,8 @@ npm run dev
 - 后端 fallback：不配置 key 时，后端返回 `MISSING_API_KEY`，结果页明确显示“不是实时 AI 分析”。
 - 本地 fallback：停止后端后上传，结果页显示 `BACKEND_UNREACHABLE` 和“本地 Demo fallback（非真实 AI）”。
 - 前端演示 mock：URL 加 `?mock=success`，来源显示 `Demo mock 结果`；该模式仅用于演示，不会标成 API 成功。
+- 慢请求演示（AIFA-86）：`?mock=slow` 会先等待约 4.5s，Scan 状态区在 3s 后出现冷启动等待文案。
+- 失败演示：`?mock=fail` 会进入失败态，并提供「再试一次」。
 
 **期望返回 JSON 格式**（在 `src/types/index.ts` 中定义）：
 

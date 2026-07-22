@@ -3,7 +3,7 @@ import type { AnalysisResult, AnalysisSource } from '../types'
 import type { ReportRecord } from '../store/UserStore'
 import { CHAT_API_CONFIG, MODEL_API_CONFIG, RECORDS_API_CONFIG } from './config'
 
-export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail'
+export type AnalyzeMode = 'auto' | 'mock-success' | 'mock-fail' | 'mock-slow'
 
 
 export interface ChatMessage {
@@ -287,6 +287,12 @@ export async function analyzePhoto(file: File, mode: AnalyzeMode = getAnalyzeMod
     throw new Error('mock_fail')
   }
 
+  if (mode === 'mock-slow') {
+    // AIFA-86: simulate Render cold start (>3s) then happy path for demo verification.
+    await wait(4500)
+    return mockResult(uploadFile, 'mock')
+  }
+
   if (mode === 'mock-success') {
     return mockResult(uploadFile, 'mock')
   }
@@ -329,6 +335,7 @@ export function getAnalyzeMode(): AnalyzeMode {
   const mode = params?.get('mock')
   if (mode === 'success') return 'mock-success'
   if (mode === 'fail') return 'mock-fail'
+  if (mode === 'slow') return 'mock-slow'
   return 'auto'
 }
 
