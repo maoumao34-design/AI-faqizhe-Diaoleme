@@ -5,16 +5,16 @@ export const rewardsSection = `<section class="page" data-page="rewards">
                 <div class="rewards-points-copy">
                   <span>我的积分</span>
                   <h2><span data-rewards-points></span><small>XP</small></h2>
-                  <p>距离下一等级还需 2,640 XP</p>
-                  <div class="rewards-level-progress"><i style="width:82%"></i></div>
+                  <p data-rewards-next-level>距离下一等级还需 -- XP</p>
+                  <div class="rewards-level-progress"><i data-rewards-level-fill style="width:0%"></i></div>
                 </div>
                 <img class="rewards-hero-character" src="./rewards-assets/hero-character.png" alt="蒲公英角色">
                 <div class="rewards-earn-card">
                   <h3>积分获取方式</h3>
                   <ul>
-                    <li><span class="earn-icon amber">★</span><b>完成任务</b><strong>+10 ~ 200 XP</strong></li>
-                    <li><span class="earn-icon green">✓</span><b>连续打卡</b><strong>+50 XP</strong></li>
-                    <li><span class="earn-icon blue">●</span><b>成长里程碑</b><strong>+300 XP</strong></li>
+                    <li><span class="earn-icon amber">★</span><b>完成任务</b><strong>+2 ~ 35 XP</strong></li>
+                    <li><span class="earn-icon green">✓</span><b>每日打卡</b><strong>+5 XP</strong></li>
+                    <li><span class="earn-icon blue">●</span><b>每日建议全完成</b><strong>+10 XP</strong></li>
                     <li><span class="earn-icon violet">⚑</span><b>参与联盟活动</b><strong>+100 ~ 500 XP</strong></li>
                   </ul>
                 </div>
@@ -47,15 +47,15 @@ export const rewardsSection = `<section class="page" data-page="rewards">
               <section class="rewards-side-panel overview-panel">
                 <div class="rewards-panel-heading"><strong>积分总览</strong><button type="button">更多详情 ›</button></div>
                 <div class="overview-content">
-                  <div class="points-donut"><div><strong data-rewards-points>12,360</strong><span>总积分</span></div></div>
+                  <div class="points-donut"><div><strong data-rewards-points></strong><span>总积分</span></div></div>
                   <ul class="legend"><li><i class="purple"></i><span>任务奖励</span><b>67%</b></li><li><i class="blue"></i><span>打卡奖励</span><b>18%</b></li><li><i class="orange"></i><span>活动奖励</span><b>10%</b></li><li><i class="gray"></i><span>其他</span><b>5%</b></li></ul>
                 </div>
               </section>
 
               <section class="rewards-side-panel checkin-panel">
-                <div class="rewards-panel-heading"><div><strong>每日签到</strong><span>连续打卡可获得额外分哦！</span></div><b>已连续 7 天</b></div>
-                <div class="checkin-week" id="rewardsCheckin"><div><span class="check-circle">✓</span><small>一</small></div><div><span class="check-circle">✓</span><small>二</small></div><div><span class="check-circle">✓</span><small>三</small></div><div><span class="check-circle">✓</span><small>四</small></div><div><span class="check-circle">✓</span><small>五</small></div><div><span class="check-circle">✓</span><small>六</small></div><button type="button"><span class="gift-circle">🎁</span><small>日</small></button></div>
-                <p>明日签到可得 <b>+50 XP</b></p>
+                <div class="rewards-panel-heading"><div><strong>每日签到</strong><span>连续打卡可获得额外分哦！</span></div><b data-rewards-streak>已连续 0 天</b></div>
+                <div class="checkin-week" id="rewardsCheckin"></div>
+                <p data-rewards-checkin-hint>今日打卡可得 <b>+5 XP</b></p>
               </section>
 
               <section class="rewards-side-panel event-panel">

@@ -18,9 +18,9 @@ export const leagueSection = `<section class="page" data-page="league">
                   <button type="button">🎁 赛季奖励预览</button>
                   <span>我的段位</span>
                   <div class="league-hero-badge">★</div>
-                  <b>钻石 III</b>
-                  <small>⭐ 620 / 1000</small>
-                  <div class="league-hero-progress"><i></i></div>
+                  <b data-league-tier-name>钻石 III</b>
+                  <small data-league-tier-progress>⭐ 0 / 1000</small>
+                  <div class="league-hero-progress"><i data-league-tier-fill style="width:0%"></i></div>
                 </div>
               </section>
               <section class="rank-area">
@@ -40,8 +40,8 @@ export const leagueSection = `<section class="page" data-page="league">
               <section class="league-side-panel alliance-panel">
                 <div class="league-panel-title"><strong>我的联盟</strong><button type="button">查看详情 ›</button></div>
                 <div class="league-alliance-main"><span class="league-shield-placeholder">✦</span><div><b>蒲公英小分队 <em>Lv.6</em></b><span>Lv.5</span></div></div>
-                <div class="league-alliance-stats"><div><span>成员</span><b>28 / 30</b></div><div><span>本周贡献</span><b>3,260 XP</b></div></div>
-                <div class="league-purple-progress"><i></i></div><small class="league-center-note">距离下一等级还需 740 XP</small>
+                <div class="league-alliance-stats"><div><span>成员</span><b>28 / 30</b></div><div><span>本周贡献</span><b data-league-my-contrib>0 XP</b></div></div>
+                <div class="league-purple-progress"><i data-league-alliance-fill style="width:0%"></i></div><small class="league-center-note" data-league-alliance-note>距离下一等级还需 -- XP</small>
               </section>
               <section class="league-side-panel announcement-panel">
                 <div class="league-panel-title"><strong>联盟公告</strong><button type="button">更多 ›</button></div>

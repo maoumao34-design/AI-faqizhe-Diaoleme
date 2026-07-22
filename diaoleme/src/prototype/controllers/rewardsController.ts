@@ -1,65 +1,185 @@
 import { HAIRSTYLE_CATALOG } from '../../services/model'
 import { useUserStore } from '../../store/UserStore'
 import { renderBuddyHairStyles } from './buddyController'
+import { getLevelProgress, todayKey, WEEKDAY_LABELS, XP_PER_LEVEL } from './progress'
 import { escapeHtml, publicAssetUrl, setHtml } from './ui'
 
 const REWARD_ASSET_BASE = publicAssetUrl('rewards-assets/')
-const REWARD_MARKET_ITEMS = [
-  { name: '樱花发箍', subtitle: 'Lv.3 解锁', points: 2000, image: `${REWARD_ASSET_BASE}reward-flower.png`, locked: true, unlockId: 'sakura' },
-  { name: '星光泡泡发型', subtitle: 'Lv.5 解锁', points: 3500, image: `${REWARD_ASSET_BASE}reward-starlight.png`, locked: true, unlockId: 'star' },
-  { name: '生发精华液 30ml', subtitle: '实物好物', points: 4800, image: `${REWARD_ASSET_BASE}reward-serum.png` },
-  { name: '治愈蘑菇帽', subtitle: 'Lv.6 解锁', points: 2800, image: `${REWARD_ASSET_BASE}reward-healing.png`, locked: true },
-  { name: '护发礼盒套装', subtitle: '实物好物', points: 6500, image: `${REWARD_ASSET_BASE}reward-gift.png` },
-  { name: '蒲公英小夜灯', subtitle: '限量周边', points: 3200, image: `${REWARD_ASSET_BASE}reward-lamp.png`, locked: true },
-  { name: '嫩芽发型', subtitle: 'Lv.4 解锁', points: 2500, image: `${REWARD_ASSET_BASE}reward-sprout.png`, locked: true, unlockId: 'sprout' },
-  { name: '头皮按摩梳', subtitle: '实物好物', points: 4200, image: `${REWARD_ASSET_BASE}reward-brush.png` },
-  { name: '银河披风', subtitle: 'Lv.7 解锁', points: 5000, image: `${REWARD_ASSET_BASE}reward-cape.png`, locked: true },
-  { name: '7天特权卡', subtitle: '成长特权', points: 8000, image: `${REWARD_ASSET_BASE}reward-vip.png` },
+const ownedRewardsKey = () => 'diaoleme-owned-rewards'
+const rewardRecordsKey = () => 'diaoleme-reward-purchase-records'
+
+export const REWARD_MARKET_ITEMS: Array<{
+  id: string
+  name: string
+  subtitle: string
+  points: number
+  image: string
+  category: string
+  unlockId?: string
+}> = [
+  { id: 'flower', name: '樱花发箍', subtitle: '发型装扮', points: 200, image: `${REWARD_ASSET_BASE}reward-flower.png`, category: '发型装扮', unlockId: 'medium' },
+  { id: 'starlight', name: '星光泡泡发型', subtitle: '发型装扮', points: 350, image: `${REWARD_ASSET_BASE}reward-starlight.png`, category: '发型装扮', unlockId: 'curly' },
+  { id: 'serum', name: '生发精华液 30ml', subtitle: '实物好物', points: 480, image: `${REWARD_ASSET_BASE}reward-serum.png`, category: '护发好物' },
+  { id: 'healing', name: '治愈蘑菇帽', subtitle: '陪伴道具', points: 280, image: `${REWARD_ASSET_BASE}reward-healing.png`, category: '陪伴道具' },
+  { id: 'gift', name: '护发礼盒套装', subtitle: '实物好物', points: 650, image: `${REWARD_ASSET_BASE}reward-gift.png`, category: '护发好物' },
+  { id: 'lamp', name: '蒲公英小夜灯', subtitle: '限量周边', points: 320, image: `${REWARD_ASSET_BASE}reward-lamp.png`, category: '定制周边' },
+  { id: 'sprout', name: '嫩芽发型', subtitle: '发型装扮', points: 250, image: `${REWARD_ASSET_BASE}reward-sprout.png`, category: '发型装扮', unlockId: 'long' },
+  { id: 'brush', name: '头皮按摩梳', subtitle: '实物好物', points: 420, image: `${REWARD_ASSET_BASE}reward-brush.png`, category: '护发好物' },
+  { id: 'cape', name: '银河披风', subtitle: '陪伴道具', points: 500, image: `${REWARD_ASSET_BASE}reward-cape.png`, category: '陪伴道具' },
+  { id: 'vip', name: '7天特权卡', subtitle: '成长特权', points: 800, image: `${REWARD_ASSET_BASE}reward-vip.png`, category: '成长特权' },
 ]
 
-const REWARD_GROWTH_ITEMS = [
-  { level: 'Lv.1', status: '已领取', image: `${REWARD_ASSET_BASE}reward-sprout.png`, active: true },
-  { level: 'Lv.2', status: '已领取', image: `${REWARD_ASSET_BASE}reward-flower.png`, active: true },
-  { level: 'Lv.3', status: '可领取', image: `${REWARD_ASSET_BASE}reward-gift.png`, active: true },
-  { level: 'Lv.4', status: '差 420 XP', image: `${REWARD_ASSET_BASE}reward-healing.png`, active: false },
-  { level: 'Lv.5', status: '未解锁', image: `${REWARD_ASSET_BASE}reward-starlight.png`, active: false },
-]
+export type RewardMarketItem = (typeof REWARD_MARKET_ITEMS)[number]
 
-const REWARD_RECORDS = [
-  { name: '樱花发箍', date: '2026-07-15', points: '-2,000 XP', status: '已兑换', image: `${REWARD_ASSET_BASE}reward-flower.png` },
-  { name: '护发礼盒', date: '2026-07-12', points: '-6,500 XP', status: '配送中', image: `${REWARD_ASSET_BASE}reward-gift.png` },
-  { name: '头皮按摩梳', date: '2026-07-08', points: '-4,200 XP', status: '已完成', image: `${REWARD_ASSET_BASE}reward-brush.png` },
-]
+type RewardPurchaseRecord = {
+  id: string
+  name: string
+  date: string
+  points: string
+  status: string
+  image: string
+}
+
+export function loadOwnedRewards() {
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(ownedRewardsKey()) || '[]'))
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function saveOwnedRewards(owned: Set<string>) {
+  localStorage.setItem(ownedRewardsKey(), JSON.stringify([...owned]))
+}
+
+export function clearOwnedRewards() {
+  localStorage.removeItem(ownedRewardsKey())
+  localStorage.removeItem(rewardRecordsKey())
+}
+
+function isRewardOwned(item: RewardMarketItem, unlockedHairStyles: string[], owned = loadOwnedRewards()) {
+  if (owned.has(item.id)) return true
+  if (item.unlockId && unlockedHairStyles.includes(item.unlockId)) return true
+  return false
+}
+
+function loadRewardPurchaseRecords(): RewardPurchaseRecord[] {
+  try {
+    return JSON.parse(localStorage.getItem(rewardRecordsKey()) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveRewardPurchaseRecords(records: RewardPurchaseRecord[]) {
+  localStorage.setItem(rewardRecordsKey(), JSON.stringify(records))
+}
+
+export function purchaseReward(item: RewardMarketItem) {
+  const s = useUserStore.getState()
+  const owned = loadOwnedRewards()
+  if (isRewardOwned(item, s.unlockedHairStyles, owned)) {
+    return { ok: false, message: `${item.name} 已经拥有啦` }
+  }
+  if (s.points < item.points) {
+    return { ok: false, message: `积分还差 ${item.points - s.points} XP` }
+  }
+
+  const nextUnlocked = item.unlockId && HAIRSTYLE_CATALOG.some((hair) => hair.id === item.unlockId)
+    ? Array.from(new Set([...s.unlockedHairStyles, item.unlockId]))
+    : s.unlockedHairStyles
+
+  useUserStore.setState({
+    points: s.points - item.points,
+    unlockedHairStyles: nextUnlocked,
+  })
+  owned.add(item.id)
+  saveOwnedRewards(owned)
+
+  const records = loadRewardPurchaseRecords()
+  records.unshift({
+    id: item.id,
+    name: item.name,
+    date: todayKey(),
+    points: `-${item.points.toLocaleString('en-US')} XP`,
+    status: '已兑换',
+    image: item.image,
+  })
+  saveRewardPurchaseRecords(records.slice(0, 20))
+  return { ok: true, message: `已兑换 ${item.name} · -${item.points} XP` }
+}
 
 export function renderRewards(root: HTMLElement) {
   const s = useUserStore.getState()
+  const level = getLevelProgress(s.points)
+  const owned = loadOwnedRewards()
+  const checkedToday = s.checkinDays.includes(todayKey())
+  const streak = s.checkinDays.length
   renderBuddyHairStyles(root)
 
   root.querySelectorAll<HTMLElement>('[data-rewards-points]').forEach((node) => {
     node.textContent = s.points.toLocaleString('en-US')
   })
+
+  const nextLevel = root.querySelector<HTMLElement>('[data-rewards-next-level]')
+  const levelFill = root.querySelector<HTMLElement>('[data-rewards-level-fill]')
+  if (nextLevel) {
+    nextLevel.textContent = level.need > 0
+      ? `距离下一等级还需 ${level.need.toLocaleString('en-US')} XP`
+      : '已达当前演示等级上限'
+  }
+  if (levelFill) levelFill.style.width = `${level.percent}%`
+
+  const streakNode = root.querySelector<HTMLElement>('[data-rewards-streak]')
+  if (streakNode) streakNode.textContent = `已连续 ${streak} 天`
+
+  const checkinHint = root.querySelector<HTMLElement>('[data-rewards-checkin-hint]')
+  if (checkinHint) {
+    checkinHint.innerHTML = checkedToday
+      ? '今日已打卡，积分已同步到 Home / Quests / League'
+      : '今日打卡可得 <b>+5 XP</b>（与 Quests / Me 共用）'
+  }
+
+  setHtml(root.querySelector('#rewardsCheckin'), WEEKDAY_LABELS.map((day, index) => {
+    const done = index < Math.min(streak, 6) || (index === 6 && checkedToday && streak >= 7)
+    if (index === 6 && !checkedToday) {
+      return `<button type="button" data-action="checkin"><span class="gift-circle">🎁</span><small>${day}</small></button>`
+    }
+    return `<div><span class="check-circle">${done || index < streak ? '✓' : '·'}</span><small>${day}</small></div>`
+  }).join(''))
+
   setHtml(root.querySelector('#shop'), REWARD_MARKET_ITEMS.map((item) => {
-    const canUnlockHair = item.unlockId && HAIRSTYLE_CATALOG.some((h) => h.id === item.unlockId)
-    return `<button class="reward-card" type="button" ${canUnlockHair ? `data-unlock-id="${escapeHtml(item.unlockId)}"` : ''}>
+    const ownedItem = isRewardOwned(item, s.unlockedHairStyles, owned)
+    const canBuy = !ownedItem && s.points >= item.points
+    const status = ownedItem ? '已拥有' : canBuy ? '可兑换' : `还差 ${item.points - s.points} XP`
+    const stateClass = ownedItem ? 'owned' : canBuy ? 'can-buy' : 'locked'
+    return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${ownedItem ? 'disabled' : ''}>
       <div class="reward-image-wrap">
         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
-        ${item.locked ? '<span class="lock-icon">⌕</span>' : ''}
+        ${ownedItem ? '' : '<span class="lock-icon">⌕</span>'}
       </div>
       <div class="reward-copy">
         <strong>${escapeHtml(item.name)}</strong>
-        <span>${escapeHtml(item.subtitle)}</span>
+        <span>${escapeHtml(status)}</span>
         <b>${item.points.toLocaleString('en-US')} XP</b>
       </div>
     </button>`
   }).join(''))
-  setHtml(root.querySelector('#rewardsGrowth'), REWARD_GROWTH_ITEMS.map((item) => `
-    <button type="button" class="growth-reward ${item.active ? 'active' : ''}">
-      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.level)} 奖励">
-      <strong>${escapeHtml(item.level)}</strong>
-      <span>${escapeHtml(item.status)}</span>
-    </button>
-  `).join(''))
-  setHtml(root.querySelector('#rewardsRecords'), REWARD_RECORDS.map((record) => `
+
+  setHtml(root.querySelector('#rewardsGrowth'), [1, 2, 3, 4, 5].map((lv) => {
+    const reached = level.level >= lv
+    const image = REWARD_MARKET_ITEMS[lv - 1]?.image || `${REWARD_ASSET_BASE}reward-sprout.png`
+    return `<button type="button" class="growth-reward ${reached ? 'active' : ''}">
+      <img src="${escapeHtml(image)}" alt="Lv.${lv} 奖励">
+      <strong>Lv.${lv}</strong>
+      <span>${reached ? (level.level > lv ? '已领取' : '当前等级') : `差 ${Math.max(0, lv * XP_PER_LEVEL - s.points)} XP`}</span>
+    </button>`
+  }).join(''))
+
+  const purchaseRecords = loadRewardPurchaseRecords()
+  setHtml(root.querySelector('#rewardsRecords'), (purchaseRecords.length ? purchaseRecords : [
+    { id: 'empty', name: '还没有兑换记录', date: todayKey(), points: '0 XP', status: '去商城看看', image: `${REWARD_ASSET_BASE}reward-flower.png` },
+  ]).slice(0, 3).map((record) => `
     <div class="record-item">
       <img src="${escapeHtml(record.image)}" alt="${escapeHtml(record.name)}">
       <div><strong>${escapeHtml(record.name)}</strong><span>${escapeHtml(record.date)}</span></div>
