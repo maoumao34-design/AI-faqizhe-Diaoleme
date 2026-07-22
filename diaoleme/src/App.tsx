@@ -715,7 +715,7 @@ function attachChatAssistant(root: HTMLElement) {
   let startLeft = 0
   let startTop = 0
   // Transient wait copy only — keep it light; not product/system policy language.
-  const thinkingPlaceholder = '🌱 稍等，我正在想一个轻松的回复…'
+  const thinkingPlaceholder = '头发丝正在认真想…'
   const renderMessages = () => {
     messagesEl.innerHTML = messages.map((m) => `<div class="ai-chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('')
     messagesEl.scrollTop = messagesEl.scrollHeight
