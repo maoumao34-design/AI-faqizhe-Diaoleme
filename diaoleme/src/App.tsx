@@ -2857,12 +2857,21 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-right-rail {
+    align-items: start;
     display: grid;
     gap: 16px;
   }
 
   [data-page="rewards"] .rewards-side-panel {
     padding: 18px;
+  }
+
+  [data-page="rewards"] .overview-panel {
+    padding: 14px 16px;
+  }
+
+  [data-page="rewards"] .overview-panel .rewards-panel-heading {
+    margin-bottom: 10px;
   }
 
   [data-page="rewards"] .rewards-panel-heading {
@@ -2893,8 +2902,8 @@ const integrationStyle = `
   [data-page="rewards"] .overview-content {
     align-items: center;
     display: grid;
-    gap: 14px;
-    grid-template-columns: 126px 1fr;
+    gap: 10px;
+    grid-template-columns: 96px 1fr;
   }
 
   [data-page="rewards"] .points-donut {
@@ -2902,9 +2911,9 @@ const integrationStyle = `
     background: conic-gradient(#8d6cf6 0 67%, #73a4f6 67% 85%, #f5b35a 85% 95%, #e6e8f4 95% 100%);
     border-radius: 50%;
     display: flex;
-    height: 126px;
+    height: 96px;
     justify-content: center;
-    width: 126px;
+    width: 96px;
   }
 
   [data-page="rewards"] .points-donut div {
@@ -2913,14 +2922,15 @@ const integrationStyle = `
     border-radius: 50%;
     display: flex;
     flex-direction: column;
-    height: 82px;
+    height: 62px;
     justify-content: center;
-    width: 82px;
+    width: 62px;
   }
 
   [data-page="rewards"] .points-donut strong {
     color: #202e76;
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.1;
   }
 
   [data-page="rewards"] .points-donut span {
@@ -2931,7 +2941,7 @@ const integrationStyle = `
 
   [data-page="rewards"] .legend {
     display: grid;
-    gap: 9px;
+    gap: 7px;
     list-style: none;
     margin: 0;
     padding: 0;
