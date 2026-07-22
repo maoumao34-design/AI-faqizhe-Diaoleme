@@ -1,3 +1,9 @@
+/** Resolve public/ assets under Vite `base` (GitHub Pages subdirectory safe). */
+export function publicAssetUrl(path: string) {
+  const base = import.meta.env.BASE_URL || './'
+  return `${base}${String(path).replace(/^\/+/, '')}`
+}
+
 export function setHtml(target: Element | null | undefined, html: string) {
   if (target) target.innerHTML = html
 }
