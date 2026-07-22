@@ -8,18 +8,21 @@ function formatShortDate(date: string) {
 }
 
 function renderRecordItems(records: ReportRecord[], timeline = false) {
-  if (!records.length) return `<div class="item"><span>📷</span><b>暂无记录<small>上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
+  if (!records.length) return `<div class="item"><span>📷</span><b class="scan-record-text"><span class="scan-record-title">暂无记录</span><small class="scan-record-meta">上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
   return records.map((r) => {
     const recordId = escapeHtml(r.id)
     const itemAttrs = timeline ? '' : ` data-view-report="${recordId}" role="button" tabindex="0"`
     const delta = typeof r.score_delta === 'number'
       ? r.score_delta > 0 ? `↑${r.score_delta}` : r.score_delta < 0 ? `↓${Math.abs(r.score_delta)}` : '→0'
       : null
-    const growth = typeof r.exp_added === 'number' && r.exp_added > 0 ? ` · +${r.exp_added}XP` : ''
-    const compareNote = delta
-      ? `<small>${escapeHtml(r.prev_title ? `对比「${r.prev_title}」 ${delta}${growth}` : `较上次 ${delta}${growth}`)}</small>`
-      : `<small>${escapeHtml(r.summary)}</small>`
-    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b>${escapeHtml(r.title)}${compareNote}</b><button class="status" data-view-report="${recordId}">${r.score} 分</button></div>`
+    const growth = typeof r.exp_added === 'number' && r.exp_added > 0 ? `+${r.exp_added}XP` : ''
+    const metaText = delta
+      ? (r.prev_title ? `对比「${r.prev_title}」 ${delta}` : `较上次 ${delta}`)
+      : r.summary
+    const scoreLabel = growth ? `${r.score} 分 · ${growth}` : `${r.score} 分`
+    const titleAttr = escapeHtml(r.title)
+    const metaAttr = escapeHtml(metaText)
+    return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b class="scan-record-text"><span class="scan-record-title" title="${titleAttr}">${escapeHtml(r.title)}</span><small class="scan-record-meta" title="${metaAttr}">${escapeHtml(metaText)}</small></b><button class="status" data-view-report="${recordId}" title="${escapeHtml(scoreLabel)}">${escapeHtml(scoreLabel)}</button></div>`
   }).join('')
 }
 
