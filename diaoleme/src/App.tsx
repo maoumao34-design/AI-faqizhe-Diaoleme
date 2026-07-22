@@ -170,8 +170,11 @@ function attachPrototypeFeatures(root: HTMLElement) {
       const item = REWARD_MARKET_ITEMS.find((entry) => entry.id === rewardBuyBtn.dataset.rewardBuy)
       if (item) {
         const result = purchaseReward(item)
-        showToast(root, result.message)
         render()
+        showToast(root, result.message, {
+          anchorSelector: '[data-page="rewards"] .reward-market',
+          className: 'prototype-toast-shop',
+        })
       }
     }
     if (communityTabBtn?.dataset.communityTab && isCommunityTab(communityTabBtn.dataset.communityTab)) {
@@ -1528,22 +1531,26 @@ const integrationStyle = `
     border-radius: 12px;
     display: grid;
     gap: 10px;
-    grid-template-columns: 28px 1fr;
+    grid-template-columns: 44px 1fr;
     padding: 10px;
   }
 
-  [data-page="league"] .league-tier-road div.done span {
-    background: #7c68e9;
-    color: white;
+  [data-page="league"] .league-tier-road div.done {
+    box-shadow: inset 0 0 0 1px rgba(124, 104, 233, 0.28);
   }
 
-  [data-page="league"] .league-tier-road span {
-    background: #eff0f8;
-    border-radius: 50%;
-    display: grid;
-    height: 24px;
-    place-items: center;
-    width: 24px;
+  [data-page="league"] .league-tier-road-shield,
+  [data-page="league"] .league-tier-current-shield {
+    display: block;
+    height: 42px;
+    object-fit: contain;
+    width: 42px;
+  }
+
+  [data-page="league"] .league-tier-current-shield {
+    height: 88px;
+    margin: 10px auto 4px;
+    width: 88px;
   }
 
   [data-page="league"] .league-tier-road small {
@@ -3021,13 +3028,31 @@ const integrationStyle = `
     position: fixed;
     right: 28px;
     bottom: 28px;
-    z-index: 20;
+    z-index: 80;
     border-radius: 999px;
     padding: 14px 20px;
     background: rgba(19,32,95,.92);
     color: #fff;
     box-shadow: 0 18px 45px rgba(19,32,95,.24);
     font-weight: 800;
+  }
+
+  .prototype-toast-anchored,
+  .prototype-toast-shop {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    max-width: min(320px, calc(100% - 32px));
+    text-align: center;
+    pointer-events: none;
+  }
+
+  [data-page="rewards"] .reward-market {
+    position: relative;
   }
   [data-page="scan"] .scan-wrap {
     align-items: stretch;
