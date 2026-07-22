@@ -1512,7 +1512,7 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-mini-list .avatar-dot + b {
-    margin-left: 2cm;
+    margin-left: 18px;
     min-width: 0;
   }
 
@@ -1586,14 +1586,19 @@ const integrationStyle = `
   [data-page="league"] .league-panel-title {
     align-items: center;
     display: flex;
-    font-size: 12px;
+    font-size: 15px;
     justify-content: space-between;
+  }
+
+  [data-page="league"] .league-panel-title strong {
+    font-size: 15px;
+    font-weight: 850;
   }
 
   [data-page="league"] .league-panel-title button {
     background: transparent;
     color: #8a70e8;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
   }
 
@@ -1672,10 +1677,10 @@ const integrationStyle = `
     background: transparent;
     color: #7f83ac;
     display: grid;
-    font-size: 9px;
+    font-size: 12px;
     gap: 4px;
     grid-template-columns: 1fr auto;
-    height: 31px;
+    min-height: 34px;
     padding: 0;
     text-align: left;
     width: 100%;

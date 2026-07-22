@@ -293,7 +293,7 @@ function renderAllianceTab() {
   const doneCount = QUEST_CATEGORIES.reduce((sum, category) => sum + loadDoneQuests(category).size, 0)
   const cards = [
     ['联盟等级', `Lv.${level.level}`, level.need > 0 ? `距离 Lv.${level.level + 1} 还需 ${level.need} XP` : '已达当前演示等级上限', `${level.percent}%`],
-    ['本周任务', `${doneCount} 个`, '任务完成数已与 Quests 同步', '67%'],
+    ['本周任务', `${doneCount} 个`, doneCount > 0 ? '完成任务可为联盟积累贡献' : '去完成任务，为联盟添一份力', '67%'],
     ['成员活跃', '28 / 30', `${s.checkinDays.length} 天打卡记录已同步`, `${Math.min(100, s.checkinDays.length * 12)}%`],
   ]
   const members = [
