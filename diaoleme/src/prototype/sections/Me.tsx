@@ -7,7 +7,7 @@ export const meSection = `<section class="page" data-page="me">
                 <div>
                   <h2 style="font-size:36px">Me <span class="badge">Lv.5</span></h2>
                   <p>一起变好呀！</p>
-                  <div class="row"><span class="badge">12,360 XP</span><span class="badge">连续 32 天</span></div>
+                  <div class="row"><span class="badge" data-me-points>0 XP</span><span class="badge" data-me-streak>连续 0 天</span></div>
                 </div>
                 <div class="buddy-stage" style="min-height:250px"><div class="ground"></div>${Buddy({ scale: 0.58 })}</div>
               </div>
@@ -17,7 +17,7 @@ export const meSection = `<section class="page" data-page="me">
               </div>
             </div>
             <aside class="grid">
-              <div class="card"><h3>个人统计</h3><div class="three grid"><div><span class="big-number">32</span><br>记录天数</div><div><span class="big-number">1,620</span><br>总 XP</div><div><span class="big-number">12</span><br>连续天数</div></div></div>
+              <div class="card"><h3>个人统计</h3><div class="three grid"><div><span class="big-number" data-me-history-days>0</span><br>记录天数</div><div><span class="big-number" data-me-total-xp>0</span><br>总 XP</div><div><span class="big-number" data-me-streak-count>0</span><br>连续天数</div></div></div>
               <div class="card item-list"><h3>设置</h3><button class="item"><span>🔔</span><b>通知设置<small>管理推送与提醒</small></b><span>›</span></button><button class="item"><span>🎨</span><b>主题外观<small>个性化你的应用</small></b><span>›</span></button><button class="item"><span>📤</span><b>分享应用<small>邀请好友一起护发</small></b><span>›</span></button><button class="item"><span>ℹ️</span><b>关于掉了么<small>版本 1.0.0</small></b><span>›</span></button></div>
             </aside>
           </div>

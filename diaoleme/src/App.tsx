@@ -11,8 +11,19 @@ import { escapeHtml, setHtml, showToast } from './prototype/controllers/ui'
 import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay } from './prototype/controllers/journeyController'
 import { attachPrototypeAnalysis, clearAnalysisCard, currentAnalysisFromStore, renderAnalysisCard } from './prototype/controllers/scanController'
 import { configureQuestController, renderTasks, completeQuest, clearQuestProgress, getQuestCount, isQuestCategory, type QuestCategory } from './prototype/controllers/questsController'
-import { renderRewards } from './prototype/controllers/rewardsController'
-import { buildLeaders, renderLeague, LEAGUE_TABS, type LeagueTab } from './prototype/controllers/leagueController'
+import { renderRewards, purchaseReward, REWARD_MARKET_ITEMS, clearOwnedRewards } from './prototype/controllers/rewardsController'
+import {
+  buildLeaders,
+  renderLeague,
+  LEAGUE_TABS,
+  loadLeagueRankMetric,
+  saveLeagueRankMetric,
+  clearLeagueRankMetric,
+  isLeagueRankMetric,
+  type LeagueTab,
+  type LeagueRankMetric,
+} from './prototype/controllers/leagueController'
+import { getLevelProgress } from './prototype/controllers/progress'
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
 const taskKey = () => `diaoleme-prototype-tasks-${todayKey()}`
@@ -94,10 +105,11 @@ function attachPrototypeFeatures(root: HTMLElement) {
   })
   let activeQuestCategory: QuestCategory = 'daily'
   let activeLeagueTab: LeagueTab = '排行榜'
+  let activeLeagueMetric: LeagueRankMetric = loadLeagueRankMetric()
   let activeCommunityTab: CommunityTab = '最新'
   let activeDiaryMood: DiaryMoodKey = 'all'
   let diaryVisibleCount = 6
-  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeCommunityTab, activeDiaryMood, diaryVisibleCount)
+  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeLeagueMetric, activeCommunityTab, activeDiaryMood, diaryVisibleCount)
   const scanCleanup = attachPrototypeAnalysis(root, {
     renderStatefulSections: render,
   })
@@ -115,12 +127,14 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const target = event.target as HTMLElement
     const categoryBtn = target.closest<HTMLElement>('[data-quest-category]')
     const leagueTabBtn = target.closest<HTMLElement>('[data-league-tab]')
+    const leagueMetricBtn = target.closest<HTMLElement>('[data-league-metric]')
     const communityTabBtn = target.closest<HTMLElement>('[data-community-tab]')
     const diaryMoodBtn = target.closest<HTMLElement>('[data-diary-mood]')
     const diaryLoadMoreBtn = target.closest<HTMLElement>('[data-action="diary-load-more"]')
     const questBtn = target.closest<HTMLElement>('[data-quest-id]')
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
+    const rewardBuyBtn = target.closest<HTMLElement>('[data-reward-buy]')
     const viewReportBtn = target.closest<HTMLElement>('[data-view-report]')
     const viewDayBtn = target.closest<HTMLElement>('[data-view-day]')
     const shareReportBtn = target.closest<HTMLElement>('[data-share-report]')
@@ -146,6 +160,19 @@ function attachPrototypeFeatures(root: HTMLElement) {
       activeLeagueTab = leagueTabBtn.dataset.leagueTab as LeagueTab
       render()
       showToast(root, `已切换至${activeLeagueTab}`)
+    }
+    if (leagueMetricBtn?.dataset.leagueMetric && isLeagueRankMetric(leagueMetricBtn.dataset.leagueMetric)) {
+      activeLeagueMetric = leagueMetricBtn.dataset.leagueMetric
+      saveLeagueRankMetric(activeLeagueMetric)
+      render()
+    }
+    if (rewardBuyBtn?.dataset.rewardBuy) {
+      const item = REWARD_MARKET_ITEMS.find((entry) => entry.id === rewardBuyBtn.dataset.rewardBuy)
+      if (item) {
+        const result = purchaseReward(item)
+        showToast(root, result.message)
+        render()
+      }
     }
     if (communityTabBtn?.dataset.communityTab && isCommunityTab(communityTabBtn.dataset.communityTab)) {
       activeCommunityTab = communityTabBtn.dataset.communityTab
@@ -213,6 +240,9 @@ function attachPrototypeFeatures(root: HTMLElement) {
       if (confirm('重置所有进度、积分、打卡和历史记录？')) {
         useUserStore.getState().resetAll()
         clearQuestProgress()
+        clearOwnedRewards()
+        clearLeagueRankMetric()
+        activeLeagueMetric = 'total_xp'
         clearAnalysisCard(root)
         render()
       }
@@ -262,6 +292,7 @@ function renderStatefulSections(
   root: HTMLElement,
   activeQuestCategory: QuestCategory = 'daily',
   activeLeagueTab: LeagueTab = '排行榜',
+  activeLeagueMetric: LeagueRankMetric = 'total_xp',
   activeCommunityTab: CommunityTab = '最新',
   activeDiaryMood: DiaryMoodKey = 'all',
   diaryVisibleCount = 6,
@@ -278,16 +309,30 @@ function renderStatefulSections(
   renderDiary(root, activeDiaryMood, diaryVisibleCount)
   renderCommunity(root, activeCommunityTab)
   renderRewards(root)
-  renderLeague(root, activeLeagueTab)
+  renderLeague(root, activeLeagueTab, activeLeagueMetric)
   renderProfile(root)
 }
 
 function renderHome(root: HTMLElement) {
   const s = useUserStore.getState()
+  const level = getLevelProgress(s.points)
   setHtml(root.querySelector('.compact-quests'), getSuggestions().slice(0, 4).map((q, i) => `<div class="item" style="grid-template-columns:34px 1fr auto"><span>${['💧', '🌙', '🥗', '🖐'][i] || '✨'}</span><b>${escapeHtml(q)}</b><span class="status">+${i === 0 ? 5 : 2} XP</span></div>`).join(''))
-  setHtml(root.querySelector('.small-leaders'), buildLeaders().slice(0, 4).map((l) => `<div class="leader ${l.isMe ? 'you' : ''}" style="grid-template-columns:34px 1fr auto"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}</b><span>${l.points} XP</span></div>`).join(''))
+  setHtml(root.querySelector('.small-leaders'), buildLeaders().slice(0, 4).map((l) => `<div class="leader ${l.isMe ? 'you' : ''}" style="grid-template-columns:34px 1fr auto"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}</b><span>${escapeHtml(l.scoreText)}</span></div>`).join(''))
   const heroBadges = root.querySelectorAll<HTMLElement>('[data-page="home"] .stats .badge, [data-page="home"] .badge')
   if (heroBadges[0]) heroBadges[0].textContent = `${s.points} XP`
+
+  const homePoints = root.querySelector<HTMLElement>('[data-home-points]')
+  const homeLevel = root.querySelector<HTMLElement>('[data-home-level]')
+  const homeFill = root.querySelector<HTMLElement>('[data-home-level-fill]')
+  const homeNext = root.querySelector<HTMLElement>('[data-home-next-level]')
+  if (homePoints) homePoints.textContent = s.points.toLocaleString('en-US')
+  if (homeLevel) homeLevel.textContent = `Lv.${level.level}`
+  if (homeFill) homeFill.style.setProperty('--w', `${level.percent}%`)
+  if (homeNext) {
+    homeNext.textContent = level.need > 0
+      ? `⭐ 再获得 ${level.need.toLocaleString('en-US')} XP 升级`
+      : '⭐ 已达当前演示等级上限'
+  }
 }
 
 function diaryMoodFromScore(score: number): DiaryDayEntry['mood'] {
@@ -812,8 +857,20 @@ function attachChatAssistant(root: HTMLElement) {
 function renderProfile(root: HTMLElement) {
   const s = useUserStore.getState()
   const checked = s.checkinDays.includes(todayKey())
+  const historyDays = new Set(s.reportHistory.map((item) => item.date)).size
   setHtml(root.querySelector('#streak'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join(''))
   setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
+
+  const mePoints = root.querySelector<HTMLElement>('[data-me-points]')
+  const meStreak = root.querySelector<HTMLElement>('[data-me-streak]')
+  const meHistoryDays = root.querySelector<HTMLElement>('[data-me-history-days]')
+  const meTotalXp = root.querySelector<HTMLElement>('[data-me-total-xp]')
+  const meStreakCount = root.querySelector<HTMLElement>('[data-me-streak-count]')
+  if (mePoints) mePoints.textContent = `${s.points.toLocaleString('en-US')} XP`
+  if (meStreak) meStreak.textContent = `连续 ${s.checkinDays.length} 天`
+  if (meHistoryDays) meHistoryDays.textContent = String(historyDays)
+  if (meTotalXp) meTotalXp.textContent = s.points.toLocaleString('en-US')
+  if (meStreakCount) meStreakCount.textContent = String(s.checkinDays.length)
 }
 
 function getSuggestions() {
@@ -848,17 +905,18 @@ const integrationStyle = `
   }
 
   [data-page="league"] .grid.two-col {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 20px;
+    min-height: 980px;
   }
 
   [data-page="league"] .league-season-hero {
     background: linear-gradient(105deg, #f6dcfa 0%, #e9e2ff 46%, #ded7fb 100%);
-    border-radius: 18px;
+    border-radius: 22px;
     box-shadow: 0 14px 34px rgba(90, 73, 158, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.7);
     display: grid;
-    grid-template-columns: 270px minmax(260px, 1fr) 155px;
-    height: 250px;
+    grid-template-columns: 300px minmax(280px, 1fr) 180px;
+    min-height: 320px;
     overflow: hidden;
     position: relative;
   }
@@ -1072,7 +1130,8 @@ const integrationStyle = `
   }
 
   [data-page="league"] .rank-area {
-    margin-top: 17px;
+    margin-top: 20px;
+    min-height: 560px;
   }
 
   [data-page="league"] .rank-toolbar {
@@ -1128,8 +1187,9 @@ const integrationStyle = `
 
   [data-page="league"] .ranking-layout {
     display: grid;
-    gap: 14px;
-    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 16px;
+    grid-template-columns: 160px minmax(0, 1fr);
+    min-height: 520px;
   }
 
   [data-page="league"] .category-nav {
@@ -1138,7 +1198,8 @@ const integrationStyle = `
     box-shadow: 0 12px 32px rgba(84, 68, 145, 0.06);
     display: grid;
     grid-template-rows: repeat(5, minmax(0, 1fr));
-    padding: 8px;
+    min-height: 520px;
+    padding: 10px;
   }
 
   [data-page="league"] .category-nav button {
@@ -1149,8 +1210,8 @@ const integrationStyle = `
     cursor: pointer;
     display: flex;
     gap: 10px;
-    min-height: 0;
-    padding: 8px 9px;
+    min-height: 88px;
+    padding: 12px 10px;
     text-align: left;
     width: 100%;
   }
@@ -1177,6 +1238,7 @@ const integrationStyle = `
     background: rgba(255, 255, 255, 0.73);
     border-radius: 17px;
     box-shadow: 0 12px 34px rgba(79, 64, 137, 0.07);
+    min-height: 520px;
     min-width: 0;
     overflow: hidden;
   }
@@ -1207,7 +1269,7 @@ const integrationStyle = `
 
   [data-page="league"] .league-ranking-row {
     border-bottom: 1px solid rgba(110, 100, 166, 0.085);
-    min-height: 51px;
+    min-height: 68px;
     padding: 0 9px;
     transition: 0.2s;
   }
@@ -1264,9 +1326,9 @@ const integrationStyle = `
   [data-page="league"] .avatar-dot {
     border-radius: 50%;
     flex: 0 0 auto;
-    height: 34px;
+    height: 42px;
     object-fit: cover;
-    width: 34px;
+    width: 42px;
   }
 
   [data-page="league"] .avatar-dot {
@@ -2298,7 +2360,8 @@ const integrationStyle = `
   [data-page="rewards"] .rewards-dashboard {
     display: grid;
     gap: 20px;
-    grid-template-columns: minmax(0, 1fr) 350px;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    min-height: 980px;
   }
 
   [data-page="rewards"] .rewards-main,
@@ -2326,9 +2389,9 @@ const integrationStyle = `
     display: grid;
     gap: 16px;
     grid-template-columns: minmax(210px, 0.82fr) minmax(180px, 240px) minmax(240px, 0.86fr);
-    min-height: 190px;
+    min-height: 280px;
     overflow: hidden;
-    padding: 20px 24px;
+    padding: 24px 28px;
     position: relative;
   }
 
@@ -2402,7 +2465,7 @@ const integrationStyle = `
     align-self: stretch;
     height: 100%;
     justify-self: center;
-    max-height: 178px;
+    max-height: 250px;
     max-width: 100%;
     object-fit: contain;
     position: relative;
@@ -2459,6 +2522,7 @@ const integrationStyle = `
   [data-page="rewards"] .earn-icon.violet { background: #9175ef; }
 
   [data-page="rewards"] .reward-market {
+    min-height: 420px;
     padding: 18px;
   }
 
@@ -2535,9 +2599,22 @@ const integrationStyle = `
     cursor: pointer;
     display: grid;
     gap: 10px;
-    min-height: 190px;
+    min-height: 240px;
     padding: 12px;
     text-align: left;
+  }
+
+  [data-page="rewards"] .reward-card.owned {
+    border-color: rgba(110, 196, 150, 0.55);
+    box-shadow: 0 12px 28px rgba(70, 160, 120, 0.1);
+  }
+
+  [data-page="rewards"] .reward-card.can-buy {
+    border-color: rgba(151, 123, 245, 0.5);
+  }
+
+  [data-page="rewards"] .reward-card.locked {
+    opacity: 0.78;
   }
 
   [data-page="rewards"] .reward-image-wrap {
@@ -2545,16 +2622,16 @@ const integrationStyle = `
     background: linear-gradient(145deg, #f7f2ff, #fff7fb);
     border-radius: 15px;
     display: flex;
-    height: 104px;
+    height: 132px;
     justify-content: center;
     overflow: hidden;
     position: relative;
   }
 
   [data-page="rewards"] .reward-image-wrap img {
-    height: 88px;
+    height: 108px;
     object-fit: contain;
-    width: 88px;
+    width: 108px;
   }
 
   [data-page="rewards"] .lock-icon {
@@ -2642,8 +2719,8 @@ const integrationStyle = `
     border-radius: 16px;
     display: grid;
     justify-items: center;
-    min-height: 118px;
-    padding: 12px 8px;
+    min-height: 150px;
+    padding: 14px 8px;
   }
 
   [data-page="rewards"] .growth-reward.active {

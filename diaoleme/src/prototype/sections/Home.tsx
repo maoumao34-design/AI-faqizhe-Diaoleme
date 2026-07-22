@@ -35,9 +35,9 @@ export const homeSection = `<section class="page active" data-page="home">
             </div>
             <div class="card">
               <h3>🌿 Growth Journey</h3>
-              <div><span class="big-number">420</span> / 800 XP <span class="badge">Lv.5</span></div>
-              <div class="meter"><div class="fill" style="--w:52%"></div></div>
-              <p>⭐ 380 XP to unlock new hairstyle</p>
+              <div><span class="big-number" data-home-points>0</span> XP <span class="badge" data-home-level>Lv.1</span></div>
+              <div class="meter"><div class="fill" data-home-level-fill style="--w:0%"></div></div>
+              <p data-home-next-level>⭐ 继续记录即可升级</p>
             </div>
             <div class="card">
               <h3>🏆 Hair Growth League</h3>
