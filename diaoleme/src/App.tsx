@@ -2857,12 +2857,27 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-right-rail {
+    align-items: start;
     display: grid;
-    gap: 16px;
+    gap: 12px;
   }
 
   [data-page="rewards"] .rewards-side-panel {
     padding: 18px;
+  }
+
+  [data-page="rewards"] .overview-panel,
+  [data-page="rewards"] .checkin-panel,
+  [data-page="rewards"] .event-panel,
+  [data-page="rewards"] .records-panel {
+    padding: 14px 16px;
+  }
+
+  [data-page="rewards"] .overview-panel .rewards-panel-heading,
+  [data-page="rewards"] .checkin-panel .rewards-panel-heading,
+  [data-page="rewards"] .event-panel .rewards-panel-heading,
+  [data-page="rewards"] .records-panel .rewards-panel-heading {
+    margin-bottom: 10px;
   }
 
   [data-page="rewards"] .rewards-panel-heading {
@@ -2893,8 +2908,8 @@ const integrationStyle = `
   [data-page="rewards"] .overview-content {
     align-items: center;
     display: grid;
-    gap: 14px;
-    grid-template-columns: 126px 1fr;
+    gap: 10px;
+    grid-template-columns: 96px 1fr;
   }
 
   [data-page="rewards"] .points-donut {
@@ -2902,9 +2917,9 @@ const integrationStyle = `
     background: conic-gradient(#8d6cf6 0 67%, #73a4f6 67% 85%, #f5b35a 85% 95%, #e6e8f4 95% 100%);
     border-radius: 50%;
     display: flex;
-    height: 126px;
+    height: 96px;
     justify-content: center;
-    width: 126px;
+    width: 96px;
   }
 
   [data-page="rewards"] .points-donut div {
@@ -2913,14 +2928,15 @@ const integrationStyle = `
     border-radius: 50%;
     display: flex;
     flex-direction: column;
-    height: 82px;
+    height: 62px;
     justify-content: center;
-    width: 82px;
+    width: 62px;
   }
 
   [data-page="rewards"] .points-donut strong {
     color: #202e76;
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.1;
   }
 
   [data-page="rewards"] .points-donut span {
@@ -2931,7 +2947,7 @@ const integrationStyle = `
 
   [data-page="rewards"] .legend {
     display: grid;
-    gap: 9px;
+    gap: 7px;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -2960,7 +2976,7 @@ const integrationStyle = `
 
   [data-page="rewards"] .checkin-week {
     display: grid;
-    gap: 7px;
+    gap: 5px;
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
@@ -2969,15 +2985,16 @@ const integrationStyle = `
     align-items: center;
     background: #f8f5ff;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     color: #7e83ae;
     display: flex;
     flex-direction: column;
     font-size: 10px;
     font-weight: 800;
-    gap: 5px;
-    min-height: 64px;
+    gap: 4px;
+    min-height: 52px;
     justify-content: center;
+    padding: 6px 2px;
   }
 
   [data-page="rewards"] .check-circle,
@@ -2985,9 +3002,9 @@ const integrationStyle = `
     border-radius: 50%;
     display: inline-flex;
     flex-shrink: 0;
-    height: 30px;
+    height: 26px;
     object-fit: contain;
-    width: 30px;
+    width: 26px;
   }
 
   [data-page="rewards"] .check-circle.done {
@@ -3010,9 +3027,9 @@ const integrationStyle = `
 
   [data-page="rewards"] .checkin-panel p {
     color: #858ab5;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    margin: 12px 0 0;
+    margin: 8px 0 0;
   }
 
   [data-page="rewards"] .checkin-panel p b {
@@ -3024,13 +3041,18 @@ const integrationStyle = `
     border: 0;
     cursor: pointer;
     display: block;
+    line-height: 0;
     padding: 0;
     width: 100%;
   }
 
   [data-page="rewards"] .event-banner img {
-    border-radius: 16px;
+    border-radius: 14px;
     display: block;
+    height: auto;
+    max-height: 110px;
+    object-fit: cover;
+    object-position: center;
     width: 100%;
   }
 
