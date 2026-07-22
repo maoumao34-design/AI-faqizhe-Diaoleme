@@ -2951,15 +2951,33 @@ const integrationStyle = `
   }
   [data-page="scan"] .scan-stat-item {
     display: grid;
-    gap: 6px;
+    gap: 8px;
+    grid-template-rows: 42px auto;
+    justify-items: center;
     min-width: 0;
+    text-align: center;
+  }
+  [data-page="scan"] .scan-stat-value {
+    align-items: center;
+    display: flex;
+    height: 42px;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
   }
   [data-page="scan"] .scan-stat-grid .big-number {
-    display: inline-block;
+    display: block;
     font-size: clamp(28px, 2.6vw, 42px);
+    font-variant-numeric: tabular-nums;
     line-height: 1;
     max-width: 100%;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-page="scan"] .scan-stat-grid .big-number[data-score-clamped="1"] {
+    cursor: help;
   }
   [data-page="scan"] .scan-stat-item small {
     color: var(--ink);
@@ -2967,29 +2985,33 @@ const integrationStyle = `
     font-size: 14px;
     font-weight: 700;
     line-height: 1.2;
+    text-align: center;
+    width: 100%;
   }
   [data-page="scan"] .scan-source-stat {
-    margin-top: 8px;
     position: relative;
   }
   [data-page="scan"] .scan-source-value {
+    box-sizing: border-box;
     display: block;
     height: 34px;
     line-height: 34px;
-    max-width: 112px;
+    margin: 0 auto;
+    max-width: min(112px, 100%);
     min-width: 0;
     overflow: hidden;
     padding: 0 12px;
+    text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   [data-page="scan"] .scan-source-value:hover::after {
     content: attr(data-full-source);
     position: absolute;
-    right: 0;
+    left: 50%;
     top: -42px;
     z-index: 30;
-    max-width: 360px;
+    max-width: min(360px, 80vw);
     border-radius: 14px;
     padding: 10px 12px;
     background: rgba(19,32,95,.94);
@@ -2998,6 +3020,7 @@ const integrationStyle = `
     font-size: 12px;
     line-height: 1.35;
     overflow-wrap: anywhere;
+    transform: translateX(-50%);
     white-space: normal;
   }
   [data-page="scan"] .scan-history-card .item {
