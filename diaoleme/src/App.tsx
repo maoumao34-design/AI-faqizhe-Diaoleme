@@ -2504,10 +2504,10 @@ const integrationStyle = `
     align-items: stretch;
     display: grid;
     gap: 16px;
-    grid-template-columns: minmax(280px, 1.2fr) minmax(240px, 0.86fr);
-    min-height: 280px;
+    grid-template-columns: minmax(320px, 1.45fr) minmax(240px, 0.8fr);
+    min-height: 340px;
     overflow: hidden;
-    padding: 24px 28px;
+    padding: 16px 18px;
     position: relative;
   }
 
@@ -2527,17 +2527,15 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-points-copy {
-    background-image:
-      linear-gradient(90deg, rgba(255, 242, 250, 0.94) 0%, rgba(255, 242, 250, 0.82) 34%, rgba(255, 242, 250, 0.28) 58%, transparent 78%),
-      url('./rewards-assets/hero-character.png');
-    background-position: left center, right center;
+    background-image: url('./rewards-assets/hero-character.png');
+    background-position: right center;
     background-repeat: no-repeat;
-    background-size: auto, 125% 100%;
+    background-size: 125% 100%;
     border-radius: 18px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 220px;
+    min-height: 300px;
     overflow: hidden;
     padding: 0;
     position: relative;
@@ -2549,9 +2547,10 @@ const integrationStyle = `
     display: flex;
     flex-direction: column;
     justify-content: center;
-    max-width: min(300px, 46%);
-    padding: 28px 16px 28px 28px;
+    max-width: min(320px, 48%);
+    padding: 32px 18px 32px 32px;
     position: relative;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 18px rgba(255, 255, 255, 0.55);
     z-index: 1;
   }
 
@@ -3326,13 +3325,13 @@ const integrationStyle = `
     }
 
     [data-page="rewards"] .rewards-points-copy {
-      background-size: auto, 125% auto;
-      min-height: 200px;
+      background-size: 125% auto;
+      min-height: 260px;
     }
 
     [data-page="rewards"] .rewards-points-copy-inner {
-      max-width: min(280px, 58%);
-      padding: 22px 14px 22px 22px;
+      max-width: min(300px, 60%);
+      padding: 26px 16px 26px 26px;
     }
 
     [data-page="rewards"] .reward-grid {
