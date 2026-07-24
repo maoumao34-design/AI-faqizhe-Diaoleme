@@ -8,7 +8,6 @@ export const rewardsSection = `<section class="page" data-page="rewards">
                   <p data-rewards-next-level>距离下一等级还需 -- XP</p>
                   <div class="rewards-level-progress"><i data-rewards-level-fill style="width:0%"></i></div>
                 </div>
-                <img class="rewards-hero-character" src="./rewards-assets/hero-character.svg" alt="蒲公英角色">
                 <div class="rewards-earn-card">
                   <h3>积分获取方式</h3>
                   <ul>
