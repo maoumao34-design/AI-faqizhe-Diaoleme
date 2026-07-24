@@ -90,7 +90,10 @@ export const rewardsSection = `<section class="page" data-page="rewards">
 
               <section class="rewards-side-panel event-panel">
                 <div class="rewards-panel-heading"><strong>限时活动</strong></div>
-                <button type="button" class="event-banner"><img src="./rewards-assets/event-banner.png" alt="夏日养发计划"></button>
+                <div class="event-list">
+                  <button type="button" class="event-banner"><img src="./rewards-assets/event-banner.png" alt="夏日养发计划"></button>
+                  <button type="button" class="event-banner"><img src="./rewards-assets/event-banner.png" alt="夏日养发计划"></button>
+                </div>
               </section>
 
               <section class="rewards-side-panel records-panel">

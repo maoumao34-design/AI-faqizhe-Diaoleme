@@ -2474,6 +2474,7 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-dashboard {
+    align-items: stretch;
     display: grid;
     gap: 20px;
     grid-template-columns: minmax(0, 1fr) 360px;
@@ -2486,8 +2487,10 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-main {
+    align-content: start;
     display: grid;
     gap: 18px;
+    height: 100%;
   }
 
   [data-page="rewards"] .reward-market,
@@ -2894,9 +2897,11 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-right-rail {
-    align-items: start;
-    display: grid;
-    gap: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+    min-height: 100%;
   }
 
   [data-page="rewards"] .rewards-side-panel {
@@ -2908,7 +2913,31 @@ const integrationStyle = `
   [data-page="rewards"] .checkin-panel,
   [data-page="rewards"] .event-panel,
   [data-page="rewards"] .records-panel {
-    padding: 16px 18px;
+    padding: 14px 16px;
+  }
+
+  [data-page="rewards"] .overview-panel {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+  }
+
+  [data-page="rewards"] .today-growth-panel,
+  [data-page="rewards"] .checkin-panel,
+  [data-page="rewards"] .event-panel {
+    flex: 0 0 auto;
+  }
+
+  [data-page="rewards"] .records-panel {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    margin-top: auto;
+    min-height: 120px;
+  }
+
+  [data-page="rewards"] .records-panel .record-list,
+  [data-page="rewards"] .records-panel .record-empty {
+    flex: 1 1 auto;
   }
 
   [data-page="rewards"] .overview-panel .rewards-panel-heading,
@@ -2916,7 +2945,7 @@ const integrationStyle = `
   [data-page="rewards"] .checkin-panel .rewards-panel-heading,
   [data-page="rewards"] .event-panel .rewards-panel-heading,
   [data-page="rewards"] .records-panel .rewards-panel-heading {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   [data-page="rewards"] .rewards-panel-heading {
@@ -2942,8 +2971,8 @@ const integrationStyle = `
 
   [data-page="rewards"] .overview-level-block {
     display: grid;
-    gap: 8px;
-    margin-top: 14px;
+    gap: 6px;
+    margin-top: 10px;
   }
 
   [data-page="rewards"] .overview-level-meta {
@@ -3086,8 +3115,8 @@ const integrationStyle = `
   [data-page="rewards"] .overview-content {
     align-items: center;
     display: grid;
-    gap: 10px;
-    grid-template-columns: 96px 1fr;
+    gap: 8px;
+    grid-template-columns: 84px 1fr;
   }
 
   [data-page="rewards"] .points-donut {
@@ -3095,9 +3124,9 @@ const integrationStyle = `
     background: conic-gradient(#8d6cf6 0 67%, #73a4f6 67% 85%, #f5b35a 85% 95%, #e6e8f4 95% 100%);
     border-radius: 50%;
     display: flex;
-    height: 96px;
+    height: 84px;
     justify-content: center;
-    width: 96px;
+    width: 84px;
   }
 
   [data-page="rewards"] .points-donut div {
@@ -3106,9 +3135,9 @@ const integrationStyle = `
     border-radius: 50%;
     display: flex;
     flex-direction: column;
-    height: 62px;
+    height: 54px;
     justify-content: center;
-    width: 62px;
+    width: 54px;
   }
 
   [data-page="rewards"] .points-donut strong {
@@ -3214,6 +3243,11 @@ const integrationStyle = `
     color: #7d66e8;
   }
 
+  [data-page="rewards"] .event-list {
+    display: grid;
+    gap: 10px;
+  }
+
   [data-page="rewards"] .event-banner {
     background: transparent;
     border: 0;
@@ -3228,7 +3262,7 @@ const integrationStyle = `
     border-radius: 14px;
     display: block;
     height: auto;
-    max-height: 110px;
+    max-height: 88px;
     object-fit: cover;
     object-position: center;
     width: 100%;
