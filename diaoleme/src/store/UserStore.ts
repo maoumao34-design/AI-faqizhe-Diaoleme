@@ -84,7 +84,7 @@ export const useUserStore = create<UserState>()(
       suggestions: [],
       unlockedHairStyles: ['none'],
       checkinDays: [],
-      points: 500,
+      points: 70,
       reportHistory: [],
 
       setAnalysis: (r) =>
@@ -208,7 +208,7 @@ export const useUserStore = create<UserState>()(
           suggestions: [],
           unlockedHairStyles: ['none'],
           checkinDays: [],
-          points: 500,
+          points: 70,
           reportHistory: [],
         })
         if (typeof window !== 'undefined') {
@@ -216,6 +216,18 @@ export const useUserStore = create<UserState>()(
         }
       },
     }),
-    { name: 'diaolema-user', storage: createJSONStorage(() => localStorage) },
+    {
+      name: 'diaolema-user',
+      storage: createJSONStorage(() => localStorage),
+      version: 3,
+      migrate: (persisted: unknown) => {
+        const state = (persisted && typeof persisted === 'object' ? persisted : {}) as Record<string, unknown>
+        return {
+          ...state,
+          points: 70,
+          unlockedHairStyles: ['none'],
+        }
+      },
+    },
   ),
 )
