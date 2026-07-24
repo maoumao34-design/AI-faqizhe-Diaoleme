@@ -27,8 +27,8 @@ export const leagueSection = `<section class="page" data-page="league">
                 <div class="league-hero-rank">
                   <button type="button">🎁 赛季奖励预览</button>
                   <span>我的段位</span>
-                  <img class="league-hero-badge" src="./league-assets/shield-diamond.png" alt="段位徽章">
-                  <b data-league-tier-name>钻石 III</b>
+                  <img class="league-hero-badge" data-league-tier-badge src="./league-assets/shield-bronze.png" alt="段位徽章">
+                  <b data-league-tier-name>青铜</b>
                   <small data-league-tier-progress>⭐ 0 / 1000</small>
                   <div class="league-hero-progress"><i data-league-tier-fill style="width:0%"></i></div>
                 </div>

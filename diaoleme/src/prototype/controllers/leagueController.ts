@@ -199,8 +199,11 @@ export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeade
 
   const myScore = myLeagueMetricScore(metric)
   const myPoints = useUserStore.getState().points
+  const myTier = getLeagueTierProgress(myPoints)
   const betterCount = leaders.filter((leader) => leader.points > myScore).length
   const myRank = Math.min(betterCount + 1, 12)
+  const myTierTone: LeagueLeader['tierTone'] =
+    myTier.name.startsWith('王者') ? 'gold' : myTier.name.startsWith('钻石') ? 'purple' : 'blue'
 
   leaders.push({
     rank: myRank,
@@ -209,8 +212,8 @@ export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeade
     note: myLeagueMetricNote(metric),
     points: myScore,
     scoreText: formatLeagueScore(metric, myScore),
-    tier: getLeagueTierProgress(myPoints).name,
-    tierTone: 'purple',
+    tier: myTier.name,
+    tierTone: myTierTone,
     trend: myRank <= 6 ? '↑ 2' : '↑ 1',
     trendTone: 'up',
     avatarSrc: leagueAvatar('you'),
@@ -242,12 +245,17 @@ export function renderLeague(
   const tierName = root.querySelector<HTMLElement>('[data-league-tier-name]')
   const tierProgress = root.querySelector<HTMLElement>('[data-league-tier-progress]')
   const tierFill = root.querySelector<HTMLElement>('[data-league-tier-fill]')
+  const tierBadge = root.querySelector<HTMLImageElement>('[data-league-tier-badge]')
   const myContrib = root.querySelector<HTMLElement>('[data-league-my-contrib]')
   const allianceFill = root.querySelector<HTMLElement>('[data-league-alliance-fill]')
   const allianceNote = root.querySelector<HTMLElement>('[data-league-alliance-note]')
   if (tierName) tierName.textContent = tier.name
   if (tierProgress) tierProgress.textContent = `⭐ ${tier.current} / ${tier.max}`
   if (tierFill) tierFill.style.width = `${tier.percent}%`
+  if (tierBadge) {
+    tierBadge.src = tierShieldSrc(tier.name)
+    tierBadge.alt = `${tier.name}段位徽章`
+  }
   if (myContrib) myContrib.textContent = `${s.points.toLocaleString('en-US')} XP`
   if (allianceFill) allianceFill.style.width = `${level.percent}%`
   if (allianceNote) {
@@ -325,6 +333,9 @@ function renderAllianceTab() {
 function renderFriendRankTab() {
   const s = useUserStore.getState()
   const myPoints = s.points
+  const myTier = getLeagueTierProgress(myPoints)
+  const myTierTone: LeagueLeader['tierTone'] =
+    myTier.name.startsWith('王者') ? 'gold' : myTier.name.startsWith('钻石') ? 'purple' : 'blue'
   const friends: LeagueLeader[] = [
     { rank: 1, name: 'Nora', level: 'Lv.5', note: '睡眠打卡稳定', points: 20680, scoreText: '20,680 XP', tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: '', isMe: false },
     { rank: 2, name: 'Echo', level: 'Lv.4', note: '本周完成 9 个任务', points: 18440, scoreText: '18,440 XP', tier: '铂金 I', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: '', isMe: false },
@@ -336,8 +347,8 @@ function renderFriendRankTab() {
       note: s.checkinDays.length ? `${s.checkinDays.length} 天打卡 · 一起变好呀！` : '一起变好呀！',
       points: myPoints,
       scoreText: formatLeagueScore('total_xp', myPoints),
-      tier: getLeagueTierProgress(myPoints).name,
-      tierTone: 'purple',
+      tier: myTier.name,
+      tierTone: myTierTone,
       trend: '↑ 1',
       trendTone: 'up',
       avatarSrc: leagueAvatar('you'),
