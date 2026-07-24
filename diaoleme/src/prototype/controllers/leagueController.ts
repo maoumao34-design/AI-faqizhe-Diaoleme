@@ -7,6 +7,81 @@ const leagueAvatar = (name: string) => publicAssetUrl(`league-avatars/${name}.pn
 const leagueAsset = (name: string) => publicAssetUrl(`league-assets/${name}`)
 const leagueRankMetricKey = () => 'diaoleme-league-rank-metric'
 
+const ALLIANCE_NAME = '蒲公英小分队'
+const ALLIANCE_LEVEL = 6
+const ALLIANCE_MEMBER_CAP = 30
+const ALLIANCE_ENEMY_NAME = '发光小队'
+const ALLIANCE_ENEMY_WEEKLY_XP = 12420
+const ALLIANCE_LEVEL_NEED = 5000
+
+type AllianceMember = {
+  name: string
+  role: string
+  weeklyXp: number
+  isMe?: boolean
+}
+
+const ALLIANCE_PEER_MEMBERS: Array<Omit<AllianceMember, 'isMe'>> = [
+  { name: 'Luna', role: '队长', weeklyXp: 1840 },
+  { name: 'Mia', role: '副队长', weeklyXp: 1620 },
+  { name: 'Ray', role: '活跃成员', weeklyXp: 1380 },
+  { name: 'Sophia', role: '活跃成员', weeklyXp: 1260 },
+  { name: 'Bella', role: '成长成员', weeklyXp: 980 },
+  { name: 'Aria', role: '成长成员', weeklyXp: 920 },
+  { name: 'Nora', role: '成员', weeklyXp: 860 },
+  { name: 'Echo', role: '成员', weeklyXp: 820 },
+  { name: 'June', role: '成员', weeklyXp: 780 },
+  { name: 'Quinn', role: '成员', weeklyXp: 740 },
+  { name: 'Iris', role: '成员', weeklyXp: 700 },
+  { name: 'Jade', role: '成员', weeklyXp: 660 },
+  { name: 'Kai', role: '成员', weeklyXp: 620 },
+  { name: 'Lynn', role: '成员', weeklyXp: 580 },
+  { name: 'Momo', role: '成员', weeklyXp: 540 },
+  { name: 'Nori', role: '成员', weeklyXp: 500 },
+  { name: 'Olive', role: '成员', weeklyXp: 460 },
+  { name: 'Piper', role: '成员', weeklyXp: 420 },
+  { name: 'Remy', role: '成员', weeklyXp: 380 },
+  { name: 'Sage', role: '成员', weeklyXp: 340 },
+  { name: 'Tori', role: '成员', weeklyXp: 300 },
+  { name: 'Uma', role: '成员', weeklyXp: 280 },
+  { name: 'Vivi', role: '成员', weeklyXp: 260 },
+  { name: 'Wren', role: '成员', weeklyXp: 240 },
+  { name: 'Yuki', role: '成员', weeklyXp: 220 },
+  { name: 'Zara', role: '成员', weeklyXp: 200 },
+  { name: 'Bo', role: '成员', weeklyXp: 180 },
+]
+
+function getMyAllianceWeeklyXp(points: number) {
+  if (points <= 0) return 420
+  return Math.max(120, Math.min(1500, Math.round(points / 18)))
+}
+
+function getAllianceState() {
+  const points = useUserStore.getState().points
+  const myWeeklyXp = getMyAllianceWeeklyXp(points)
+  const members: AllianceMember[] = [
+    ...ALLIANCE_PEER_MEMBERS,
+    { name: 'You', role: '成长成员', weeklyXp: myWeeklyXp, isMe: true },
+  ].sort((a, b) => b.weeklyXp - a.weeklyXp)
+  const weeklyXp = members.reduce((sum, member) => sum + member.weeklyXp, 0)
+  const intoLevel = weeklyXp % ALLIANCE_LEVEL_NEED
+  const percent = Math.round((intoLevel / ALLIANCE_LEVEL_NEED) * 100)
+  return {
+    name: ALLIANCE_NAME,
+    level: ALLIANCE_LEVEL,
+    memberCount: members.length,
+    memberCap: ALLIANCE_MEMBER_CAP,
+    weeklyXp,
+    myWeeklyXp,
+    intoLevel,
+    nextNeed: ALLIANCE_LEVEL_NEED - intoLevel,
+    percent,
+    members,
+    enemyName: ALLIANCE_ENEMY_NAME,
+    enemyWeeklyXp: ALLIANCE_ENEMY_WEEKLY_XP,
+  }
+}
+
 const TIER_SHIELD_BY_NAME: Record<string, string> = {
   青铜: 'shield-bronze.png',
   白银: 'shield-silver.png',
@@ -233,7 +308,7 @@ export function renderLeague(
 ) {
   const s = useUserStore.getState()
   const tier = getLeagueTierProgress(s.points)
-  const level = getLevelProgress(s.points)
+  const alliance = getAllianceState()
 
   root.querySelectorAll<HTMLElement>('[data-league-tab]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.leagueTab === activeTab)
@@ -242,19 +317,35 @@ export function renderLeague(
   const tierName = root.querySelector<HTMLElement>('[data-league-tier-name]')
   const tierProgress = root.querySelector<HTMLElement>('[data-league-tier-progress]')
   const tierFill = root.querySelector<HTMLElement>('[data-league-tier-fill]')
+  const tierBadge = root.querySelector<HTMLImageElement>('[data-league-tier-badge]')
+  const allianceLevel = root.querySelector<HTMLElement>('[data-league-alliance-level]')
+  const allianceMembers = root.querySelector<HTMLElement>('[data-league-alliance-members]')
   const myContrib = root.querySelector<HTMLElement>('[data-league-my-contrib]')
   const allianceFill = root.querySelector<HTMLElement>('[data-league-alliance-fill]')
   const allianceNote = root.querySelector<HTMLElement>('[data-league-alliance-note]')
+  const allyXp = root.querySelector<HTMLElement>('[data-league-ally-xp]')
+  const enemyXp = root.querySelector<HTMLElement>('[data-league-enemy-xp]')
+  const allyName = root.querySelector<HTMLElement>('[data-league-ally-name]')
+  const enemyName = root.querySelector<HTMLElement>('[data-league-enemy-name]')
+
   if (tierName) tierName.textContent = tier.name
   if (tierProgress) tierProgress.textContent = `⭐ ${tier.current} / ${tier.max}`
   if (tierFill) tierFill.style.width = `${tier.percent}%`
-  if (myContrib) myContrib.textContent = `${s.points.toLocaleString('en-US')} XP`
-  if (allianceFill) allianceFill.style.width = `${level.percent}%`
-  if (allianceNote) {
-    allianceNote.textContent = level.need > 0
-      ? `距离下一等级还需 ${level.need} XP`
-      : '本周贡献已同步你的总 XP'
+  if (tierBadge) {
+    tierBadge.src = tierShieldSrc(tier.name)
+    tierBadge.alt = `${tier.name}段位徽章`
   }
+  if (allianceLevel) allianceLevel.textContent = `Lv.${alliance.level}`
+  if (allianceMembers) allianceMembers.textContent = `${alliance.memberCount} / ${alliance.memberCap}`
+  if (myContrib) myContrib.textContent = `${alliance.myWeeklyXp.toLocaleString('en-US')} XP`
+  if (allianceFill) allianceFill.style.width = `${alliance.percent}%`
+  if (allianceNote) {
+    allianceNote.textContent = `距离 Lv.${alliance.level + 1} 还需 ${alliance.nextNeed.toLocaleString('en-US')} XP`
+  }
+  if (allyName) allyName.textContent = alliance.name
+  if (enemyName) enemyName.textContent = alliance.enemyName
+  if (allyXp) allyXp.textContent = alliance.weeklyXp.toLocaleString('en-US')
+  if (enemyXp) enemyXp.textContent = alliance.enemyWeeklyXp.toLocaleString('en-US')
 
   setHtml(root.querySelector('#leagueRankContent'), renderLeagueTab(activeTab, activeMetric))
 }
@@ -288,19 +379,28 @@ function renderLeaderboardTab(activeMetric: LeagueRankMetric) {
 }
 
 function renderAllianceTab() {
-  const s = useUserStore.getState()
-  const level = getLevelProgress(s.points)
+  const alliance = getAllianceState()
   const doneCount = QUEST_CATEGORIES.reduce((sum, category) => sum + loadDoneQuests(category).size, 0)
+  const memberActivePercent = Math.round((alliance.memberCount / alliance.memberCap) * 100)
   const cards = [
-    ['联盟等级', `Lv.${level.level}`, level.need > 0 ? `距离 Lv.${level.level + 1} 还需 ${level.need} XP` : '已达当前演示等级上限', `${level.percent}%`],
-    ['本周任务', `${doneCount} 个`, doneCount > 0 ? '完成任务可为联盟积累贡献' : '去完成任务，为联盟添一份力', '67%'],
-    ['成员活跃', '28 / 30', `${s.checkinDays.length} 天打卡记录已同步`, `${Math.min(100, s.checkinDays.length * 12)}%`],
-  ]
-  const members = [
-    ['Luna', '队长', '8,420 XP'],
-    ['Mia', '副队长', '7,860 XP'],
-    ['Ray', '活跃成员', '6,980 XP'],
-    ['You', '成长成员', `${s.points.toLocaleString('en-US')} XP`],
+    [
+      '联盟等级',
+      `Lv.${alliance.level}`,
+      `距离 Lv.${alliance.level + 1} 还需 ${alliance.nextNeed.toLocaleString('en-US')} XP`,
+      `${alliance.percent}%`,
+    ],
+    [
+      '本周任务',
+      `${doneCount} 个`,
+      doneCount > 0 ? '完成任务可为联盟积累贡献' : '去完成任务，为联盟添一份力',
+      `${Math.min(100, Math.max(18, doneCount * 12))}%`,
+    ],
+    [
+      '成员活跃',
+      `${alliance.memberCount} / ${alliance.memberCap}`,
+      `本周联盟战累计 ${alliance.weeklyXp.toLocaleString('en-US')} XP`,
+      `${memberActivePercent}%`,
+    ],
   ]
   return `
     <div class="league-mock-grid alliance-mock">
@@ -313,9 +413,18 @@ function renderAllianceTab() {
         </section>
       `).join('')}
       <section class="league-mock-card wide">
-        <div class="league-mock-title"><b>联盟成员贡献</b></div>
-        <div class="league-mini-list">
-          ${members.map(([name, role, xp]) => `<div><span class="avatar-dot"></span><b>${escapeHtml(name)}<small>${escapeHtml(role)}</small></b><strong>${escapeHtml(xp)}</strong></div>`).join('')}
+        <div class="league-mock-title">
+          <b>联盟成员贡献</b>
+          <small>${escapeHtml(alliance.name)} · ${alliance.memberCount}/${alliance.memberCap} · 本周合计 ${alliance.weeklyXp.toLocaleString('en-US')} XP</small>
+        </div>
+        <div class="league-mini-list alliance-member-scroll">
+          ${alliance.members.map((member) => `
+            <div class="${member.isMe ? 'is-me' : ''}">
+              <span class="avatar-dot"></span>
+              <b>${escapeHtml(member.name)}${member.isMe ? '（我）' : ''}<small>${escapeHtml(member.role)}</small></b>
+              <strong>${member.weeklyXp.toLocaleString('en-US')} XP</strong>
+            </div>
+          `).join('')}
         </div>
       </section>
     </div>
