@@ -49,8 +49,8 @@ export const leagueSection = `<section class="page" data-page="league">
             <aside class="league-right-rail">
               <section class="league-side-panel alliance-panel">
                 <div class="league-panel-title"><strong>我的联盟</strong><button type="button">查看详情 ›</button></div>
-                <div class="league-alliance-main"><img class="league-shield-placeholder" src="./league-assets/badge-ally.png" alt="联盟徽章"><div><b>蒲公英小分队 <em>Lv.6</em></b><span>Lv.5</span></div></div>
-                <div class="league-alliance-stats"><div><span>成员</span><b>28 / 30</b></div><div><span>本周贡献</span><b data-league-my-contrib>0 XP</b></div></div>
+                <div class="league-alliance-main"><img class="league-shield-placeholder" src="./league-assets/badge-ally.png" alt="联盟徽章"><div><b>蒲公英小分队 <em data-league-alliance-level>Lv.6</em></b></div></div>
+                <div class="league-alliance-stats"><div><span>成员</span><b data-league-alliance-members>28 / 30</b></div><div><span>本周贡献</span><b data-league-my-contrib>0 XP</b></div></div>
                 <div class="league-purple-progress"><i data-league-alliance-fill style="width:0%"></i></div><small class="league-center-note" data-league-alliance-note>距离下一等级还需 -- XP</small>
               </section>
               <section class="league-side-panel announcement-panel">
@@ -62,9 +62,9 @@ export const leagueSection = `<section class="page" data-page="league">
               <section class="league-side-panel battle-panel">
                 <div class="league-panel-title"><strong>本周联盟战 <span class="league-live">进行中</span></strong></div>
                 <div class="league-battle-grid">
-                  <div><img class="league-battle-badge" src="./league-assets/badge-ally-sm.png" alt="我方"><b>蒲公英小分队</b><strong>15,680</strong></div>
+                  <div><img class="league-battle-badge" src="./league-assets/badge-ally-sm.png" alt="我方"><b data-league-ally-name>蒲公英小分队</b><strong data-league-ally-xp>15,680</strong></div>
                   <img class="league-vs" src="./league-assets/vs-mark.png" alt="VS">
-                  <div><img class="league-battle-badge" src="./league-assets/badge-enemy-sm.png" alt="对手"><b>发光小队</b><strong>12,420</strong></div>
+                  <div><img class="league-battle-badge" src="./league-assets/badge-enemy-sm.png" alt="对手"><b data-league-enemy-name>发光小队</b><strong data-league-enemy-xp>12,420</strong></div>
                 </div>
                 <small class="league-center-note">剩余 2 天 12:36:45</small>
               </section>

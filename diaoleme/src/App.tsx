@@ -1565,6 +1565,30 @@ const integrationStyle = `
     font-size: 9px;
   }
 
+  [data-page="league"] .league-mock-title {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    justify-content: space-between;
+  }
+
+  [data-page="league"] .league-mock-title small {
+    color: #969abb;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  [data-page="league"] .league-mini-list.alliance-member-scroll {
+    max-height: 360px;
+    overflow: auto;
+    padding-right: 4px;
+  }
+
+  [data-page="league"] .league-mini-list .is-me b {
+    color: #6f57d8;
+  }
+
   [data-page="league"] .league-tier-board {
     display: grid;
     gap: 14px;
