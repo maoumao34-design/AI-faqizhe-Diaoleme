@@ -2,13 +2,11 @@ export const rewardsSection = `<section class="page" data-page="rewards">
           <div class="rewards-dashboard">
             <main class="rewards-main">
               <section class="rewards-points-hero">
-                <div class="rewards-points-copy">
-                  <div class="rewards-points-copy-inner">
-                    <span>我的积分</span>
-                    <h2><span data-rewards-points></span><small>XP</small></h2>
-                    <p data-rewards-next-level>距离下一等级还需 -- XP</p>
-                    <div class="rewards-level-progress"><i data-rewards-level-fill style="width:0%"></i></div>
-                  </div>
+                <div class="rewards-points-stats">
+                  <span>我的积分</span>
+                  <h2><span data-rewards-points></span><small>XP</small></h2>
+                  <p data-rewards-next-level>距离下一等级还需 -- XP</p>
+                  <div class="rewards-level-progress"><i data-rewards-level-fill style="width:0%"></i></div>
                 </div>
                 <div class="rewards-earn-card">
                   <h3>积分获取方式</h3>
