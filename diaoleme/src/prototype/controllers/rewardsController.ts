@@ -1,7 +1,7 @@
 import { HAIRSTYLE_CATALOG } from '../../services/model'
 import { useUserStore } from '../../store/UserStore'
 import { renderBuddyHairStyles } from './buddyController'
-import { getLevelProgress, todayKey, WEEKDAY_LABELS, XP_PER_LEVEL } from './progress'
+import { getLevelProgress, todayKey, WEEKDAY_LABELS } from './progress'
 import { escapeHtml, publicAssetUrl, setHtml } from './ui'
 
 const REWARD_ASSET_BASE = publicAssetUrl('rewards-assets/')
@@ -31,21 +31,22 @@ export const REWARD_MARKET_ITEMS: Array<{
 
 export type RewardMarketItem = (typeof REWARD_MARKET_ITEMS)[number]
 
-/** Demo 用成长等级奖励：多造几条，保证横向滑动可看完全部 */
-const GROWTH_LEVEL_REWARDS: Array<{ level: number; name: string; image: string }> = [
-  { level: 1, name: '樱花发箍', image: `${REWARD_ASSET_BASE}reward-flower.png` },
-  { level: 2, name: '星光泡泡', image: `${REWARD_ASSET_BASE}reward-starlight.png` },
-  { level: 3, name: '生发精华', image: `${REWARD_ASSET_BASE}reward-serum.png` },
-  { level: 4, name: '蘑菇小帽', image: `${REWARD_ASSET_BASE}reward-healing.png` },
-  { level: 5, name: '护发礼盒', image: `${REWARD_ASSET_BASE}reward-gift.png` },
-  { level: 6, name: '蒲公英灯', image: `${REWARD_ASSET_BASE}reward-lamp.png` },
-  { level: 7, name: '嫩芽发型', image: `${REWARD_ASSET_BASE}reward-sprout.png` },
-  { level: 8, name: '按摩木梳', image: `${REWARD_ASSET_BASE}reward-brush.png` },
-  { level: 9, name: '银河披风', image: `${REWARD_ASSET_BASE}reward-cape.png` },
-  { level: 10, name: '7天特权', image: `${REWARD_ASSET_BASE}reward-vip.png` },
-  { level: 11, name: '花瓣发卡', image: `${REWARD_ASSET_BASE}reward-flower.png` },
-  { level: 12, name: '星尘徽章', image: `${REWARD_ASSET_BASE}reward-starlight.png` },
+/** Demo 用成长等级奖励：绑定商城同款，保证「差多少 XP」与商城一致 */
+const GROWTH_LEVEL_REWARDS: Array<{ level: number; name: string; image: string; marketId: string }> = [
+  { level: 1, name: '樱花发箍', image: `${REWARD_ASSET_BASE}reward-flower.png`, marketId: 'flower' },
+  { level: 2, name: '星光泡泡', image: `${REWARD_ASSET_BASE}reward-starlight.png`, marketId: 'starlight' },
+  { level: 3, name: '生发精华', image: `${REWARD_ASSET_BASE}reward-serum.png`, marketId: 'serum' },
+  { level: 4, name: '蘑菇小帽', image: `${REWARD_ASSET_BASE}reward-healing.png`, marketId: 'healing' },
+  { level: 5, name: '护发礼盒', image: `${REWARD_ASSET_BASE}reward-gift.png`, marketId: 'gift' },
+  { level: 6, name: '蒲公英灯', image: `${REWARD_ASSET_BASE}reward-lamp.png`, marketId: 'lamp' },
+  { level: 7, name: '嫩芽发型', image: `${REWARD_ASSET_BASE}reward-sprout.png`, marketId: 'sprout' },
+  { level: 8, name: '按摩木梳', image: `${REWARD_ASSET_BASE}reward-brush.png`, marketId: 'brush' },
+  { level: 9, name: '银河披风', image: `${REWARD_ASSET_BASE}reward-cape.png`, marketId: 'cape' },
+  { level: 10, name: '7天特权', image: `${REWARD_ASSET_BASE}reward-vip.png`, marketId: 'vip' },
+  { level: 11, name: '花瓣发卡', image: `${REWARD_ASSET_BASE}reward-flower.png`, marketId: 'flower' },
+  { level: 12, name: '星尘徽章', image: `${REWARD_ASSET_BASE}reward-starlight.png`, marketId: 'starlight' },
 ]
+
 
 type RewardPurchaseRecord = {
   id: string
@@ -77,6 +78,24 @@ function isRewardOwned(item: RewardMarketItem, unlockedHairStyles: string[], own
   if (owned.has(item.id)) return true
   if (item.unlockId && unlockedHairStyles.includes(item.unlockId)) return true
   return false
+}
+
+function getMarketItemById(id: string) {
+  return REWARD_MARKET_ITEMS.find((item) => item.id === id)
+}
+
+/** 按当前 XP 判定是否已拥有：已兑换，或积分已达到该商品兑换门槛 */
+function isOwnedByPoints(item: RewardMarketItem, points: number, unlockedHairStyles: string[], owned = loadOwnedRewards()) {
+  if (isRewardOwned(item, unlockedHairStyles, owned)) return true
+  return points >= item.points
+}
+
+function shopStatusForItem(item: RewardMarketItem, points: number, unlockedHairStyles: string[], owned = loadOwnedRewards()) {
+  if (isOwnedByPoints(item, points, unlockedHairStyles, owned)) {
+    return { owned: true, canBuy: false, status: '已拥有', need: 0 }
+  }
+  const need = Math.max(0, item.points - points)
+  return { owned: false, canBuy: need === 0, status: need === 0 ? '可兑换' : `还差 ${need.toLocaleString('en-US')} XP`, need }
 }
 
 function loadRewardPurchaseRecords(): RewardPurchaseRecord[] {
@@ -258,27 +277,28 @@ export function renderRewards(root: HTMLElement) {
   }).join(''))
 
   setHtml(root.querySelector('#shop'), REWARD_MARKET_ITEMS.map((item) => {
-    const ownedItem = isRewardOwned(item, s.unlockedHairStyles, owned)
-    const canBuy = !ownedItem && s.points >= item.points
-    const status = ownedItem ? '已拥有' : canBuy ? '可兑换' : `还差 ${item.points - s.points} XP`
-    const stateClass = ownedItem ? 'owned' : canBuy ? 'can-buy' : 'locked'
-    return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${ownedItem ? 'disabled' : ''}>
+    const state = shopStatusForItem(item, s.points, s.unlockedHairStyles, owned)
+    const stateClass = state.owned ? 'owned' : state.canBuy ? 'can-buy' : 'locked'
+    return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${state.owned ? 'disabled' : ''}>
       <div class="reward-image-wrap">
         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
       </div>
       <div class="reward-copy">
         <strong>${escapeHtml(item.name)}</strong>
-        <span>${escapeHtml(status)}</span>
+        <span>${escapeHtml(state.status)}</span>
         <b>${item.points.toLocaleString('en-US')} XP</b>
       </div>
     </button>`
   }).join(''))
 
   setHtml(root.querySelector('#rewardsGrowth'), GROWTH_LEVEL_REWARDS.map((reward) => {
-    const reached = level.level >= reward.level
-    const status = reached
-      ? (level.level > reward.level ? '已领取' : '当前等级')
-      : `差 ${Math.max(0, reward.level * XP_PER_LEVEL - s.points)} XP`
+    const marketItem = getMarketItemById(reward.marketId)
+    const state = marketItem
+      ? shopStatusForItem(marketItem, s.points, s.unlockedHairStyles, owned)
+      : { owned: level.level >= reward.level, canBuy: false, status: '已拥有', need: 0 }
+    // 与商城同一套 XP 差值文案；已达成时成长轨显示「已领取」
+    const status = state.owned ? '已领取' : state.status
+    const reached = state.owned || level.level >= reward.level
     return `<button type="button" class="growth-reward ${reached ? 'active' : ''}">
       <img src="${escapeHtml(reward.image)}" alt="Lv.${reward.level} ${escapeHtml(reward.name)}">
       <strong>Lv.${reward.level}</strong>
