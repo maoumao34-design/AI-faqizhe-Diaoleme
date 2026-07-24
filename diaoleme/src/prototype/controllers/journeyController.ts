@@ -73,7 +73,8 @@ export function buildTrendBars(records: ReportRecord[]) {
 
 export function renderHistory(root: HTMLElement) {
   const history = useUserStore.getState().reportHistory
-  const scanPageSize = 3
+  // 一页 4 条，贴近中间扫描卡高度，避免右侧「最近扫描记录」明显矮一截
+  const scanPageSize = 4
   const totalPages = Math.max(1, Math.ceil(history.length / scanPageSize))
   const currentPage = Math.min(Math.max(Number(root.dataset.scanRecordPage || 0), 0), totalPages - 1)
   root.dataset.scanRecordPage = String(currentPage)
