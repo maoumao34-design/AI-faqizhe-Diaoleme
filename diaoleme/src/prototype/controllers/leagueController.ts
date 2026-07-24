@@ -12,15 +12,37 @@ const TIER_SHIELD_BY_NAME: Record<string, string> = {
   白银: 'shield-silver.png',
   黄金: 'shield-gold.png',
   铂金: 'shield-platinum.png',
+  '铂金 I': 'shield-platinum-i-sm.png',
+  '铂金 II': 'shield-platinum-ii.png',
   '钻石 III': 'shield-diamond.png',
   '钻石 II': 'shield-diamond-ii.png',
   '钻石 I': 'shield-diamond-i.png',
   王者: 'shield-king.png',
+  '王者 I': 'shield-king-i.png',
+  '王者 II': 'shield-king-ii.png',
+}
+
+function resolveTierShieldKey(name: string) {
+  if (TIER_SHIELD_BY_NAME[name]) return name
+  if (name.startsWith('王者')) return name.includes('II') ? '王者 II' : '王者 I'
+  if (name.startsWith('铂金')) return name.includes('II') ? '铂金 II' : '铂金 I'
+  if (name.startsWith('钻石')) {
+    if (name.includes('III')) return '钻石 III'
+    if (name.includes('II')) return '钻石 II'
+    return '钻石 I'
+  }
+  if (name.startsWith('黄金')) return '黄金'
+  if (name.startsWith('白银')) return '白银'
+  if (name.startsWith('青铜')) return '青铜'
+  return '青铜'
 }
 
 function tierShieldSrc(name: string) {
-  return leagueAsset(TIER_SHIELD_BY_NAME[name] || 'shield-bronze.png')
+  const key = resolveTierShieldKey(name)
+  return leagueAsset(TIER_SHIELD_BY_NAME[key] || 'shield-bronze.png')
 }
+
+const MY_LEADERBOARD_RANK = 16
 
 export type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
 export type LeagueRankMetric = 'total_xp' | 'hair_care' | 'active_star' | 'streak' | 'kindness'
@@ -200,13 +222,11 @@ export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeade
   const myScore = myLeagueMetricScore(metric)
   const myPoints = useUserStore.getState().points
   const myTier = getLeagueTierProgress(myPoints)
-  const betterCount = leaders.filter((leader) => leader.points > myScore).length
-  const myRank = Math.min(betterCount + 1, 12)
   const myTierTone: LeagueLeader['tierTone'] =
     myTier.name.startsWith('王者') ? 'gold' : myTier.name.startsWith('钻石') ? 'purple' : 'blue'
 
   leaders.push({
-    rank: myRank,
+    rank: MY_LEADERBOARD_RANK,
     name: 'You',
     level: `Lv.${getLevelProgress(myPoints).level}`,
     note: myLeagueMetricNote(metric),
@@ -214,19 +234,21 @@ export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeade
     scoreText: formatLeagueScore(metric, myScore),
     tier: myTier.name,
     tierTone: myTierTone,
-    trend: myRank <= 6 ? '↑ 2' : '↑ 1',
+    trend: '↑ 1',
     trendTone: 'up',
     avatarSrc: leagueAvatar('you'),
     isMe: true,
   })
 
-  return leaders
+  const others = leaders
+    .filter((leader) => !leader.isMe)
     .sort((a, b) => {
       if (a.points !== b.points) return b.points - a.points
-      if (a.isMe !== b.isMe) return a.isMe ? 1 : -1
       return a.rank - b.rank
     })
     .map((leader, index) => ({ ...leader, rank: index + 1 }))
+  const me = leaders.find((leader) => leader.isMe)
+  return me ? [...others, { ...me, rank: MY_LEADERBOARD_RANK }] : others
 }
 
 export function renderLeague(
@@ -402,7 +424,7 @@ function renderTierProgressTab() {
 
 function renderLeagueLeader(leader: LeagueLeader) {
   const rankClass = leader.isMe ? 'you-rank' : leader.rank === 1 ? 'gold' : leader.rank === 2 ? 'silver' : leader.rank === 3 ? 'bronze' : 'normal'
-  const tierClass = leader.tierTone === 'gold' ? 'king' : leader.tierTone === 'purple' ? 'diamond' : 'platinum'
+  const tierIcon = tierShieldSrc(leader.tier)
   return `
     <div class="league-ranking-row ${leader.isMe ? 'current-user' : ''}" role="row">
       <div class="rank-cell" role="cell"><span class="rank-badge ${rankClass}">${leader.rank}</span></div>
@@ -414,9 +436,7 @@ function renderLeagueLeader(leader: LeagueLeader) {
         </div>
       </div>
       <div class="tier-cell" role="cell">
-        <span class="tier-emblem ${tierClass}" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 2.3 16 5l4.7.8-.8 4.7 1.7 4.5-4.2 2.3L15 21.6 12 19l-3 2.6-2.4-4.3L2.4 15l1.7-4.5-.8-4.7L8 5l4-2.7Z"/><path class="tier-star" d="m12 7.2 1.35 2.74 3.03.44-2.19 2.13.52 3.02L12 14.1l-2.71 1.43.52-3.02-2.19-2.13 3.03-.44L12 7.2Z"/></svg>
-        </span>
+        <img class="tier-emblem-icon" src="${escapeHtml(tierIcon)}" alt="${escapeHtml(leader.tier)}">
         <span>${escapeHtml(leader.tier)}</span>
       </div>
       <div class="xp-cell" role="cell">${escapeHtml(leader.scoreText)}</div>
