@@ -3380,6 +3380,7 @@ const integrationStyle = `
   [data-page="rewards"] .reward-market {
     position: relative;
   }
+  /* AIFA-88: 左/中/右三栏锁定同高，底边对齐；历史区靠布局拉满，不只堆第 4 条 */
   [data-page="scan"] .scan-wrap {
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
@@ -3389,20 +3390,32 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap > .grid {
     min-width: 0;
   }
+  [data-page="scan"] .feature-stack,
   [data-page="scan"] .scan-wrap > .card,
-  [data-page="scan"] .scan-side-panel,
-  [data-page="scan"] .feature-stack {
+  [data-page="scan"] .scan-side-panel {
     align-self: stretch;
+    box-sizing: border-box;
+    height: min(74vh, 860px);
+    max-height: min(74vh, 860px);
     min-height: min(74vh, 860px);
   }
   [data-page="scan"] .feature-stack {
+    display: grid;
+    gap: 18px;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+  [data-page="scan"] .feature-stack > .card.soft {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    justify-content: flex-end;
+    min-height: 0;
   }
-  [data-page="scan"] .feature-stack .card.soft {
-    flex: 1 1 auto;
-    margin-top: auto;
+  [data-page="scan"] .scan-wrap > .card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   [data-page="scan"] .scan-side-panel {
     align-content: stretch;
@@ -3415,10 +3428,9 @@ const integrationStyle = `
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    /* 至少装下 4 行；更高时撑满右栏剩余高度，分页贴底 */
     height: auto;
-    min-height: 400px;
     max-height: none;
+    min-height: 0;
     overflow: hidden;
   }
   [data-page="scan"] .scan-history-card > h3 {
@@ -3564,14 +3576,21 @@ const integrationStyle = `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* AIFA-80/88: 固定 4 行视口，翻页/短标题不撑开壳层 */
   [data-page="scan"] .scan-record-list {
+    align-content: start;
     display: grid;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     gap: 10px;
     grid-auto-rows: 68px;
-    /* 4 × 68 + 3 × 10 gap */
-    min-height: 302px;
+    height: calc(4 * 68px + 3 * 10px);
+    max-height: calc(4 * 68px + 3 * 10px);
+    min-height: calc(4 * 68px + 3 * 10px);
     overflow: hidden;
+  }
+  [data-page="scan"] .scan-history-card .scan-record-placeholder {
+    opacity: 0;
+    pointer-events: none;
   }
   [data-page="scan"] .scan-record-pager {
     align-items: center;
@@ -3580,7 +3599,11 @@ const integrationStyle = `
     gap: 10px;
     justify-content: space-between;
     margin-top: auto;
+    min-height: 48px;
     padding-top: 12px;
+  }
+  [data-page="scan"] .scan-record-pager[data-pager-idle="1"] {
+    visibility: hidden;
   }
   [data-page="scan"] .scan-record-pager .pill {
     min-height: 36px;
@@ -3589,6 +3612,25 @@ const integrationStyle = `
   [data-page="scan"] .scan-record-pager .pill:disabled {
     cursor: not-allowed;
     opacity: .45;
+  }
+  @media (max-width: 1180px) {
+    [data-page="scan"] .feature-stack,
+    [data-page="scan"] .scan-wrap > .card,
+    [data-page="scan"] .scan-side-panel {
+      height: auto;
+      max-height: none;
+      min-height: 0;
+    }
+    [data-page="scan"] .feature-stack {
+      grid-template-rows: none;
+    }
+    [data-page="scan"] .scan-side-panel {
+      overflow: visible;
+    }
+    [data-page="scan"] .scan-history-card {
+      height: auto;
+      min-height: calc(28px + (4 * 68px) + (3 * 10px) + 48px);
+    }
   }
   [data-page="scan"] .has-analysis-result {
     padding: 18px;
