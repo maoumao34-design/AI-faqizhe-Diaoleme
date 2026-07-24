@@ -75,8 +75,8 @@ export function clearOwnedRewards() {
 }
 
 function isRewardOwned(item: RewardMarketItem, unlockedHairStyles: string[], owned = loadOwnedRewards()) {
+  // 商城「已拥有」只认真实兑换记录，避免发型解锁或旧逻辑把未兑换商品标成已拥有
   if (owned.has(item.id)) return true
-  if (item.unlockId && unlockedHairStyles.includes(item.unlockId)) return true
   return false
 }
 
@@ -84,18 +84,26 @@ function getMarketItemById(id: string) {
   return REWARD_MARKET_ITEMS.find((item) => item.id === id)
 }
 
-/** 按当前 XP 判定是否已拥有：已兑换，或积分已达到该商品兑换门槛 */
-function isOwnedByPoints(item: RewardMarketItem, points: number, unlockedHairStyles: string[], owned = loadOwnedRewards()) {
-  if (isRewardOwned(item, unlockedHairStyles, owned)) return true
-  return points >= item.points
-}
-
-function shopStatusForItem(item: RewardMarketItem, points: number, unlockedHairStyles: string[], owned = loadOwnedRewards()) {
-  if (isOwnedByPoints(item, points, unlockedHairStyles, owned)) {
+/** 商城 / 成长轨共用：已兑换 → 已拥有；否则按真实 XP 显示可兑换或还差 */
+function shopStatusForItem(item: RewardMarketItem, points: number, owned = loadOwnedRewards()) {
+  if (isRewardOwned(item, [], owned)) {
     return { owned: true, canBuy: false, status: '已拥有', need: 0 }
   }
   const need = Math.max(0, item.points - points)
-  return { owned: false, canBuy: need === 0, status: need === 0 ? '可兑换' : `还差 ${need.toLocaleString('en-US')} XP`, need }
+  if (need === 0) {
+    return { owned: false, canBuy: true, status: '可兑换', need: 0 }
+  }
+  return { owned: false, canBuy: false, status: `还差 ${need.toLocaleString('en-US')} XP`, need }
+}
+
+/** 一次性清掉旧版错误「已拥有」缓存，与真实 XP 对齐 */
+function reconcileOwnedRewardsCache() {
+  if (typeof window === 'undefined') return
+  const flagKey = 'diaoleme-rewards-owned-sync-v3'
+  if (window.localStorage.getItem(flagKey) === '1') return
+  window.localStorage.removeItem(ownedRewardsKey())
+  window.localStorage.removeItem(rewardRecordsKey())
+  window.localStorage.setItem(flagKey, '1')
 }
 
 function loadRewardPurchaseRecords(): RewardPurchaseRecord[] {
@@ -162,6 +170,7 @@ function getDisplayPurchaseRecords(): RewardPurchaseRecord[] {
 }
 
 export function renderRewards(root: HTMLElement) {
+  reconcileOwnedRewardsCache()
   const s = useUserStore.getState()
   const level = getLevelProgress(s.points)
   const owned = loadOwnedRewards()
@@ -277,7 +286,7 @@ export function renderRewards(root: HTMLElement) {
   }).join(''))
 
   setHtml(root.querySelector('#shop'), REWARD_MARKET_ITEMS.map((item) => {
-    const state = shopStatusForItem(item, s.points, s.unlockedHairStyles, owned)
+    const state = shopStatusForItem(item, s.points, owned)
     const stateClass = state.owned ? 'owned' : state.canBuy ? 'can-buy' : 'locked'
     return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${state.owned ? 'disabled' : ''}>
       <div class="reward-image-wrap">
@@ -294,11 +303,11 @@ export function renderRewards(root: HTMLElement) {
   setHtml(root.querySelector('#rewardsGrowth'), GROWTH_LEVEL_REWARDS.map((reward) => {
     const marketItem = getMarketItemById(reward.marketId)
     const state = marketItem
-      ? shopStatusForItem(marketItem, s.points, s.unlockedHairStyles, owned)
-      : { owned: level.level >= reward.level, canBuy: false, status: '已拥有', need: 0 }
-    // 与商城同一套 XP 差值文案；已达成时成长轨显示「已领取」
+      ? shopStatusForItem(marketItem, s.points, owned)
+      : { owned: false, canBuy: false, status: '还差 -- XP', need: 0 }
+    // 与商城同一套 XP 差值；已兑换显示已领取，未兑换显示还差/可兑换
     const status = state.owned ? '已领取' : state.status
-    const reached = state.owned || level.level >= reward.level
+    const reached = state.owned
     return `<button type="button" class="growth-reward ${reached ? 'active' : ''}">
       <img src="${escapeHtml(reward.image)}" alt="Lv.${reward.level} ${escapeHtml(reward.name)}">
       <strong>Lv.${reward.level}</strong>
