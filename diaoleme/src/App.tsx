@@ -954,7 +954,7 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-season-hero {
-    background: linear-gradient(105deg, #f6dcfa 0%, #e9e2ff 46%, #ded7fb 100%);
+    background: #e9e2ff;
     border-radius: 22px;
     box-shadow: 0 14px 34px rgba(90, 73, 158, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.7);
     display: grid;
@@ -964,34 +964,25 @@ const integrationStyle = `
     position: relative;
   }
 
-  [data-page="league"] .league-hero-sky,
-  [data-page="league"] .league-hero-flowers {
-    left: 0;
+  [data-page="league"] .league-hero-bg {
+    height: 100%;
+    inset: 0;
+    object-fit: cover;
+    object-position: center;
+    opacity: 1;
     pointer-events: none;
     position: absolute;
     width: 100%;
     z-index: 0;
   }
 
-  [data-page="league"] .league-hero-sky {
-    height: 58%;
-    object-fit: cover;
-    opacity: 0.55;
-    top: 0;
-  }
-
-  [data-page="league"] .league-hero-flowers {
-    bottom: 0;
-    height: 42%;
-    object-fit: cover;
-    opacity: 0.7;
-  }
-
   [data-page="league"] .league-season-hero::before {
-    background: radial-gradient(circle at 14% 22%, rgba(255, 255, 255, 0.7), transparent 24%), linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
     content: "";
     inset: 0;
+    pointer-events: none;
     position: absolute;
+    z-index: 1;
   }
 
   [data-page="league"] .league-hero-copy {
