@@ -7,15 +7,15 @@ export const rewardsSection = `<section class="page" data-page="rewards">
                   <h2><span data-rewards-points></span><small>XP</small></h2>
                   <p data-rewards-next-level>距离下一等级还需 -- XP</p>
                   <div class="rewards-level-progress"><i data-rewards-level-fill style="width:0%"></i></div>
-                </div>
-                <div class="rewards-earn-card">
-                  <h3>积分获取方式</h3>
-                  <ul>
-                    <li><img class="earn-icon" src="./rewards-assets/earn-task.png" alt=""><b>完成任务</b><strong>+2 ~ 35 XP</strong></li>
-                    <li><img class="earn-icon" src="./rewards-assets/earn-checkin.png" alt=""><b>每日打卡</b><strong>+5 XP</strong></li>
-                    <li><img class="earn-icon" src="./rewards-assets/earn-growth.png" alt=""><b>每日建议全完成</b><strong>+10 XP</strong></li>
-                    <li><img class="earn-icon" src="./rewards-assets/earn-league.png" alt=""><b>参与联盟活动</b><strong>+100 ~ 500 XP</strong></li>
-                  </ul>
+                  <div class="rewards-earn-card">
+                    <h3>积分获取方式</h3>
+                    <ul>
+                      <li><img class="earn-icon" src="./rewards-assets/earn-task.png" alt=""><b>完成任务</b><strong>+2 ~ 35 XP</strong></li>
+                      <li><img class="earn-icon" src="./rewards-assets/earn-checkin.png" alt=""><b>每日打卡</b><strong>+5 XP</strong></li>
+                      <li><img class="earn-icon" src="./rewards-assets/earn-growth.png" alt=""><b>每日建议全完成</b><strong>+10 XP</strong></li>
+                      <li><img class="earn-icon" src="./rewards-assets/earn-league.png" alt=""><b>参与联盟活动</b><strong>+100 ~ 500 XP</strong></li>
+                    </ul>
+                  </div>
                 </div>
               </section>
 

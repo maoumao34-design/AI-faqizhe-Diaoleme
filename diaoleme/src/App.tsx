@@ -2508,12 +2508,10 @@ const integrationStyle = `
     border: 1px solid rgba(255, 255, 255, 0.82);
     border-radius: 22px;
     box-shadow: 0 18px 46px rgba(95, 85, 150, 0.11);
-    display: grid;
-    gap: 18px;
-    grid-template-columns: minmax(280px, 1.2fr) minmax(260px, 0.9fr);
-    min-height: 360px;
+    display: block;
+    min-height: 420px;
     overflow: hidden;
-    padding: 22px 24px;
+    padding: 26px 28px;
     position: relative;
   }
 
@@ -2526,9 +2524,9 @@ const integrationStyle = `
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    max-width: min(340px, 52%);
-    padding: 12px 8px 12px 8px;
+    justify-content: flex-start;
+    max-width: min(360px, 46%);
+    padding: 4px 0;
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 18px rgba(255, 255, 255, 0.55);
   }
 
@@ -2592,12 +2590,14 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-earn-card {
-    align-self: center;
     backdrop-filter: blur(14px);
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.86);
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 18px;
-    padding: 22px 20px;
+    margin-top: 18px;
+    padding: 18px 16px;
+    text-shadow: none;
+    width: 100%;
   }
 
   [data-page="rewards"] .rewards-earn-card h3 {
@@ -3307,14 +3307,13 @@ const integrationStyle = `
 
   @media (max-width: 980px) {
     [data-page="rewards"] .rewards-points-hero {
-      background-size: 125% auto;
-      grid-template-columns: 1fr;
-      min-height: 320px;
+      background-position: right 18% center;
+      background-size: 140% auto;
+      min-height: 460px;
     }
 
     [data-page="rewards"] .rewards-points-stats {
-      max-width: min(320px, 70%);
-      padding: 8px 4px;
+      max-width: min(360px, 72%);
     }
 
     [data-page="rewards"] .rewards-earn-card ul {
