@@ -2532,20 +2532,31 @@ const integrationStyle = `
       url('./rewards-assets/hero-character.png');
     background-position: left center, right center;
     background-repeat: no-repeat;
-    /* 150% 宽 → 可视区域正好是原图靠右的 2/3 */
-    background-size: auto, 150% 100%;
+    background-size: auto, 125% 100%;
     border-radius: 18px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     min-height: 220px;
     overflow: hidden;
-    padding: 20px 24px;
+    padding: 0;
     position: relative;
     z-index: 1;
   }
 
-  [data-page="rewards"] .rewards-points-copy > span {
+  [data-page="rewards"] .rewards-points-copy-inner {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: min(300px, 46%);
+    padding: 28px 16px 28px 28px;
+    position: relative;
+    z-index: 1;
+  }
+
+  [data-page="rewards"] .rewards-points-copy > span,
+  [data-page="rewards"] .rewards-points-copy-inner > span {
     color: #5960a8;
     display: block;
     font-size: 14px;
@@ -2553,7 +2564,8 @@ const integrationStyle = `
     margin-bottom: 8px;
   }
 
-  [data-page="rewards"] .rewards-points-copy h2 {
+  [data-page="rewards"] .rewards-points-copy h2,
+  [data-page="rewards"] .rewards-points-copy-inner h2 {
     align-items: baseline;
     color: #172873;
     display: flex;
@@ -2564,12 +2576,14 @@ const integrationStyle = `
     margin: 0;
   }
 
-  [data-page="rewards"] .rewards-points-copy h2 small {
+  [data-page="rewards"] .rewards-points-copy h2 small,
+  [data-page="rewards"] .rewards-points-copy-inner h2 small {
     color: #7764d8;
     font-size: 18px;
   }
 
-  [data-page="rewards"] .rewards-points-copy p {
+  [data-page="rewards"] .rewards-points-copy p,
+  [data-page="rewards"] .rewards-points-copy-inner p {
     color: #767aa8;
     font-size: 13px;
     font-weight: 700;
@@ -3171,8 +3185,13 @@ const integrationStyle = `
     }
 
     [data-page="rewards"] .rewards-points-copy {
-      background-size: auto, 150% auto;
+      background-size: auto, 125% auto;
       min-height: 200px;
+    }
+
+    [data-page="rewards"] .rewards-points-copy-inner {
+      max-width: min(280px, 58%);
+      padding: 22px 14px 22px 22px;
     }
 
     [data-page="rewards"] .reward-grid {
