@@ -1440,6 +1440,14 @@ const integrationStyle = `
     gap: 7px;
   }
 
+  [data-page="league"] .tier-emblem-icon {
+    display: block;
+    flex: 0 0 auto;
+    height: 22px;
+    object-fit: contain;
+    width: 22px;
+  }
+
   [data-page="league"] .tier-emblem {
     clip-path: polygon(50% 0, 90% 20%, 100% 66%, 50% 100%, 0 66%, 10% 20%);
     display: grid;
