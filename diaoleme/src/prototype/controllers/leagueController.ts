@@ -8,18 +8,18 @@ const leagueAsset = (name: string) => publicAssetUrl(`league-assets/${name}`)
 const leagueRankMetricKey = () => 'diaoleme-league-rank-metric'
 
 const TIER_SHIELD_BY_NAME: Record<string, string> = {
-  青铜: 'shield-bronze.png',
-  白银: 'shield-silver.png',
-  黄金: 'shield-gold.png',
-  铂金: 'shield-platinum.png',
-  '钻石 III': 'shield-diamond.png',
-  '钻石 II': 'shield-diamond-ii.png',
-  '钻石 I': 'shield-diamond-i.png',
-  王者: 'shield-king.png',
+  青铜: 'shield-bronze.svg',
+  白银: 'shield-silver.svg',
+  黄金: 'shield-gold.svg',
+  铂金: 'shield-platinum.svg',
+  '钻石 III': 'shield-diamond.svg',
+  '钻石 II': 'shield-diamond-ii.svg',
+  '钻石 I': 'shield-diamond-i.svg',
+  王者: 'shield-king.svg',
 }
 
 function tierShieldSrc(name: string) {
-  return leagueAsset(TIER_SHIELD_BY_NAME[name] || 'shield-bronze.png')
+  return leagueAsset(TIER_SHIELD_BY_NAME[name] || 'shield-bronze.svg')
 }
 
 export type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
