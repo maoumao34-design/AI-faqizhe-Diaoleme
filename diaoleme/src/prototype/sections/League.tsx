@@ -2,8 +2,7 @@ export const leagueSection = `<section class="page" data-page="league">
           <div class="grid two-col">
             <div class="grid">
               <section class="league-season-hero">
-                <img class="league-hero-sky" src="./league-assets/sky-bg.png" alt="" aria-hidden="true">
-                <img class="league-hero-flowers" src="./league-assets/flower-fg.png" alt="" aria-hidden="true">
+                <img class="league-hero-bg" src="./league-assets/new_sky_and_flower_bg.png" alt="" aria-hidden="true">
                 <div class="league-hero-copy">
                   <span>本赛季</span>
                   <h2>春风吹发季 🌸</h2>
