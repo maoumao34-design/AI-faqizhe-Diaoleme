@@ -1440,6 +1440,14 @@ const integrationStyle = `
     gap: 7px;
   }
 
+  [data-page="league"] .tier-emblem-icon {
+    display: block;
+    flex: 0 0 auto;
+    height: 22px;
+    object-fit: contain;
+    width: 22px;
+  }
+
   [data-page="league"] .tier-emblem {
     clip-path: polygon(50% 0, 90% 20%, 100% 66%, 50% 100%, 0 66%, 10% 20%);
     display: grid;
@@ -3208,12 +3216,23 @@ const integrationStyle = `
     min-width: 0;
   }
   [data-page="scan"] .scan-wrap > .card,
-  [data-page="scan"] .scan-side-panel {
+  [data-page="scan"] .scan-side-panel,
+  [data-page="scan"] .feature-stack {
+    align-self: stretch;
     min-height: min(74vh, 860px);
   }
+  [data-page="scan"] .feature-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  [data-page="scan"] .feature-stack .card.soft {
+    flex: 1 1 auto;
+    margin-top: auto;
+  }
   [data-page="scan"] .scan-side-panel {
-    align-content: start;
-    align-self: stretch;
+    align-content: stretch;
+    display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
     min-width: 0;
     overflow: hidden;
@@ -3222,10 +3241,10 @@ const integrationStyle = `
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    /* 4 行 × 68px + 标题/分页；相对 3 行卡增高一截，对齐中间扫描卡 */
-    height: 400px;
+    /* 至少装下 4 行；更高时撑满右栏剩余高度，分页贴底 */
+    height: auto;
     min-height: 400px;
-    max-height: 400px;
+    max-height: none;
     overflow: hidden;
   }
   [data-page="scan"] .scan-history-card > h3 {
@@ -3376,7 +3395,8 @@ const integrationStyle = `
     flex: 1 1 auto;
     gap: 10px;
     grid-auto-rows: 68px;
-    min-height: 224px;
+    /* 4 × 68 + 3 × 10 gap */
+    min-height: 302px;
     overflow: hidden;
   }
   [data-page="scan"] .scan-record-pager {
