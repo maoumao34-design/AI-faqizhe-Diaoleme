@@ -2501,10 +2501,10 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-points-hero {
-    align-items: center;
+    align-items: stretch;
     display: grid;
     gap: 16px;
-    grid-template-columns: minmax(210px, 0.82fr) minmax(180px, 240px) minmax(240px, 0.86fr);
+    grid-template-columns: minmax(280px, 1.2fr) minmax(240px, 0.86fr);
     min-height: 280px;
     overflow: hidden;
     padding: 24px 28px;
@@ -2527,6 +2527,20 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .rewards-points-copy {
+    background-image:
+      linear-gradient(90deg, rgba(255, 242, 250, 0.94) 0%, rgba(255, 242, 250, 0.82) 34%, rgba(255, 242, 250, 0.28) 58%, transparent 78%),
+      url('./rewards-assets/hero-character.png');
+    background-position: left center, right center;
+    background-repeat: no-repeat;
+    /* 150% 宽 → 可视区域正好是原图靠右的 2/3 */
+    background-size: auto, 150% 100%;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 220px;
+    overflow: hidden;
+    padding: 20px 24px;
     position: relative;
     z-index: 1;
   }
@@ -3156,9 +3170,9 @@ const integrationStyle = `
       grid-template-columns: 1fr;
     }
 
-    [data-page="rewards"] .rewards-hero-character {
-      height: 150px;
-      max-height: 150px;
+    [data-page="rewards"] .rewards-points-copy {
+      background-size: auto, 150% auto;
+      min-height: 200px;
     }
 
     [data-page="rewards"] .reward-grid {
