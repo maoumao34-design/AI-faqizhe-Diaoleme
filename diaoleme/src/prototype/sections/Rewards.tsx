@@ -48,11 +48,40 @@ export const rewardsSection = `<section class="page" data-page="rewards">
 
             <aside class="rewards-right-rail">
               <section class="rewards-side-panel overview-panel">
-                <div class="rewards-panel-heading"><strong>积分总览</strong></div>
+                <div class="rewards-panel-heading">
+                  <div>
+                    <span class="panel-eyebrow">POINTS OVERVIEW</span>
+                    <strong>积分总览</strong>
+                  </div>
+                  <b data-rewards-level-badge>Lv.1 成长中</b>
+                </div>
                 <div class="overview-content">
                   <div class="points-donut"><div><strong data-rewards-points></strong><span>总积分</span></div></div>
                   <ul class="legend"><li><i class="purple"></i><span>任务奖励</span><b>67%</b></li><li><i class="blue"></i><span>打卡奖励</span><b>18%</b></li><li><i class="orange"></i><span>活动奖励</span><b>10%</b></li><li><i class="gray"></i><span>其他</span><b>5%</b></li></ul>
                 </div>
+                <div class="overview-level-block">
+                  <div class="overview-level-meta">
+                    <span data-rewards-overview-next>距离下一等级还需 -- XP</span>
+                    <span data-rewards-overview-ratio>-- / --</span>
+                  </div>
+                  <div class="overview-level-bar"><i data-rewards-overview-fill style="width:0%"></i></div>
+                </div>
+              </section>
+
+              <section class="rewards-side-panel today-growth-panel">
+                <div class="rewards-panel-heading">
+                  <div>
+                    <span class="panel-eyebrow">TODAY'S GROWTH</span>
+                    <strong>今日成长</strong>
+                  </div>
+                  <b data-rewards-today-badge>3 / 5 已完成</b>
+                </div>
+                <div class="today-growth-stats">
+                  <div><span>今日获得</span><strong data-rewards-today-xp>+5 XP</strong></div>
+                  <div><span>完成任务</span><strong data-rewards-today-tasks>2 项</strong></div>
+                  <div><span>专注效率</span><strong data-rewards-today-focus>80%</strong></div>
+                </div>
+                <div class="today-growth-list" id="rewardsTodayGrowth"></div>
               </section>
 
               <section class="rewards-side-panel checkin-panel">

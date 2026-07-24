@@ -2910,7 +2910,7 @@ const integrationStyle = `
   [data-page="rewards"] .rewards-right-rail {
     align-items: start;
     display: grid;
-    gap: 12px;
+    gap: 18px;
   }
 
   [data-page="rewards"] .rewards-side-panel {
@@ -2918,17 +2918,19 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .overview-panel,
+  [data-page="rewards"] .today-growth-panel,
   [data-page="rewards"] .checkin-panel,
   [data-page="rewards"] .event-panel,
   [data-page="rewards"] .records-panel {
-    padding: 14px 16px;
+    padding: 16px 18px;
   }
 
   [data-page="rewards"] .overview-panel .rewards-panel-heading,
+  [data-page="rewards"] .today-growth-panel .rewards-panel-heading,
   [data-page="rewards"] .checkin-panel .rewards-panel-heading,
   [data-page="rewards"] .event-panel .rewards-panel-heading,
   [data-page="rewards"] .records-panel .rewards-panel-heading {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   [data-page="rewards"] .rewards-panel-heading {
@@ -2936,6 +2938,145 @@ const integrationStyle = `
     display: flex;
     justify-content: space-between;
     margin-bottom: 14px;
+  }
+
+  [data-page="rewards"] .panel-eyebrow {
+    color: #8a6ff0;
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  [data-page="rewards"] .rewards-panel-heading > div strong {
+    display: block;
+  }
+
+  [data-page="rewards"] .overview-level-block {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  [data-page="rewards"] .overview-level-meta {
+    align-items: center;
+    color: #767aa8;
+    display: flex;
+    font-size: 11px;
+    font-weight: 700;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  [data-page="rewards"] .overview-level-bar,
+  [data-page="rewards"] .today-growth-bar {
+    background: #eceaf8;
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  [data-page="rewards"] .overview-level-bar i,
+  [data-page="rewards"] .today-growth-bar i {
+    background: linear-gradient(90deg, #8d6cf6, #6f7cf2);
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+  }
+
+  [data-page="rewards"] .today-growth-stats {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 12px;
+  }
+
+  [data-page="rewards"] .today-growth-stats > div {
+    background: #f6f4ff;
+    border-radius: 14px;
+    display: grid;
+    gap: 6px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  [data-page="rewards"] .today-growth-stats span {
+    color: #8a90bb;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  [data-page="rewards"] .today-growth-stats strong {
+    color: #5b62c8;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  [data-page="rewards"] .today-growth-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  [data-page="rewards"] .today-growth-item {
+    background: rgba(248, 245, 255, 0.88);
+    border-radius: 14px;
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  [data-page="rewards"] .today-growth-item-head {
+    align-items: center;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  [data-page="rewards"] .today-growth-icon {
+    align-items: center;
+    background: #efeaff;
+    border-radius: 10px;
+    display: inline-flex;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+  }
+
+  [data-page="rewards"] .today-growth-item-head > div {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  [data-page="rewards"] .today-growth-item-head strong {
+    color: #2c3478;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  [data-page="rewards"] .today-growth-item-head b {
+    color: #7c67e4;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  [data-page="rewards"] .today-growth-item-meta {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  [data-page="rewards"] .today-growth-item-meta span {
+    color: #8a90bb;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
   }
 
   [data-page="rewards"] .rewards-panel-heading button,
