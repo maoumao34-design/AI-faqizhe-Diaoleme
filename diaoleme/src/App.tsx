@@ -2502,16 +2502,16 @@ const integrationStyle = `
   [data-page="rewards"] .rewards-points-hero {
     align-items: stretch;
     background-image: url('./rewards-assets/hero-character.png');
-    background-position: right center;
+    background-position: center center;
     background-repeat: no-repeat;
-    background-size: 125% 100%;
+    background-size: 100% 100%;
     border: 1px solid rgba(255, 255, 255, 0.82);
     border-radius: 22px;
     box-shadow: 0 18px 46px rgba(95, 85, 150, 0.11);
     display: block;
     min-height: 420px;
     overflow: hidden;
-    padding: 26px 28px;
+    padding: 15px 15px;
     position: relative;
   }
 
@@ -2593,17 +2593,18 @@ const integrationStyle = `
     backdrop-filter: blur(14px);
     background: rgba(255, 255, 255, 0.78);
     border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 18px;
-    margin-top: 18px;
-    padding: 18px 16px;
+    border-radius: 16px;
+    box-sizing: border-box;
+    margin-top: 14px;
+    padding: 12px 12px;
     text-shadow: none;
-    width: 100%;
+    width: min(100%, 260px);
   }
 
   [data-page="rewards"] .rewards-earn-card h3 {
     color: #172873;
-    font-size: 18px;
-    margin: 0 0 16px;
+    font-size: 14px;
+    margin: 0 0 10px;
   }
 
   [data-page="rewards"] .reward-market h3 {
@@ -2614,7 +2615,7 @@ const integrationStyle = `
 
   [data-page="rewards"] .rewards-earn-card ul {
     display: grid;
-    gap: 16px;
+    gap: 10px;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -2624,24 +2625,24 @@ const integrationStyle = `
     align-items: center;
     color: #4f5788;
     display: grid;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 700;
-    gap: 12px;
-    grid-template-columns: 36px 1fr auto;
+    gap: 8px;
+    grid-template-columns: 26px 1fr auto;
   }
 
   [data-page="rewards"] .rewards-earn-card li strong {
     color: #6b57d4;
-    font-size: 15px;
+    font-size: 12px;
     white-space: nowrap;
   }
 
   [data-page="rewards"] .earn-icon {
     border-radius: 50%;
     display: block;
-    height: 36px;
+    height: 26px;
     object-fit: contain;
-    width: 36px;
+    width: 26px;
   }
 
   [data-page="rewards"] .reward-market {
@@ -3307,17 +3308,17 @@ const integrationStyle = `
 
   @media (max-width: 980px) {
     [data-page="rewards"] .rewards-points-hero {
-      background-position: right 18% center;
-      background-size: 140% auto;
-      min-height: 460px;
+      background-size: 100% 100%;
+      min-height: 380px;
+      padding: 15px 15px;
     }
 
     [data-page="rewards"] .rewards-points-stats {
       max-width: min(360px, 72%);
     }
 
-    [data-page="rewards"] .rewards-earn-card ul {
-      gap: 14px;
+    [data-page="rewards"] .rewards-earn-card {
+      width: min(100%, 260px);
     }
 
     [data-page="rewards"] .reward-grid {
