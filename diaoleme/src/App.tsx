@@ -3198,9 +3198,10 @@ const integrationStyle = `
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    height: 332px;
-    min-height: 332px;
-    max-height: 332px;
+    /* 4 行 × 68px + 标题/分页；相对 3 行卡增高一截，对齐中间扫描卡 */
+    height: 400px;
+    min-height: 400px;
+    max-height: 400px;
     overflow: hidden;
   }
   [data-page="scan"] .scan-history-card > h3 {
