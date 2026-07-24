@@ -7,9 +7,20 @@ function formatShortDate(date: string) {
   return `${m}/${d}`
 }
 
-function renderRecordItems(records: ReportRecord[], timeline = false) {
-  if (!records.length) return `<div class="item"><span>📷</span><b class="scan-record-text"><span class="scan-record-title">暂无记录</span><small class="scan-record-meta">上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
-  return records.map((r) => {
+/** Scan「最近扫描记录」每页条数（AIFA-88）；布局按此固定 4 槽，不足时占位不塌 */
+export const SCAN_RECORD_PAGE_SIZE = 4
+
+function renderRecordPlaceholder() {
+  return `<div class="item scan-record-placeholder" aria-hidden="true"><span></span><b class="scan-record-text"><span class="scan-record-title">&nbsp;</span><small class="scan-record-meta">&nbsp;</small></b><span class="status">&nbsp;</span></div>`
+}
+
+function renderRecordItems(records: ReportRecord[], timeline = false, pageSlots = 0) {
+  const emptySlot = `<div class="item"><span>📷</span><b class="scan-record-text"><span class="scan-record-title">暂无记录</span><small class="scan-record-meta">上传图片后会出现在这里。</small></b><span class="status">--</span></div>`
+  if (!records.length) {
+    if (pageSlots <= 0) return emptySlot
+    return emptySlot + Array.from({ length: Math.max(0, pageSlots - 1) }, () => renderRecordPlaceholder()).join('')
+  }
+  const rows = records.map((r) => {
     const recordId = escapeHtml(r.id)
     const itemAttrs = timeline ? '' : ` data-view-report="${recordId}" role="button" tabindex="0"`
     const delta = typeof r.score_delta === 'number'
@@ -24,6 +35,8 @@ function renderRecordItems(records: ReportRecord[], timeline = false) {
     const metaAttr = escapeHtml(metaText)
     return `<div class="item"${itemAttrs}><span>${timeline ? r.date.slice(5) : '〰'}</span><b class="scan-record-text"><span class="scan-record-title" title="${titleAttr}">${escapeHtml(r.title)}</span><small class="scan-record-meta" title="${metaAttr}">${escapeHtml(metaText)}</small></b><button class="status" data-view-report="${recordId}" title="${escapeHtml(scoreLabel)}">${escapeHtml(scoreLabel)}</button></div>`
   }).join('')
+  if (pageSlots <= 0 || records.length >= pageSlots) return rows
+  return rows + Array.from({ length: pageSlots - records.length }, () => renderRecordPlaceholder()).join('')
 }
 
 export function groupReportsByDay(records: ReportRecord[]) {
@@ -73,15 +86,14 @@ export function buildTrendBars(records: ReportRecord[]) {
 
 export function renderHistory(root: HTMLElement) {
   const history = useUserStore.getState().reportHistory
-  // 一页 4 条，贴近中间扫描卡高度，避免右侧「最近扫描记录」明显矮一截
-  const scanPageSize = 4
+  const scanPageSize = SCAN_RECORD_PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(history.length / scanPageSize))
   const currentPage = Math.min(Math.max(Number(root.dataset.scanRecordPage || 0), 0), totalPages - 1)
   root.dataset.scanRecordPage = String(currentPage)
   const pageRecords = history.slice(currentPage * scanPageSize, currentPage * scanPageSize + scanPageSize)
-  const pager = history.length > scanPageSize
-    ? `<div class="scan-record-pager"><button class="pill" data-scan-record-page="${Math.max(0, currentPage - 1)}" ${currentPage === 0 ? 'disabled' : ''}>上一页</button><small>${currentPage + 1} / ${totalPages}</small><button class="pill" data-scan-record-page="${Math.min(totalPages - 1, currentPage + 1)}" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>下一页</button></div>`
-    : ''
+  // 始终占位分页条，避免有/无翻页时历史卡高度跳动（AIFA-80/88）
+  const pagerDisabled = history.length <= scanPageSize
+  const pager = `<div class="scan-record-pager"${pagerDisabled ? ' data-pager-idle="1"' : ''}><button class="pill" data-scan-record-page="${Math.max(0, currentPage - 1)}" ${currentPage === 0 || pagerDisabled ? 'disabled' : ''}>上一页</button><small>${currentPage + 1} / ${totalPages}</small><button class="pill" data-scan-record-page="${Math.min(totalPages - 1, currentPage + 1)}" ${currentPage >= totalPages - 1 || pagerDisabled ? 'disabled' : ''}>下一页</button></div>`
   const latest = history.slice(0, 4)
   const latestSource = history[0]?.source_label || '等待分析'
   const latestSourceText = escapeHtml(latestSource)
@@ -98,7 +110,7 @@ export function renderHistory(root: HTMLElement) {
       `<div class="scan-stat-item scan-source-stat"><div class="scan-stat-value"><span class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</span></div><small>最新来源</small></div>` +
       `</div>`,
   )
-  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords)}</div>${pager}`)
+  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords, false, scanPageSize)}</div>${pager}`)
   renderJourney(root, history)
   setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
 }

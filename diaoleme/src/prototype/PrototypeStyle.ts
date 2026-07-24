@@ -731,7 +731,7 @@ export const prototypeStyle = `
     display: grid;
     grid-template-columns: 250px minmax(420px, 1fr) 360px;
     gap: 24px;
-    align-items: center;
+    align-items: stretch;
   }
 
   .scan-orbit {
