@@ -150,6 +150,31 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const shareBtn = target.closest<HTMLElement>('#guideBtn')
     const likeBtn = target.closest<HTMLElement>('[data-post-like]')
     const commentBtn = target.closest<HTMLElement>('[data-post-comments]')
+    const seasonRewardBtn = target.closest<HTMLElement>('[data-league-season-reward]')
+    const seasonRewardClose = target.closest<HTMLElement>('[data-league-season-reward-close]')
+    const seasonRewardPanel = root.querySelector<HTMLElement>('[data-league-season-reward-panel]')
+    const seasonRewardToggle = root.querySelector<HTMLElement>('[data-league-season-reward]')
+
+    if (seasonRewardBtn && seasonRewardPanel && seasonRewardToggle) {
+      const open = seasonRewardPanel.hasAttribute('hidden')
+      seasonRewardPanel.toggleAttribute('hidden', !open)
+      seasonRewardToggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+      return
+    }
+    if (seasonRewardClose && seasonRewardPanel && seasonRewardToggle) {
+      seasonRewardPanel.setAttribute('hidden', '')
+      seasonRewardToggle.setAttribute('aria-expanded', 'false')
+      return
+    }
+    if (
+      seasonRewardPanel &&
+      seasonRewardToggle &&
+      !seasonRewardPanel.hasAttribute('hidden') &&
+      !target.closest('[data-league-season-reward-panel]')
+    ) {
+      seasonRewardPanel.setAttribute('hidden', '')
+      seasonRewardToggle.setAttribute('aria-expanded', 'false')
+    }
 
     if (navBtn?.dataset.go === 'scan' && !viewReportBtn) {
       clearAnalysisCard(root)
@@ -1328,25 +1353,118 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-hero-rank {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
     padding: 28px 20px 0 0;
     position: relative;
     text-align: center;
     z-index: 3;
   }
 
-  [data-page="league"] .league-hero-rank button {
+  [data-page="league"] .league-season-reward-btn,
+  [data-page="league"] .league-hero-rank button.league-season-reward-btn {
     align-items: center;
     background: linear-gradient(135deg, #9b7af3, #765ce6);
+    border: 0;
     border-radius: 999px;
     box-shadow: 0 9px 20px rgba(108, 78, 218, 0.23);
     color: #fff;
-    display: flex;
+    cursor: pointer;
+    display: inline-flex;
     font-size: 11px;
     font-weight: 800;
     gap: 7px;
     height: 34px;
+    justify-content: center;
+    margin: 0 auto;
     padding: 0 15px;
     white-space: nowrap;
+  }
+
+  [data-page="league"] .league-season-reward-btn[aria-expanded="true"] {
+    box-shadow: 0 10px 22px rgba(108, 78, 218, 0.32);
+    transform: translateY(-1px);
+  }
+
+  [data-page="league"] .league-season-reward-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 240, 255, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    border-radius: 18px;
+    box-shadow:
+      0 18px 40px rgba(95, 74, 168, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    left: 50%;
+    margin-top: 10px;
+    padding: 16px 14px 14px;
+    position: absolute;
+    top: 42px;
+    transform: translateX(-50%);
+    width: min(188px, calc(100% + 24px));
+    z-index: 8;
+  }
+
+  [data-page="league"] .league-season-reward-panel[hidden] {
+    display: none;
+  }
+
+  [data-page="league"] .league-season-reward-close {
+    align-items: center;
+    background: rgba(124, 104, 214, 0.1);
+    border: 0;
+    border-radius: 999px;
+    color: #6b63a8;
+    cursor: pointer;
+    display: grid;
+    font-size: 16px;
+    height: 24px;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width: 24px;
+  }
+
+  [data-page="league"] .league-season-reward-card {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+
+  [data-page="league"] .league-season-reward-card img {
+    background: radial-gradient(circle at 50% 30%, #fff, #efe8ff 70%);
+    border: 1px solid rgba(170, 151, 244, 0.28);
+    border-radius: 18px;
+    box-shadow: 0 10px 18px rgba(108, 78, 218, 0.12);
+    height: 84px;
+    object-fit: contain;
+    padding: 8px;
+    width: 84px;
+  }
+
+  [data-page="league"] .league-season-reward-card b {
+    color: #2a3478;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  [data-page="league"] .league-season-reward-card small {
+    color: #7a74ad;
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  [data-page="league"] .league-season-reward-card p {
+    color: #6f72a2;
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.45;
+    margin: 4px 0 0;
   }
 
   [data-page="league"] .league-hero-rank > span {
@@ -1371,12 +1489,12 @@ const integrationStyle = `
     display: block;
   }
 
-  [data-page="league"] .league-hero-rank b {
+  [data-page="league"] .league-hero-rank > b {
     font-size: 14px;
     margin-top: 7px;
   }
 
-  [data-page="league"] .league-hero-rank small {
+  [data-page="league"] .league-hero-rank > small {
     color: #7376a4;
     font-size: 10px;
     margin-top: 6px;
