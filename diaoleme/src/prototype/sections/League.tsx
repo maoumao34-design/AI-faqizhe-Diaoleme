@@ -9,33 +9,57 @@ export const leagueSection = `<section class="page" data-page="league">
                   <p class="league-season-range"><span data-league-season-range>8.1 - 8.31</span> <small aria-label="赛季说明">ⓘ</small></p>
                   <small class="league-countdown-label">赛季结束倒计时</small>
                   <div class="league-countdown" data-league-countdown aria-live="polite">
-                    <div class="league-flip-unit" data-flip="days">
-                      <div class="league-flip-card">
-                        <span class="league-flip-value" data-flip-value>00</span>
-                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                    <div class="league-flip-unit">
+                      <div class="league-flip-card" data-unit="days" aria-label="剩余天数">
+                        <div class="league-page-stack" aria-hidden="true"></div>
+                        <div class="league-flip-shell">
+                          <div class="league-half league-top league-static-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-static-bottom"><span>00</span></div>
+                          <div class="league-half league-top league-flip-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-flip-bottom"><span>00</span></div>
+                          <div class="league-hinge" aria-hidden="true"></div>
+                        </div>
                       </div>
-                      <span>天</span>
+                      <span class="league-flip-label">天</span>
                     </div>
-                    <div class="league-flip-unit" data-flip="hours">
-                      <div class="league-flip-card">
-                        <span class="league-flip-value" data-flip-value>00</span>
-                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                    <div class="league-flip-unit">
+                      <div class="league-flip-card" data-unit="hours" aria-label="剩余小时">
+                        <div class="league-page-stack" aria-hidden="true"></div>
+                        <div class="league-flip-shell">
+                          <div class="league-half league-top league-static-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-static-bottom"><span>00</span></div>
+                          <div class="league-half league-top league-flip-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-flip-bottom"><span>00</span></div>
+                          <div class="league-hinge" aria-hidden="true"></div>
+                        </div>
                       </div>
-                      <span>时</span>
+                      <span class="league-flip-label">时</span>
                     </div>
-                    <div class="league-flip-unit" data-flip="mins">
-                      <div class="league-flip-card">
-                        <span class="league-flip-value" data-flip-value>00</span>
-                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                    <div class="league-flip-unit">
+                      <div class="league-flip-card" data-unit="minutes" aria-label="剩余分钟">
+                        <div class="league-page-stack" aria-hidden="true"></div>
+                        <div class="league-flip-shell">
+                          <div class="league-half league-top league-static-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-static-bottom"><span>00</span></div>
+                          <div class="league-half league-top league-flip-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-flip-bottom"><span>00</span></div>
+                          <div class="league-hinge" aria-hidden="true"></div>
+                        </div>
                       </div>
-                      <span>分</span>
+                      <span class="league-flip-label">分</span>
                     </div>
-                    <div class="league-flip-unit" data-flip="secs">
-                      <div class="league-flip-card">
-                        <span class="league-flip-value" data-flip-value>00</span>
-                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                    <div class="league-flip-unit">
+                      <div class="league-flip-card" data-unit="seconds" aria-label="剩余秒数">
+                        <div class="league-page-stack" aria-hidden="true"></div>
+                        <div class="league-flip-shell">
+                          <div class="league-half league-top league-static-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-static-bottom"><span>00</span></div>
+                          <div class="league-half league-top league-flip-top"><span>00</span></div>
+                          <div class="league-half league-bottom league-flip-bottom"><span>00</span></div>
+                          <div class="league-hinge" aria-hidden="true"></div>
+                        </div>
                       </div>
-                      <span>秒</span>
+                      <span class="league-flip-label">秒</span>
                     </div>
                   </div>
                 </div>
