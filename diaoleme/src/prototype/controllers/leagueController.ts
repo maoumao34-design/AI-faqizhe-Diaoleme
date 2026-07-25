@@ -23,6 +23,89 @@ const ALLIANCE_ENEMY_NAME = '发光小队'
 const ALLIANCE_ENEMY_WEEKLY_XP = 12420
 const ALLIANCE_LEVEL_NEED = 5000
 
+/** 赛季：8.1 – 8.31（本地时区），倒计时截止到 8 月 31 日 23:59:59 */
+export const LEAGUE_SEASON_YEAR = 2026
+export const LEAGUE_SEASON_RANGE_LABEL = '8.1 - 8.31'
+export const LEAGUE_SEASON_START = new Date(LEAGUE_SEASON_YEAR, 7, 1, 0, 0, 0, 0)
+export const LEAGUE_SEASON_END = new Date(LEAGUE_SEASON_YEAR, 7, 31, 23, 59, 59, 999)
+
+type SeasonRemain = { days: number; hours: number; mins: number; secs: number; totalMs: number }
+
+function pad2(value: number) {
+  return String(Math.max(0, value)).padStart(2, '0')
+}
+
+export function getSeasonRemaining(now = new Date()): SeasonRemain {
+  const totalMs = Math.max(0, LEAGUE_SEASON_END.getTime() - now.getTime())
+  const totalSec = Math.floor(totalMs / 1000)
+  return {
+    days: Math.floor(totalSec / 86400),
+    hours: Math.floor((totalSec % 86400) / 3600),
+    mins: Math.floor((totalSec % 3600) / 60),
+    secs: totalSec % 60,
+    totalMs,
+  }
+}
+
+function formatBattleRemain(remain: SeasonRemain) {
+  if (remain.totalMs <= 0) return '赛季已结束'
+  return `剩余 ${remain.days} 天 ${pad2(remain.hours)}:${pad2(remain.mins)}:${pad2(remain.secs)}`
+}
+
+function flipUnit(root: HTMLElement, unit: 'days' | 'hours' | 'mins' | 'secs', nextText: string) {
+  const card = root.querySelector<HTMLElement>(`[data-flip="${unit}"]`)
+  if (!card) return
+  const valueNode = card.querySelector<HTMLElement>('[data-flip-value]')
+  const flap = card.querySelector<HTMLElement>('[data-flip-flap]')
+  if (!valueNode || !flap) return
+  const prev = valueNode.textContent ?? ''
+  if (prev === nextText) return
+
+  const flapLabel = flap.querySelector('span')
+  if (flapLabel) flapLabel.textContent = prev
+  valueNode.textContent = nextText
+  flap.classList.remove('is-flipping')
+  // restart CSS animation
+  void flap.offsetWidth
+  flap.classList.add('is-flipping')
+}
+
+function paintSeasonCountdown(root: HTMLElement, now = new Date()) {
+  const remain = getSeasonRemaining(now)
+  const range = root.querySelector<HTMLElement>('[data-league-season-range]')
+  if (range) range.textContent = LEAGUE_SEASON_RANGE_LABEL
+
+  flipUnit(root, 'days', pad2(remain.days))
+  flipUnit(root, 'hours', pad2(remain.hours))
+  flipUnit(root, 'mins', pad2(remain.mins))
+  flipUnit(root, 'secs', pad2(remain.secs))
+
+  const battle = root.querySelector<HTMLElement>('[data-league-battle-remain]')
+  if (battle) battle.textContent = formatBattleRemain(remain)
+}
+
+let seasonCountdownTimer: ReturnType<typeof setInterval> | null = null
+let seasonCountdownRoot: HTMLElement | null = null
+
+export function bindSeasonCountdown(root: HTMLElement) {
+  seasonCountdownRoot = root
+  paintSeasonCountdown(root)
+  if (seasonCountdownTimer == null) {
+    seasonCountdownTimer = setInterval(() => {
+      if (!seasonCountdownRoot) return
+      paintSeasonCountdown(seasonCountdownRoot)
+    }, 1000)
+  }
+}
+
+export function stopSeasonCountdown() {
+  if (seasonCountdownTimer != null) {
+    clearInterval(seasonCountdownTimer)
+    seasonCountdownTimer = null
+  }
+  seasonCountdownRoot = null
+}
+
 type AllianceMember = {
   name: string
   role: string
@@ -394,6 +477,7 @@ export function renderLeague(
   if (allyXp) allyXp.textContent = alliance.weeklyXp.toLocaleString('en-US')
   if (enemyXp) enemyXp.textContent = alliance.enemyWeeklyXp.toLocaleString('en-US')
 
+  bindSeasonCountdown(root)
   setHtml(root.querySelector('#leagueRankContent'), renderLeagueTab(activeTab, activeMetric))
 }
 
