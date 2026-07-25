@@ -2555,13 +2555,13 @@ const integrationStyle = `
     color: #6d5ed7;
   }
 
-  [data-page="league"] .category-nav {
+  [data-page="league"] .category-nav-list {
     display: grid;
     grid-template-rows: repeat(5, minmax(0, 1fr));
   }
 
-  [data-page="league"] .category-nav button {
-    min-height: 88px;
+  [data-page="league"] .category-nav-item {
+    min-height: 72px;
   }
 
   [data-page="league"] .league-ranking-row {
