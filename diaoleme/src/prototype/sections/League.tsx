@@ -71,9 +71,9 @@ export const leagueSection = `<section class="page" data-page="league">
               <section class="league-side-panel awards-panel">
                 <div class="league-panel-title"><strong>每周荣誉榜</strong><button type="button">更多 ›</button></div>
                 <div class="league-awards-grid">
-                  <div><img class="award-dot" src="./league-assets/honor-hair.png" alt="护发达人"><b>护发达人</b><small>Luna</small></div>
-                  <div><img class="award-dot" src="./league-assets/honor-love.png" alt="爱心大使"><b>爱心大使</b><small>Mia</small></div>
-                  <div><img class="award-dot" src="./league-assets/honor-active.png" alt="活跃之星"><b>活跃之星</b><small>Ray</small></div>
+                  <div><img class="award-dot" src="./league-assets/honor-hair.png" alt="护发达人"><b>护发达人</b><small data-award-hair>--</small></div>
+                  <div><img class="award-dot" src="./league-assets/honor-love.png" alt="爱心大使"><b>爱心大使</b><small data-award-kindness>--</small></div>
+                  <div><img class="award-dot" src="./league-assets/honor-active.png" alt="活跃之星"><b>活跃之星</b><small data-award-active>--</small></div>
                 </div>
               </section>
             </aside>

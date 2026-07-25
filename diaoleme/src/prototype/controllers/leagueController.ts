@@ -7,6 +7,15 @@ const leagueAvatar = (name: string) => publicAssetUrl(`league-avatars/${name}.pn
 const leagueAsset = (name: string) => publicAssetUrl(`league-assets/${name}`)
 const leagueRankMetricKey = () => 'diaoleme-league-rank-metric'
 
+/** 可选头像池：不含 you.png */
+const LEAGUE_AVATAR_POOL = ['aria', 'bella', 'luna', 'mia', 'ray', 'sophia'] as const
+
+function pickLeagueAvatar(seed: string) {
+  let hash = 0
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  return leagueAvatar(LEAGUE_AVATAR_POOL[hash % LEAGUE_AVATAR_POOL.length])
+}
+
 const ALLIANCE_NAME = '蒲公英小分队'
 const ALLIANCE_LEVEL = 6
 const ALLIANCE_MEMBER_CAP = 30
@@ -18,10 +27,11 @@ type AllianceMember = {
   name: string
   role: string
   weeklyXp: number
+  avatarSrc: string
   isMe?: boolean
 }
 
-const ALLIANCE_PEER_MEMBERS: Array<Omit<AllianceMember, 'isMe'>> = [
+const ALLIANCE_PEER_MEMBERS: Array<Omit<AllianceMember, 'isMe' | 'avatarSrc'>> = [
   { name: 'Luna', role: '队长', weeklyXp: 1840 },
   { name: 'Mia', role: '副队长', weeklyXp: 1620 },
   { name: 'Ray', role: '活跃成员', weeklyXp: 1380 },
@@ -60,8 +70,11 @@ function getAllianceState() {
   const points = useUserStore.getState().points
   const myWeeklyXp = getMyAllianceWeeklyXp(points)
   const members: AllianceMember[] = [
-    ...ALLIANCE_PEER_MEMBERS,
-    { name: 'You', role: '成长成员', weeklyXp: myWeeklyXp, isMe: true },
+    ...ALLIANCE_PEER_MEMBERS.map((member) => ({
+      ...member,
+      avatarSrc: pickLeagueAvatar(`alliance:${member.name}`),
+    })),
+    { name: 'You', role: '成长成员', weeklyXp: myWeeklyXp, avatarSrc: leagueAvatar('you'), isMe: true },
   ].sort((a, b) => b.weeklyXp - a.weeklyXp)
   const weeklyXp = members.reduce((sum, member) => sum + member.weeklyXp, 0)
   const intoLevel = weeklyXp % ALLIANCE_LEVEL_NEED
@@ -334,6 +347,15 @@ export function renderLeague(
   const s = useUserStore.getState()
   const tier = getLeagueTierProgress(s.points)
   const alliance = getAllianceState()
+  const awardHair = buildLeaders('hair_care').find((leader) => !leader.isMe)
+  const awardKindness = buildLeaders('kindness').find((leader) => !leader.isMe)
+  const awardActive = buildLeaders('active_star').find((leader) => !leader.isMe)
+  const awardHairNode = root.querySelector<HTMLElement>('[data-award-hair]')
+  const awardKindnessNode = root.querySelector<HTMLElement>('[data-award-kindness]')
+  const awardActiveNode = root.querySelector<HTMLElement>('[data-award-active]')
+  if (awardHairNode) awardHairNode.textContent = awardHair?.name ?? '--'
+  if (awardKindnessNode) awardKindnessNode.textContent = awardKindness?.name ?? '--'
+  if (awardActiveNode) awardActiveNode.textContent = awardActive?.name ?? '--'
 
   root.querySelectorAll<HTMLElement>('[data-league-tab]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.leagueTab === activeTab)
@@ -455,7 +477,7 @@ function renderAllianceTab() {
         <div class="league-mini-list alliance-member-scroll">
           ${alliance.members.map((member) => `
             <div class="${member.isMe ? 'is-me' : ''}">
-              <span class="avatar-dot"></span>
+              <img class="league-avatar" src="${escapeHtml(member.avatarSrc)}" alt="${escapeHtml(member.name)}">
               <b>${escapeHtml(member.name)}${member.isMe ? '（我）' : ''}<small>${escapeHtml(member.role)}</small></b>
               <strong>${member.weeklyXp.toLocaleString('en-US')} XP</strong>
             </div>
@@ -473,9 +495,9 @@ function renderFriendRankTab() {
   const myTierTone: LeagueLeader['tierTone'] =
     myTier.name.startsWith('王者') ? 'gold' : myTier.name.startsWith('钻石') ? 'purple' : 'blue'
   const friends: LeagueLeader[] = [
-    { rank: 1, name: 'Nora', level: 'Lv.5', note: '睡眠打卡稳定', points: 20680, scoreText: '20,680 XP', tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: '', isMe: false },
-    { rank: 2, name: 'Echo', level: 'Lv.4', note: '本周完成 9 个任务', points: 18440, scoreText: '18,440 XP', tier: '铂金 I', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: '', isMe: false },
-    { rank: 3, name: 'June', level: 'Lv.4', note: '护发建议执行率 86%', points: 17210, scoreText: '17,210 XP', tier: '铂金 II', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: '', isMe: false },
+    { rank: 1, name: 'Nora', level: 'Lv.5', note: '睡眠打卡稳定', points: 20680, scoreText: '20,680 XP', tier: '钻石 II', tierTone: 'purple', trend: '↑ 2', trendTone: 'up', avatarSrc: pickLeagueAvatar('friend:Nora'), isMe: false },
+    { rank: 2, name: 'Echo', level: 'Lv.4', note: '本周完成 9 个任务', points: 18440, scoreText: '18,440 XP', tier: '铂金 I', tierTone: 'blue', trend: '—', trendTone: 'flat', avatarSrc: pickLeagueAvatar('friend:Echo'), isMe: false },
+    { rank: 3, name: 'June', level: 'Lv.4', note: '护发建议执行率 86%', points: 17210, scoreText: '17,210 XP', tier: '铂金 II', tierTone: 'blue', trend: '↓ 1', trendTone: 'down', avatarSrc: pickLeagueAvatar('friend:June'), isMe: false },
     {
       rank: 7,
       name: 'You',
