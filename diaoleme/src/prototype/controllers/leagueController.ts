@@ -146,12 +146,12 @@ type LeagueRankMetricDef = {
 }
 
 export const LEAGUE_TABS: LeagueTab[] = ['排行榜', '我的联盟', '好友排行', '段位晋升']
-export const LEAGUE_RANK_METRICS: LeagueRankMetricDef[] = [
-  { id: 'total_xp', icon: '✣', title: '总 XP 排行', subtitle: '', column: '总 XP' },
-  { id: 'hair_care', icon: '♔', title: '护发达人', subtitle: '头发健康分', column: '健康分' },
-  { id: 'active_star', icon: '✦', title: '活跃之星', subtitle: '任务完成数', column: '任务数' },
-  { id: 'streak', icon: '⌁', title: '坚持不懈', subtitle: '连续打卡天数', column: '打卡天数' },
-  { id: 'kindness', icon: '♡', title: '爱心大使', subtitle: '帮助伙伴次数', column: '帮助次数' },
+export const LEAGUE_RANK_METRICS: Array<LeagueRankMetricDef & { tone: string }> = [
+  { id: 'total_xp', icon: '✦', title: '总 XP 排行', subtitle: '综合成长积分', column: '总 XP', tone: 'purple' },
+  { id: 'hair_care', icon: '❀', title: '护发达人', subtitle: '头发健康分', column: '健康分', tone: 'orange' },
+  { id: 'active_star', icon: '★', title: '活跃之星', subtitle: '任务完成数', column: '任务数', tone: 'blue' },
+  { id: 'streak', icon: '⚡', title: '坚持不懈', subtitle: '连续打卡天数', column: '打卡天数', tone: 'rose' },
+  { id: 'kindness', icon: '♡', title: '爱心大使', subtitle: '帮助伙伴次数', column: '帮助次数', tone: 'green' },
 ]
 const LEAGUE_RANK_METRIC_IDS: LeagueRankMetric[] = LEAGUE_RANK_METRICS.map((metric) => metric.id)
 
@@ -387,12 +387,22 @@ function renderLeaderboardTab(activeMetric: LeagueRankMetric) {
   return `
     <div class="ranking-layout">
       <aside class="category-nav">
-        ${LEAGUE_RANK_METRICS.map((metric) => `
-          <button class="${metric.id === activeMetric ? 'active' : ''}" type="button" data-league-metric="${metric.id}">
-            <span>${metric.icon}</span>
-            <span><b>${escapeHtml(metric.title)}</b>${metric.subtitle ? `<small>${escapeHtml(metric.subtitle)}</small>` : ''}</span>
-          </button>
-        `).join('')}
+        <div class="category-nav-head">
+          <span>排行维度</span>
+          <button type="button" class="category-nav-all">全部</button>
+        </div>
+        <div class="category-nav-list">
+          ${LEAGUE_RANK_METRICS.map((metric) => `
+            <button class="category-nav-item ${metric.id === activeMetric ? 'active' : ''}" type="button" data-league-metric="${metric.id}">
+              <span class="category-icon tone-${metric.tone}" aria-hidden="true">${metric.icon}</span>
+              <span class="category-copy">
+                <b>${escapeHtml(metric.title)}</b>
+                <small>${escapeHtml(metric.subtitle)}</small>
+              </span>
+              <span class="category-arrow" aria-hidden="true">›</span>
+            </button>
+          `).join('')}
+        </div>
       </aside>
       <div class="ranking-card">
         <div class="table-head"><span>排名</span><span>玩家</span><span>段位</span><span>${escapeHtml(metricDef.column)}</span><span>趋势</span></div>
