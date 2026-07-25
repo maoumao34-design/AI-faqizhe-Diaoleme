@@ -78,7 +78,16 @@ export const leagueSection = `<section class="page" data-page="league">
                   </div>
                 </div>
                 <div class="league-hero-rank">
-                  <button type="button">🎁 赛季奖励预览</button>
+                  <button type="button" class="league-season-reward-btn" data-league-season-reward aria-expanded="false" aria-controls="leagueSeasonRewardPanel">🎁 赛季奖励预览</button>
+                  <div class="league-season-reward-panel" id="leagueSeasonRewardPanel" data-league-season-reward-panel hidden>
+                    <button type="button" class="league-season-reward-close" data-league-season-reward-close aria-label="关闭">×</button>
+                    <div class="league-season-reward-card">
+                      <img src="./rewards-assets/reward-sprout.png" alt="嫩芽发型" width="96" height="96">
+                      <b>嫩芽发型</b>
+                      <small>发型装扮 · 赛季限定奖励</small>
+                      <p>完成本赛季（8.1 – 8.31）段位目标后可领取，先预览一下～</p>
+                    </div>
+                  </div>
                   <span>我的段位</span>
                   <img class="league-hero-badge" data-league-tier-badge src="./league-assets/shield-bronze.png" alt="段位徽章">
                   <b data-league-tier-name>青铜</b>
