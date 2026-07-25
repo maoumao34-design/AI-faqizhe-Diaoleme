@@ -52,33 +52,100 @@ function formatBattleRemain(remain: SeasonRemain) {
   return `剩余 ${remain.days} 天 ${pad2(remain.hours)}:${pad2(remain.mins)}:${pad2(remain.secs)}`
 }
 
-function flipUnit(root: HTMLElement, unit: 'days' | 'hours' | 'mins' | 'secs', nextText: string) {
-  const card = root.querySelector<HTMLElement>(`[data-flip="${unit}"]`)
-  if (!card) return
-  const valueNode = card.querySelector<HTMLElement>('[data-flip-value]')
-  const flap = card.querySelector<HTMLElement>('[data-flip-flap]')
-  if (!valueNode || !flap) return
-  const prev = valueNode.textContent ?? ''
-  if (prev === nextText) return
-
-  const flapLabel = flap.querySelector('span')
-  if (flapLabel) flapLabel.textContent = prev
-  valueNode.textContent = nextText
-  flap.classList.remove('is-flipping')
-  // restart CSS animation
-  void flap.offsetWidth
-  flap.classList.add('is-flipping')
+type FlipCardState = {
+  el: HTMLElement
+  staticTop: HTMLElement
+  staticBottom: HTMLElement
+  flipTop: HTMLElement
+  flipBottom: HTMLElement
+  current: string | null
+  busy: boolean
+  timer: ReturnType<typeof setTimeout> | null
 }
 
-function paintSeasonCountdown(root: HTMLElement, now = new Date()) {
+const flipCardStates = new WeakMap<HTMLElement, FlipCardState>()
+
+function getFlipCardState(card: HTMLElement): FlipCardState | null {
+  const cached = flipCardStates.get(card)
+  if (cached) return cached
+  const staticTop = card.querySelector<HTMLElement>('.league-static-top span')
+  const staticBottom = card.querySelector<HTMLElement>('.league-static-bottom span')
+  const flipTop = card.querySelector<HTMLElement>('.league-flip-top span')
+  const flipBottom = card.querySelector<HTMLElement>('.league-flip-bottom span')
+  if (!staticTop || !staticBottom || !flipTop || !flipBottom) return null
+  const state: FlipCardState = {
+    el: card,
+    staticTop,
+    staticBottom,
+    flipTop,
+    flipBottom,
+    current: null,
+    busy: false,
+    timer: null,
+  }
+  flipCardStates.set(card, state)
+  return state
+}
+
+function renderFlipWithoutAnimation(card: FlipCardState, value: string) {
+  card.staticTop.textContent = value
+  card.staticBottom.textContent = value
+  card.flipTop.textContent = value
+  card.flipBottom.textContent = value
+  card.current = value
+  card.busy = false
+  card.el.classList.remove('is-flipping')
+}
+
+function flipTo(card: FlipCardState, nextValue: string) {
+  if (card.current === null) {
+    renderFlipWithoutAnimation(card, nextValue)
+    return
+  }
+  if (card.current === nextValue || card.busy) return
+
+  card.busy = true
+  const previousValue = card.current
+  card.staticTop.textContent = nextValue
+  card.staticBottom.textContent = previousValue
+  card.flipTop.textContent = previousValue
+  card.flipBottom.textContent = nextValue
+  card.el.classList.remove('is-flipping')
+  void card.el.offsetWidth
+  card.el.classList.add('is-flipping')
+
+  if (card.timer) clearTimeout(card.timer)
+  card.timer = setTimeout(() => {
+    card.staticBottom.textContent = nextValue
+    card.flipTop.textContent = nextValue
+    card.flipBottom.textContent = nextValue
+    card.el.classList.remove('is-flipping')
+    card.current = nextValue
+    card.busy = false
+    card.timer = null
+  }, 720)
+}
+
+function paintSeasonCountdown(root: HTMLElement, now = new Date(), animate = true) {
   const remain = getSeasonRemaining(now)
   const range = root.querySelector<HTMLElement>('[data-league-season-range]')
   if (range) range.textContent = LEAGUE_SEASON_RANGE_LABEL
 
-  flipUnit(root, 'days', pad2(remain.days))
-  flipUnit(root, 'hours', pad2(remain.hours))
-  flipUnit(root, 'mins', pad2(remain.mins))
-  flipUnit(root, 'secs', pad2(remain.secs))
+  const formatted = {
+    days: pad2(remain.days),
+    hours: pad2(remain.hours),
+    minutes: pad2(remain.mins),
+    seconds: pad2(remain.secs),
+  } as const
+
+  ;(Object.keys(formatted) as Array<keyof typeof formatted>).forEach((unit) => {
+    const card = root.querySelector<HTMLElement>(`.league-flip-card[data-unit="${unit}"]`)
+    if (!card) return
+    const state = getFlipCardState(card)
+    if (!state) return
+    if (animate) flipTo(state, formatted[unit])
+    else renderFlipWithoutAnimation(state, formatted[unit])
+  })
 
   const battle = root.querySelector<HTMLElement>('[data-league-battle-remain]')
   if (battle) battle.textContent = formatBattleRemain(remain)
@@ -88,12 +155,14 @@ let seasonCountdownTimer: ReturnType<typeof setInterval> | null = null
 let seasonCountdownRoot: HTMLElement | null = null
 
 export function bindSeasonCountdown(root: HTMLElement) {
+  const sameRoot = seasonCountdownRoot === root
   seasonCountdownRoot = root
-  paintSeasonCountdown(root)
+  // 首次挂载不做翻页，避免一进页面四格同时翻
+  paintSeasonCountdown(root, new Date(), sameRoot && seasonCountdownTimer != null)
   if (seasonCountdownTimer == null) {
     seasonCountdownTimer = setInterval(() => {
       if (!seasonCountdownRoot) return
-      paintSeasonCountdown(seasonCountdownRoot)
+      paintSeasonCountdown(seasonCountdownRoot, new Date(), true)
     }, 1000)
   }
 }
