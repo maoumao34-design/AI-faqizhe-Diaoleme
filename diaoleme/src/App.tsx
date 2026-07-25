@@ -1659,11 +1659,13 @@ const integrationStyle = `
     grid-template-columns: 34px 1fr auto;
   }
 
+  [data-page="league"] .league-mini-list .league-avatar,
   [data-page="league"] .league-mini-list .avatar-dot {
     height: 34px;
     width: 34px;
   }
 
+  [data-page="league"] .league-mini-list .league-avatar + b,
   [data-page="league"] .league-mini-list .avatar-dot + b {
     margin-left: 18px;
     min-width: 0;
@@ -2618,18 +2620,26 @@ const integrationStyle = `
 
   [data-page="rewards"] .rewards-points-hero {
     align-items: stretch;
+    background-color: transparent;
     background-image: url('./rewards-assets/hero-character.png');
-    background-position: center center;
+    background-position: center top;
     background-repeat: no-repeat;
-    background-size: 100% 100%;
+    background-size: 100% 125%;
     border: 1px solid rgba(255, 255, 255, 0.82);
     border-radius: 22px;
     box-shadow: 0 18px 46px rgba(95, 85, 150, 0.11);
     display: block;
+    filter: none;
     min-height: 420px;
     overflow: hidden;
     padding: 15px 15px;
     position: relative;
+  }
+
+  [data-page="rewards"] .rewards-points-hero::before,
+  [data-page="rewards"] .rewards-points-hero::after {
+    content: none;
+    display: none;
   }
 
   [data-page="rewards"] .rewards-points-hero > * {
@@ -2644,7 +2654,7 @@ const integrationStyle = `
     justify-content: flex-start;
     max-width: min(360px, 46%);
     padding: 4px 0;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 18px rgba(255, 255, 255, 0.55);
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.55);
   }
 
   [data-page="rewards"] .rewards-points-stats > span {
@@ -3456,7 +3466,7 @@ const integrationStyle = `
 
   @media (max-width: 980px) {
     [data-page="rewards"] .rewards-points-hero {
-      background-size: 100% 100%;
+      background-size: 100% 125%;
       min-height: 380px;
       padding: 15px 15px;
     }
