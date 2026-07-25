@@ -4,11 +4,40 @@ export const leagueSection = `<section class="page" data-page="league">
               <section class="league-season-hero">
                 <img class="league-hero-bg" src="./league-assets/new_sky_and_flower_bg.png" alt="" aria-hidden="true">
                 <div class="league-hero-copy">
-                  <span>本赛季</span>
+                  <span class="league-season-kicker">本赛季</span>
                   <h2>春风吹发季 🌸</h2>
-                  <p>5.1 - 5.31 <small>ⓘ</small></p>
-                  <small>赛季结束倒计时</small>
-                  <div class="league-countdown"><div><b>08</b><span>天</span></div><div><b>12</b><span>时</span></div><div><b>36</b><span>分</span></div><div><b>45</b><span>秒</span></div></div>
+                  <p class="league-season-range"><span data-league-season-range>8.1 - 8.31</span> <small aria-label="赛季说明">ⓘ</small></p>
+                  <small class="league-countdown-label">赛季结束倒计时</small>
+                  <div class="league-countdown" data-league-countdown aria-live="polite">
+                    <div class="league-flip-unit" data-flip="days">
+                      <div class="league-flip-card">
+                        <span class="league-flip-value" data-flip-value>00</span>
+                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                      </div>
+                      <span>天</span>
+                    </div>
+                    <div class="league-flip-unit" data-flip="hours">
+                      <div class="league-flip-card">
+                        <span class="league-flip-value" data-flip-value>00</span>
+                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                      </div>
+                      <span>时</span>
+                    </div>
+                    <div class="league-flip-unit" data-flip="mins">
+                      <div class="league-flip-card">
+                        <span class="league-flip-value" data-flip-value>00</span>
+                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                      </div>
+                      <span>分</span>
+                    </div>
+                    <div class="league-flip-unit" data-flip="secs">
+                      <div class="league-flip-card">
+                        <span class="league-flip-value" data-flip-value>00</span>
+                        <div class="league-flip-flap" data-flip-flap aria-hidden="true"><span>00</span></div>
+                      </div>
+                      <span>秒</span>
+                    </div>
+                  </div>
                 </div>
                 <div class="league-hero-characters" aria-label="赛季前三名">
                   <div class="podium second">
@@ -55,9 +84,9 @@ export const leagueSection = `<section class="page" data-page="league">
               </section>
               <section class="league-side-panel announcement-panel">
                 <div class="league-panel-title"><strong>联盟公告</strong><button type="button">更多 ›</button></div>
-                <button class="league-announcement" type="button"><span>• 本周联盟任务已更新，快来完成吧！</span><time>05-18</time></button>
-                <button class="league-announcement" type="button"><span>• 联盟战即将开始，准备好了吗？</span><time>05-17</time></button>
-                <button class="league-announcement" type="button"><span>• 欢迎新成员加入蒲公英小分队～</span><time>05-15</time></button>
+                <button class="league-announcement" type="button"><span>• 本周联盟任务已更新，快来完成吧！</span><time>08-18</time></button>
+                <button class="league-announcement" type="button"><span>• 联盟战即将开始，准备好了吗？</span><time>08-17</time></button>
+                <button class="league-announcement" type="button"><span>• 欢迎新成员加入蒲公英小分队～</span><time>08-15</time></button>
               </section>
               <section class="league-side-panel battle-panel">
                 <div class="league-panel-title"><strong>本周联盟战 <span class="league-live">进行中</span></strong></div>
@@ -66,7 +95,7 @@ export const leagueSection = `<section class="page" data-page="league">
                   <img class="league-vs" src="./league-assets/vs-mark.png" alt="VS">
                   <div><img class="league-battle-badge" src="./league-assets/badge-enemy-sm.png" alt="对手"><b data-league-enemy-name>发光小队</b><strong data-league-enemy-xp>12,420</strong></div>
                 </div>
-                <small class="league-center-note">剩余 2 天 12:36:45</small>
+                <small class="league-center-note" data-league-battle-remain>剩余 --</small>
               </section>
               <section class="league-side-panel awards-panel">
                 <div class="league-panel-title"><strong>每周荣誉榜</strong><button type="button">更多 ›</button></div>

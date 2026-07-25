@@ -20,6 +20,7 @@ import {
   saveLeagueRankMetric,
   clearLeagueRankMetric,
   isLeagueRankMetric,
+  stopSeasonCountdown,
   type LeagueTab,
   type LeagueRankMetric,
 } from './prototype/controllers/leagueController'
@@ -296,6 +297,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
   return () => {
     scanCleanup()
     chatCleanup()
+    stopSeasonCountdown()
     unsubscribe()
     document.removeEventListener('click', onClick)
   }
@@ -954,11 +956,14 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-season-hero {
-    background: #e9e2ff;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.55), transparent 34%),
+      radial-gradient(circle at 82% 12%, rgba(255, 214, 236, 0.35), transparent 28%),
+      #e9e2ff;
     border-radius: 22px;
     box-shadow: 0 14px 34px rgba(90, 73, 158, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.7);
     display: grid;
-    grid-template-columns: 300px minmax(280px, 1fr) 180px;
+    grid-template-columns: 320px minmax(280px, 1fr) 180px;
     min-height: 320px;
     overflow: hidden;
     position: relative;
@@ -977,7 +982,7 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-season-hero::before {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+    background: linear-gradient(105deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0) 68%);
     content: "";
     inset: 0;
     pointer-events: none;
@@ -986,46 +991,161 @@ const integrationStyle = `
   }
 
   [data-page="league"] .league-hero-copy {
-    padding: 29px 0 0 26px;
+    padding: 28px 0 22px 26px;
     position: relative;
     z-index: 2;
   }
 
+  [data-page="league"] .league-season-kicker,
   [data-page="league"] .league-hero-copy > span {
-    font-size: 12px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    color: #5b63a8;
+    display: inline-flex;
+    font-size: 11px;
     font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
   }
 
   [data-page="league"] .league-hero-copy h2 {
-    font-size: 22px;
-    margin: 10px 0 8px;
+    color: #1f2a74;
+    font-size: 24px;
+    letter-spacing: 0.01em;
+    margin: 12px 0 10px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
+  [data-page="league"] .league-season-range,
   [data-page="league"] .league-hero-copy p {
     align-items: center;
     color: #6f72a2;
-    display: flex;
+    display: inline-flex;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 750;
     gap: 6px;
     margin: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.7);
   }
 
+  [data-page="league"] .league-countdown-label,
   [data-page="league"] .league-hero-copy > small {
     color: #6f72a2;
     display: block;
     font-size: 11px;
     font-weight: 750;
-    margin-top: 27px;
+    margin-top: 22px;
   }
 
   [data-page="league"] .league-countdown {
     display: flex;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 10px;
+    margin-top: 10px;
   }
 
-  [data-page="league"] .league-countdown div {
+  [data-page="league"] .league-flip-unit {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  [data-page="league"] .league-flip-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f7f3ff 46%, #ebe4ff 54%, #e7e0ff 100%);
+    border: 1px solid rgba(255, 255, 255, 0.88);
+    border-radius: 12px;
+    box-shadow:
+      0 10px 20px rgba(95, 78, 168, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    height: 64px;
+    overflow: hidden;
+    perspective: 420px;
+    position: relative;
+    width: 54px;
+  }
+
+  [data-page="league"] .league-flip-card::after {
+    background: rgba(108, 92, 176, 0.18);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+    content: "";
+    height: 1px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    z-index: 4;
+  }
+
+  [data-page="league"] .league-flip-value {
+    align-items: center;
+    color: #24307a;
+    display: flex;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 850;
+    height: 100%;
+    justify-content: center;
+    letter-spacing: 0.02em;
+  }
+
+  [data-page="league"] .league-flip-flap {
+    backface-visibility: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, #f1ecff 100%);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 6px 10px rgba(70, 58, 130, 0.12);
+    height: 50%;
+    left: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transform-origin: bottom center;
+    transform: rotateX(0deg);
+    z-index: 3;
+  }
+
+  [data-page="league"] .league-flip-flap span {
+    align-items: flex-start;
+    color: #24307a;
+    display: flex;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 850;
+    height: 200%;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    padding-top: 12px;
+    width: 100%;
+  }
+
+  [data-page="league"] .league-flip-flap.is-flipping {
+    animation: league-flip-down 0.48s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+
+  @keyframes league-flip-down {
+    0% {
+      opacity: 1;
+      transform: rotateX(0deg);
+    }
+    100% {
+      opacity: 0.35;
+      transform: rotateX(-90deg);
+    }
+  }
+
+  [data-page="league"] .league-flip-unit > span {
+    color: #6f72a2;
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  /* legacy static countdown cells (if any remain) */
+  [data-page="league"] .league-countdown > div:not(.league-flip-unit) {
     align-items: center;
     background: rgba(255, 255, 255, 0.68);
     border-radius: 10px;
@@ -1043,7 +1163,7 @@ const integrationStyle = `
 
   [data-page="league"] .league-countdown span {
     font-size: 10px;
-    margin-top: 4px;
+    margin-top: 0;
   }
 
   [data-page="league"] .league-hero-characters {
