@@ -22,14 +22,18 @@ export const rewardsSection = `<section class="page" data-page="rewards">
               <section class="reward-market">
                 <div class="market-toolbar">
                   <div class="category-tabs">
-                    <button class="active" type="button">全部</button>
-                    <button type="button">发型装扮</button>
-                    <button type="button">护发好物</button>
-                    <button type="button">陪伴道具</button>
-                    <button type="button">成长特权</button>
-                    <button type="button">定制周边</button>
+                    <button class="active" type="button" data-reward-category="全部">全部</button>
+                    <button type="button" data-reward-category="发型装扮">发型装扮</button>
+                    <button type="button" data-reward-category="护发好物">护发好物</button>
+                    <button type="button" data-reward-category="陪伴道具">陪伴道具</button>
+                    <button type="button" data-reward-category="成长特权">成长特权</button>
+                    <button type="button" data-reward-category="定制周边">定制周边</button>
                   </div>
-                  <label class="sort-select"><select aria-label="奖励排序"><option>默认排序</option><option>积分从低到高</option><option>积分从高到低</option></select><span>⌄</span></label>
+                  <label class="sort-select"><select aria-label="奖励排序" data-reward-sort>
+                    <option value="default">默认排序</option>
+                    <option value="points-asc">积分从低到高</option>
+                    <option value="points-desc">积分从高到低</option>
+                  </select><span>⌄</span></label>
                 </div>
                 <div class="reward-grid" id="shop"></div>
               </section>
