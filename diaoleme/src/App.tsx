@@ -3859,7 +3859,7 @@ const integrationStyle = `
   [data-page="rewards"] .reward-market {
     position: relative;
   }
-  /* AIFA-88: 左/中/右三栏锁定同高，底边对齐；历史区靠布局拉满，不只堆第 4 条 */
+  /* Scan 三栏：底边齐平；结果态允许随内容增高（不压矮中栏、不加内部滚动） */
   [data-page="scan"] .scan-wrap {
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
@@ -3874,8 +3874,9 @@ const integrationStyle = `
   [data-page="scan"] .scan-side-panel {
     align-self: stretch;
     box-sizing: border-box;
-    height: min(74vh, 860px);
-    max-height: min(74vh, 860px);
+    /* 空态保持与其他页相近的高度；有结果时随内容长高，不再锁死 max-height */
+    height: auto;
+    max-height: none;
     min-height: min(74vh, 860px);
   }
   [data-page="scan"] .feature-stack {
@@ -3892,9 +3893,8 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap > .card {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    overflow-x: hidden;
-    overflow-y: auto;
+    justify-content: flex-start;
+    overflow: visible;
   }
   [data-page="scan"] .scan-side-panel {
     align-content: stretch;
@@ -4112,12 +4112,14 @@ const integrationStyle = `
     }
   }
   [data-page="scan"] .has-analysis-result {
+    justify-content: flex-start;
     padding: 18px;
   }
   [data-page="scan"] .has-analysis-result .scan-orbit {
     aspect-ratio: 1 / 1;
+    flex: 0 0 auto;
     height: min(28vw, 340px);
-    margin-bottom: 12px;
+    margin: 0 auto 12px;
     overflow: visible;
     width: min(28vw, 340px);
   }
