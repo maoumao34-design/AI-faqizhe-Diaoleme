@@ -24,9 +24,8 @@ import {
   type LeagueTab,
   type LeagueRankMetric,
 } from './prototype/controllers/leagueController'
-import { getLevelProgress } from './prototype/controllers/progress'
+import { getLevelProgress, todayKey, getCurrentWeekDays, getCheckinStreak } from './prototype/controllers/progress'
 
-const todayKey = () => new Date().toISOString().slice(0, 10)
 const taskKey = () => `diaoleme-prototype-tasks-${todayKey()}`
 const taskBonusKey = () => `diaoleme-prototype-task-bonus-${todayKey()}`
 const questProgressKey = (category: QuestCategory) => `diaoleme-prototype-quest-progress-${category}-${todayKey()}`
@@ -244,8 +243,11 @@ function attachPrototypeFeatures(root: HTMLElement) {
       render()
     }
     if (checkinBtn) {
+      const before = useUserStore.getState().checkinDays.length
       useUserStore.getState().markCheckinToday()
+      const after = useUserStore.getState().checkinDays.length
       render()
+      showToast(root, after > before ? '今日打卡成功 +5 XP' : '今日已经打过卡啦')
     }
     if (unlockBtn) {
       const item = HAIRSTYLE_CATALOG.find((h) => h.id === unlockBtn.dataset.unlockId)
@@ -960,9 +962,24 @@ function attachChatAssistant(root: HTMLElement) {
 function renderProfile(root: HTMLElement) {
   const s = useUserStore.getState()
   const checked = s.checkinDays.includes(todayKey())
+  const streak = getCheckinStreak(s.checkinDays)
   const historyDays = new Set(s.reportHistory.map((item) => item.date)).size
-  setHtml(root.querySelector('#streak'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join(''))
-  setHtml(root.querySelector('#checkin'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < Math.min(s.checkinDays.length, 6) ? '✓' : i === 6 ? '🎁' : d}<br><small>${d}</small></span>`).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
+  const weekDays = getCurrentWeekDays()
+  setHtml(
+    root.querySelector('#streak'),
+    weekDays.map(({ label, key }, index) => {
+      const done = s.checkinDays.includes(key)
+      const mark = done ? '✓' : index === 6 ? '🎁' : label
+      return `<span class="badge">${mark}<br><small>${label}</small></span>`
+    }).join(''),
+  )
+  const questsStreakDays = root.querySelector<HTMLElement>('[data-quests-streak-days]')
+  if (questsStreakDays) questsStreakDays.textContent = `${streak} 天`
+  setHtml(root.querySelector('#checkin'), weekDays.map(({ label, key }, index) => {
+    const done = s.checkinDays.includes(key)
+    const mark = done ? '✓' : index === 6 ? '🎁' : label
+    return `<span class="badge">${mark}<br><small>${label}</small></span>`
+  }).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 
   const mePoints = root.querySelector<HTMLElement>('[data-me-points]')
   const meStreak = root.querySelector<HTMLElement>('[data-me-streak]')

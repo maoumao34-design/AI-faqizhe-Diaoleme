@@ -16,7 +16,7 @@ export const questsSection = `<section class="page" data-page="quests">
             </div>
             <aside class="grid">
               <div class="card"><h3>我的任务进度</h3><div class="big-number">78%</div><div class="meter"><div class="fill" style="--w:78%"></div></div><p>完成 11/14 个任务</p></div>
-              <div class="card"><h3>连续打卡</h3><div class="big-number">7 天</div><div class="row" id="streak"><span class="badge">✓<br><small>一</small></span><span class="badge">✓<br><small>二</small></span><span class="badge">✓<br><small>三</small></span><span class="badge">✓<br><small>四</small></span><span class="badge">✓<br><small>五</small></span><span class="badge">✓<br><small>六</small></span><span class="badge">🎁<br><small>日</small></span></div></div>
+              <div class="card"><h3>连续打卡</h3><div class="big-number" data-quests-streak-days>0 天</div><div class="row" id="streak"></div></div>
               <div class="card"><h3>任务小贴士</h3><p>定期护理 + 健康生活习惯 = 健康的头发！保持好心情，规律作息，均衡饮食。</p><div class="mini-buddy"></div></div>
               <div class="card"><h3>本周任务总览</h3><div class="donut" data-label="14\A 总任务数"></div></div>
             </aside>
