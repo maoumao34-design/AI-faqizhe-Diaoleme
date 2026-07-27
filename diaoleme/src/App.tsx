@@ -3859,43 +3859,43 @@ const integrationStyle = `
   [data-page="rewards"] .reward-market {
     position: relative;
   }
-  /* AIFA-92: Scan 与 Home/Buddy 同 980 画幅；拉高右栏齐平，禁止压矮左/中；过长仅结果卡内滚 */
+  /* AIFA-92/94: 去掉 980 空壳；左栏自然高度不镂空；右栏随中栏拉高齐底；结果态一屏内滚 */
   [data-page="scan"] .scan-wrap {
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
-    min-height: 980px;
+    min-height: 0;
   }
   [data-page="scan"] .feature-stack,
   [data-page="scan"] .scan-wrap > .card,
   [data-page="scan"] .scan-wrap > .grid {
     min-width: 0;
   }
-  [data-page="scan"] .feature-stack,
-  [data-page="scan"] .scan-wrap > .card,
-  [data-page="scan"] .scan-side-panel {
-    align-self: stretch;
-    box-sizing: border-box;
-    height: 980px;
-    max-height: 980px;
-    min-height: 980px;
-  }
   [data-page="scan"] .feature-stack {
+    align-self: start;
+    box-sizing: border-box;
     display: grid;
     gap: 18px;
-    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
+    height: auto;
+    max-height: none;
+    min-height: 0;
   }
   [data-page="scan"] .feature-stack > .card.soft {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
     min-height: 0;
   }
   [data-page="scan"] .scan-wrap > .card {
+    align-self: stretch;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    height: auto;
+    justify-content: flex-start;
+    max-height: none;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
   }
   [data-page="scan"] .scan-wrap > .card > .scan-orbit,
   [data-page="scan"] .scan-wrap > .card > h3,
@@ -3906,8 +3906,13 @@ const integrationStyle = `
   }
   [data-page="scan"] .scan-side-panel {
     align-content: stretch;
+    align-self: stretch;
+    box-sizing: border-box;
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
+    height: auto;
+    max-height: none;
+    min-height: 0;
     min-width: 0;
     overflow: hidden;
   }
@@ -4132,6 +4137,9 @@ const integrationStyle = `
   }
   [data-page="scan"] .has-analysis-result {
     justify-content: flex-start;
+    max-height: calc(100vh - 132px);
+    min-height: min(720px, calc(100vh - 132px));
+    overflow: hidden;
     padding: 18px;
   }
   [data-page="scan"] .has-analysis-result .scan-orbit {
@@ -4189,7 +4197,7 @@ const integrationStyle = `
   .scan-analysis-retry {
     margin-top: 10px;
   }
-  .scan-result-card {
+  [data-page="scan"] .scan-result-card {
     box-sizing: border-box;
     flex: 1 1 auto;
     margin: 0 auto;
