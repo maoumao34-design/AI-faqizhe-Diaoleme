@@ -81,7 +81,7 @@ export const rewardsSection = `<section class="page" data-page="rewards">
                 <div class="today-growth-stats">
                   <div><span>今日获得</span><strong data-rewards-today-xp>+5 XP</strong></div>
                   <div><span>完成任务</span><strong data-rewards-today-tasks>2 项</strong></div>
-                  <div><span>专注效率</span><strong data-rewards-today-focus>80%</strong></div>
+                  <div><span>护发记录</span><strong data-rewards-today-record>0 次</strong></div>
                 </div>
                 <div class="today-growth-list" id="rewardsTodayGrowth"></div>
               </section>

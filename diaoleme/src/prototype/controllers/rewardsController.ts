@@ -254,14 +254,14 @@ export function renderRewards(
 
   const todayTasksDone = 2
   const todayTasksTotal = 3
-  const todayFocusDone = 17
-  const todayFocusTotal = 25
-  const todayGrowthDone = 3
-  const todayGrowthTotal = 5
-  const todayXp = checkedToday ? 5 + 3 + 2 : 3 + 2
+  const todayRecordDone = s.reportHistory.filter((record) => record.date === todayKey()).length
+  const todayRecordGoal = 1
+  const todayGrowthDone = (checkedToday ? 1 : 0) + Math.min(todayTasksDone, todayTasksTotal) + Math.min(todayRecordDone, todayRecordGoal)
+  const todayGrowthTotal = 1 + todayTasksTotal + todayRecordGoal
+  const todayXp = (checkedToday ? 5 : 0) + 3 + (todayRecordDone > 0 ? 2 : 0)
 
   const todayBadge = root.querySelector<HTMLElement>('[data-rewards-today-badge]')
-  if (todayBadge) todayBadge.textContent = `${todayGrowthDone} / ${todayGrowthTotal} 已完成`
+  if (todayBadge) todayBadge.textContent = `${Math.min(todayGrowthDone, todayGrowthTotal)} / ${todayGrowthTotal} 已完成`
 
   const todayXpNode = root.querySelector<HTMLElement>('[data-rewards-today-xp]')
   if (todayXpNode) todayXpNode.textContent = `+${todayXp} XP`
@@ -269,9 +269,9 @@ export function renderRewards(
   const todayTasksNode = root.querySelector<HTMLElement>('[data-rewards-today-tasks]')
   if (todayTasksNode) todayTasksNode.textContent = `${todayTasksDone} 项`
 
-  const todayFocusNode = root.querySelector<HTMLElement>('[data-rewards-today-focus]')
-  if (todayFocusNode) {
-    todayFocusNode.textContent = `${Math.round((todayFocusDone / todayFocusTotal) * 100)}%`
+  const todayRecordNode = root.querySelector<HTMLElement>('[data-rewards-today-record]')
+  if (todayRecordNode) {
+    todayRecordNode.textContent = `${todayRecordDone} 次`
   }
 
   setHtml(root.querySelector('#rewardsTodayGrowth'), `
@@ -296,13 +296,13 @@ export function renderRewards(
           <svg viewBox="0 0 16 16" width="14" height="14"><path fill="none" stroke="#7c67e4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M3.2 8.2l3.2 3.2 6.4-6.8"/></svg>
         </span>
         <div>
-          <strong>专注 ${todayFocusTotal} 分钟</strong>
+          <strong>轻松记录头发状态</strong>
           <b>+2 XP</b>
         </div>
       </div>
       <div class="today-growth-item-meta">
-        <div class="today-growth-bar"><i style="width:${Math.round((todayFocusDone / todayFocusTotal) * 100)}%"></i></div>
-        <span>还差 ${todayFocusTotal - todayFocusDone} 分钟</span>
+        <div class="today-growth-bar"><i style="width:${Math.min(100, Math.round((todayRecordDone / todayRecordGoal) * 100))}%"></i></div>
+        <span>${todayRecordDone >= todayRecordGoal ? '今日已记录' : `还差 ${Math.max(0, todayRecordGoal - todayRecordDone)} 次`}</span>
       </div>
     </article>
   `)
