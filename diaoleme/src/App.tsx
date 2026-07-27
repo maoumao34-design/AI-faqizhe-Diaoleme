@@ -3861,7 +3861,8 @@ const integrationStyle = `
   }
   /* AIFA-92: 有/无结果同画幅；三栏同高；过长仅结果卡内滚；右栏历史卡撑满不留底空 */
   [data-page="scan"] .scan-wrap {
-    --scan-col-h: 980px;
+    /* 与 Home .page 同量级：Home 实测约 100vh；两态同高 */
+    --scan-col-h: max(980px, 100vh);
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
     min-height: 0;
