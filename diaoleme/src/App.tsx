@@ -3859,10 +3859,11 @@ const integrationStyle = `
   [data-page="rewards"] .reward-market {
     position: relative;
   }
-  /* Scan 三栏：底边齐平；结果态允许随内容增高（不压矮中栏、不加内部滚动） */
+  /* AIFA-92: Scan 与 Home/Buddy 同 980 画幅；拉高右栏齐平，禁止压矮左/中；过长仅结果卡内滚 */
   [data-page="scan"] .scan-wrap {
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
+    min-height: 980px;
   }
   [data-page="scan"] .feature-stack,
   [data-page="scan"] .scan-wrap > .card,
@@ -3874,10 +3875,9 @@ const integrationStyle = `
   [data-page="scan"] .scan-side-panel {
     align-self: stretch;
     box-sizing: border-box;
-    /* 空态保持与其他页相近的高度；有结果时随内容长高，不再锁死 max-height */
-    height: auto;
-    max-height: none;
-    min-height: min(74vh, 860px);
+    height: 980px;
+    max-height: 980px;
+    min-height: 980px;
   }
   [data-page="scan"] .feature-stack {
     display: grid;
@@ -3893,8 +3893,16 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap > .card {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    overflow: visible;
+    justify-content: center;
+    min-height: 0;
+    overflow: hidden;
+  }
+  [data-page="scan"] .scan-wrap > .card > .scan-orbit,
+  [data-page="scan"] .scan-wrap > .card > h3,
+  [data-page="scan"] .scan-wrap > .card > p,
+  [data-page="scan"] .scan-wrap > .card > .hero-buttons,
+  [data-page="scan"] .scan-wrap > .card > .scan-analysis-status {
+    flex: 0 0 auto;
   }
   [data-page="scan"] .scan-side-panel {
     align-content: stretch;
@@ -4093,6 +4101,9 @@ const integrationStyle = `
     opacity: .45;
   }
   @media (max-width: 1180px) {
+    [data-page="scan"] .scan-wrap {
+      min-height: 0;
+    }
     [data-page="scan"] .feature-stack,
     [data-page="scan"] .scan-wrap > .card,
     [data-page="scan"] .scan-side-panel {
@@ -4103,12 +4114,20 @@ const integrationStyle = `
     [data-page="scan"] .feature-stack {
       grid-template-rows: none;
     }
+    [data-page="scan"] .scan-wrap > .card {
+      overflow: visible;
+    }
     [data-page="scan"] .scan-side-panel {
       overflow: visible;
     }
     [data-page="scan"] .scan-history-card {
       height: auto;
       min-height: calc(28px + (4 * 68px) + (3 * 10px) + 48px);
+    }
+    [data-page="scan"] .scan-result-card {
+      flex: 0 0 auto;
+      max-height: none;
+      overflow: visible;
     }
   }
   [data-page="scan"] .has-analysis-result {
@@ -4118,6 +4137,7 @@ const integrationStyle = `
   [data-page="scan"] .has-analysis-result .scan-orbit {
     aspect-ratio: 1 / 1;
     flex: 0 0 auto;
+    /* 结果态略收圆环给结果卡让位，但仍保持可读尺寸；不靠压扁整栏迁就右栏 */
     height: min(28vw, 340px);
     margin: 0 auto 12px;
     overflow: visible;
@@ -4170,11 +4190,17 @@ const integrationStyle = `
     margin-top: 10px;
   }
   .scan-result-card {
-    margin: 0 auto 12px;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    margin: 0 auto;
     max-width: 620px;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 18px 16px 16px;
     text-align: left;
-    overflow: visible;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
   .scan-result-source {
     margin-bottom: 10px;
