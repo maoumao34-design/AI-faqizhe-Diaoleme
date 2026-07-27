@@ -31,6 +31,34 @@ export const REWARD_MARKET_ITEMS: Array<{
 
 export type RewardMarketItem = (typeof REWARD_MARKET_ITEMS)[number]
 
+export const REWARD_CATEGORIES = ['全部', '发型装扮', '护发好物', '陪伴道具', '成长特权', '定制周边'] as const
+export type RewardCategoryFilter = (typeof REWARD_CATEGORIES)[number]
+export type RewardSortMode = 'default' | 'points-asc' | 'points-desc'
+
+export function isRewardCategoryFilter(value: string): value is RewardCategoryFilter {
+  return (REWARD_CATEGORIES as readonly string[]).includes(value)
+}
+
+export function isRewardSortMode(value: string): value is RewardSortMode {
+  return value === 'default' || value === 'points-asc' || value === 'points-desc'
+}
+
+export function listRewardMarketItems(
+  category: RewardCategoryFilter = '全部',
+  sort: RewardSortMode = 'default',
+): RewardMarketItem[] {
+  let items = [...REWARD_MARKET_ITEMS]
+  if (category !== '全部') {
+    items = items.filter((item) => item.category === category)
+  }
+  if (sort === 'points-asc') {
+    items.sort((a, b) => a.points - b.points || a.name.localeCompare(b.name, 'zh-CN'))
+  } else if (sort === 'points-desc') {
+    items.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'zh-CN'))
+  }
+  return items
+}
+
 /** Demo 用成长等级奖励：绑定商城同款，保证「差多少 XP」与商城一致 */
 const GROWTH_LEVEL_REWARDS: Array<{ level: number; name: string; image: string; marketId: string }> = [
   { level: 1, name: '樱花发箍', image: `${REWARD_ASSET_BASE}reward-flower.png`, marketId: 'flower' },
@@ -169,7 +197,11 @@ function getDisplayPurchaseRecords(): RewardPurchaseRecord[] {
   }))
 }
 
-export function renderRewards(root: HTMLElement) {
+export function renderRewards(
+  root: HTMLElement,
+  activeCategory: RewardCategoryFilter = '全部',
+  activeSort: RewardSortMode = 'default',
+) {
   reconcileOwnedRewardsCache()
   const s = useUserStore.getState()
   const level = getLevelProgress(s.points)
@@ -177,6 +209,14 @@ export function renderRewards(root: HTMLElement) {
   const checkedToday = s.checkinDays.includes(todayKey())
   const streak = s.checkinDays.length
   renderBuddyHairStyles(root)
+
+  root.querySelectorAll<HTMLElement>('[data-reward-category]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.rewardCategory === activeCategory)
+  })
+  const sortSelect = root.querySelector<HTMLSelectElement>('[data-reward-sort]')
+  if (sortSelect && sortSelect.value !== activeSort) {
+    sortSelect.value = activeSort
+  }
 
   root.querySelectorAll<HTMLElement>('[data-rewards-points]').forEach((node) => {
     node.textContent = s.points.toLocaleString('en-US')
@@ -285,10 +325,14 @@ export function renderRewards(root: HTMLElement) {
     return `<div>${mark}<small>${day}</small></div>`
   }).join(''))
 
-  setHtml(root.querySelector('#shop'), REWARD_MARKET_ITEMS.map((item) => {
-    const state = shopStatusForItem(item, s.points, owned)
-    const stateClass = state.owned ? 'owned' : state.canBuy ? 'can-buy' : 'locked'
-    return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${state.owned ? 'disabled' : ''}>
+  const marketItems = listRewardMarketItems(activeCategory, activeSort)
+  setHtml(
+    root.querySelector('#shop'),
+    marketItems.length
+      ? marketItems.map((item) => {
+        const state = shopStatusForItem(item, s.points, owned)
+        const stateClass = state.owned ? 'owned' : state.canBuy ? 'can-buy' : 'locked'
+        return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${state.owned ? 'disabled' : ''}>
       <div class="reward-image-wrap">
         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
       </div>
@@ -298,7 +342,9 @@ export function renderRewards(root: HTMLElement) {
         <b>${item.points.toLocaleString('en-US')} XP</b>
       </div>
     </button>`
-  }).join(''))
+      }).join('')
+      : `<div class="reward-empty">该分类暂无商品</div>`,
+  )
 
   setHtml(root.querySelector('#rewardsGrowth'), GROWTH_LEVEL_REWARDS.map((reward) => {
     const marketItem = getMarketItemById(reward.marketId)

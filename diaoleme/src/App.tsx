@@ -11,7 +11,7 @@ import { escapeHtml, setHtml, showToast } from './prototype/controllers/ui'
 import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay } from './prototype/controllers/journeyController'
 import { attachPrototypeAnalysis, clearAnalysisCard, currentAnalysisFromStore, renderAnalysisCard } from './prototype/controllers/scanController'
 import { configureQuestController, renderTasks, completeQuest, clearQuestProgress, getQuestCount, isQuestCategory, type QuestCategory } from './prototype/controllers/questsController'
-import { renderRewards, purchaseReward, REWARD_MARKET_ITEMS, clearOwnedRewards } from './prototype/controllers/rewardsController'
+import { renderRewards, purchaseReward, REWARD_MARKET_ITEMS, clearOwnedRewards, isRewardCategoryFilter, isRewardSortMode, type RewardCategoryFilter, type RewardSortMode } from './prototype/controllers/rewardsController'
 import {
   buildLeaders,
   renderLeague,
@@ -110,7 +110,9 @@ function attachPrototypeFeatures(root: HTMLElement) {
   let activeCommunityTab: CommunityTab = '最新'
   let activeDiaryMood: DiaryMoodKey = 'all'
   let diaryVisibleCount = 6
-  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeLeagueMetric, activeCommunityTab, activeDiaryMood, diaryVisibleCount)
+  let activeRewardCategory: RewardCategoryFilter = '全部'
+  let activeRewardSort: RewardSortMode = 'default'
+  const render = () => renderStatefulSections(root, activeQuestCategory, activeLeagueTab, activeLeagueMetric, activeCommunityTab, activeDiaryMood, diaryVisibleCount, activeRewardCategory, activeRewardSort)
   const scanCleanup = attachPrototypeAnalysis(root, {
     renderStatefulSections: render,
   })
@@ -136,6 +138,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
     const rewardBuyBtn = target.closest<HTMLElement>('[data-reward-buy]')
+    const rewardCategoryBtn = target.closest<HTMLElement>('[data-reward-category]')
     const growthScrollBtn = target.closest<HTMLElement>('[data-growth-scroll]')
     const viewReportBtn = target.closest<HTMLElement>('[data-view-report]')
     const viewDayBtn = target.closest<HTMLElement>('[data-view-day]')
@@ -192,6 +195,14 @@ function attachPrototypeFeatures(root: HTMLElement) {
       activeLeagueMetric = leagueMetricBtn.dataset.leagueMetric
       saveLeagueRankMetric(activeLeagueMetric)
       render()
+    }
+    if (rewardCategoryBtn?.dataset.rewardCategory && isRewardCategoryFilter(rewardCategoryBtn.dataset.rewardCategory)) {
+      activeRewardCategory = rewardCategoryBtn.dataset.rewardCategory
+      render()
+      showToast(root, activeRewardCategory === '全部' ? '已显示全部商品' : `已筛选：${activeRewardCategory}`, {
+        anchorSelector: '[data-page="rewards"] .reward-market',
+        className: 'prototype-toast-shop',
+      })
     }
     if (rewardBuyBtn?.dataset.rewardBuy) {
       const item = REWARD_MARKET_ITEMS.find((entry) => entry.id === rewardBuyBtn.dataset.rewardBuy)
@@ -318,6 +329,25 @@ function attachPrototypeFeatures(root: HTMLElement) {
   }
 
   document.addEventListener('click', onClick)
+  const onChange = (event: Event) => {
+    const target = event.target as HTMLElement
+    const sortSelect = target.closest<HTMLSelectElement>('select[data-reward-sort]')
+    if (sortSelect && isRewardSortMode(sortSelect.value)) {
+      activeRewardSort = sortSelect.value
+      render()
+      const label =
+        activeRewardSort === 'points-asc'
+          ? '积分从低到高'
+          : activeRewardSort === 'points-desc'
+            ? '积分从高到低'
+            : '默认排序'
+      showToast(root, `已按${label}排列`, {
+        anchorSelector: '[data-page="rewards"] .reward-market',
+        className: 'prototype-toast-shop',
+      })
+    }
+  }
+  document.addEventListener('change', onChange)
 
   return () => {
     scanCleanup()
@@ -325,6 +355,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     stopSeasonCountdown()
     unsubscribe()
     document.removeEventListener('click', onClick)
+    document.removeEventListener('change', onChange)
   }
 }
 
@@ -336,6 +367,8 @@ function renderStatefulSections(
   activeCommunityTab: CommunityTab = '最新',
   activeDiaryMood: DiaryMoodKey = 'all',
   diaryVisibleCount = 6,
+  activeRewardCategory: RewardCategoryFilter = '全部',
+  activeRewardSort: RewardSortMode = 'default',
 ) {
   renderHome(root)
   renderBuddy(root, {
@@ -348,7 +381,7 @@ function renderStatefulSections(
   renderHistory(root)
   renderDiary(root, activeDiaryMood, diaryVisibleCount)
   renderCommunity(root, activeCommunityTab)
-  renderRewards(root)
+  renderRewards(root, activeRewardCategory, activeRewardSort)
   renderLeague(root, activeLeagueTab, activeLeagueMetric)
   renderProfile(root)
 }
