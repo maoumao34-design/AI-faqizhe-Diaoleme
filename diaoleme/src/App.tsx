@@ -5,6 +5,7 @@ import type { ChatMessage } from './services/model'
 import { prototypeBody } from './prototype/PrototypeBody'
 import { prototypeScript } from './prototype/PrototypeScript'
 import { prototypeStyle } from './prototype/PrototypeStyle'
+import './prototype/finalPages.css'
 import { renderBuddy, handleBuddyAction, selectHairStyle } from './prototype/controllers/buddyController'
 import { showPage } from './prototype/controllers/navigation'
 import { escapeHtml, setHtml, showToast } from './prototype/controllers/ui'
@@ -116,6 +117,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     renderStatefulSections: render,
   })
   const chatCleanup = attachChatAssistant(root)
+  showPage(root, 'home')
   render()
   const unsubscribe = useUserStore.subscribe(render)
 

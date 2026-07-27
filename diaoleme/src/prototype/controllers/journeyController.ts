@@ -102,17 +102,60 @@ export function renderHistory(root: HTMLElement) {
   // 状态分产品预期 0–99；异常 3–4 位数钳到 99，布局仍按 1–4 位居中兜底（AIFA-64）
   const avgScore = rawAvg == null ? null : Math.max(0, Math.min(99, rawAvg))
   const avgDigits = avgScore == null ? 2 : String(avgScore).length
-  setHtml(
-    root.querySelector('[data-page="scan"] .grid .card:nth-child(2)'),
-    `<h3>本周扫描数据</h3><div class="three grid scan-stat-grid">` +
-      `<div class="scan-stat-item"><div class="scan-stat-value"><span class="big-number" data-digits="${String(history.length).length}">${history.length}</span></div><small>扫描次数</small></div>` +
-      `<div class="scan-stat-item"><div class="scan-stat-value"><span class="big-number" data-digits="${avgDigits}">${avgScore ?? '--'}</span></div><small>平均状态分</small></div>` +
-      `<div class="scan-stat-item scan-source-stat"><div class="scan-stat-value"><span class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</span></div><small>最新来源</small></div>` +
-      `</div>`,
-  )
-  setHtml(root.querySelector('[data-page="scan"] .grid .card.item-list'), `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords, false, scanPageSize)}</div>${pager}`)
+  const weekCard =
+    root.querySelector('[data-page="scan"] .scan-week-card') ||
+    root.querySelector('[data-page="scan"] .grid .card:nth-child(2)')
+  const weekBody = weekCard?.querySelector('.scan-week')
+  const weekHtml =
+    `<h3>本周扫描数据 <small>最近记录</small></h3><div class="scan-week three grid scan-stat-grid">` +
+    `<div class="scan-stat-item"><strong><span class="big-number" data-digits="${String(history.length).length}">${history.length}</span><small>次</small></strong><span>扫描次数</span></div>` +
+    `<div class="scan-stat-item"><strong><span class="big-number" data-digits="${avgDigits}">${avgScore ?? '--'}</span></strong><span>平均状态分</span></div>` +
+    `<div class="scan-stat-item scan-source-stat"><strong style="font-size:18px" class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>` +
+    `</div>`
+  if (weekBody && weekCard) {
+    const title = weekCard.querySelector('h3')
+    if (title) title.innerHTML = `本周扫描数据 <small>最近记录</small>`
+    setHtml(weekBody, `
+      <div class="scan-stat-item"><strong><span class="big-number" data-digits="${String(history.length).length}">${history.length}</span><small>次</small></strong><span>扫描次数</span></div>
+      <div class="scan-stat-item"><strong><span class="big-number" data-digits="${avgDigits}">${avgScore ?? '--'}</span></strong><span>平均状态分</span></div>
+      <div class="scan-stat-item scan-source-stat"><strong style="font-size:18px" class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>
+    `)
+  } else {
+    setHtml(weekCard, weekHtml)
+  }
+
+  const historyCard =
+    root.querySelector('[data-page="scan"] .scan-history-card') ||
+    root.querySelector('[data-page="scan"] .grid .card.item-list')
+  const historyList =
+    root.querySelector('[data-page="scan"] .scan-history') ||
+    root.querySelector('[data-page="scan"] .scan-record-list')
+  if (historyList && historyCard) {
+    const heading = historyCard.querySelector('h3')
+    if (heading) heading.innerHTML = `最近扫描记录 <a href="#" data-go="journey">查看全部 →</a>`
+    setHtml(historyList, renderRecordItems(pageRecords, false, scanPageSize) + pager)
+  } else {
+    setHtml(historyCard, `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords, false, scanPageSize)}</div>${pager}`)
+  }
   renderJourney(root, history)
-  setHtml(root.querySelector('#diaries'), latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
+  const diaryList = root.querySelector('#diaries')
+  if (diaryList?.classList.contains('diary-list-new')) {
+    setHtml(
+      diaryList,
+      latest.length
+        ? latest
+            .map((r) => {
+              const d = new Date(r.date)
+              const day = Number.isNaN(d.getTime()) ? '--' : String(d.getDate())
+              const month = Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}月`
+              return `<article class="diary-row-new"><div class="diary-date"><strong>${day}</strong><small>${month}</small></div><div class="diary-copy"><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.summary)}</p></div><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></article>`
+            })
+            .join('')
+        : `<article class="diary-row-new"><div class="diary-copy"><b>还没有日记</b><p>上传图片后会自动保存分析记录。</p></div></article>`,
+    )
+  } else {
+    setHtml(diaryList, latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
+  }
 }
 
 function shortenScanSource(label: string) {
