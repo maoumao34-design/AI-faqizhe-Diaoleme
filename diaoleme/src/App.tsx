@@ -3210,6 +3210,22 @@ const integrationStyle = `
     grid-template-columns: repeat(5, minmax(120px, 1fr));
   }
 
+  [data-page="rewards"] .reward-empty {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px dashed rgba(140, 120, 210, 0.28);
+    border-radius: 16px;
+    color: #7a74ad;
+    display: grid;
+    font-size: 13px;
+    font-weight: 700;
+    grid-column: 1 / -1;
+    justify-content: center;
+    min-height: 120px;
+    padding: 24px;
+    text-align: center;
+  }
+
   [data-page="rewards"] .reward-card {
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid rgba(226, 219, 255, 0.9);
