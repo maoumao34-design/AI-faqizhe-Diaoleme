@@ -3859,8 +3859,9 @@ const integrationStyle = `
   [data-page="rewards"] .reward-market {
     position: relative;
   }
-  /* AIFA-92/94: 去掉 980 空壳；左栏自然高度不镂空；右栏随中栏拉高齐底；结果态一屏内滚 */
+  /* AIFA-92: 有/无结果同画幅；三栏同高；过长仅结果卡内滚；右栏历史卡撑满不留底空 */
   [data-page="scan"] .scan-wrap {
+    --scan-col-h: min(780px, calc(100vh - 148px));
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
     min-height: 0;
@@ -3870,32 +3871,31 @@ const integrationStyle = `
   [data-page="scan"] .scan-wrap > .grid {
     min-width: 0;
   }
-  [data-page="scan"] .feature-stack {
-    align-self: start;
+  [data-page="scan"] .feature-stack,
+  [data-page="scan"] .scan-wrap > .card,
+  [data-page="scan"] .scan-side-panel {
+    align-self: stretch;
     box-sizing: border-box;
+    height: var(--scan-col-h);
+    max-height: var(--scan-col-h);
+    min-height: var(--scan-col-h);
+  }
+  [data-page="scan"] .feature-stack {
     display: grid;
     gap: 18px;
-    grid-template-rows: auto auto auto auto;
-    height: auto;
-    max-height: none;
-    min-height: 0;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
   }
   [data-page="scan"] .feature-stack > .card.soft {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
     min-height: 0;
   }
   [data-page="scan"] .scan-wrap > .card {
-    align-self: stretch;
-    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    height: auto;
-    justify-content: flex-start;
-    max-height: none;
-    min-height: 0;
-    overflow: visible;
+    justify-content: center;
+    overflow: hidden;
   }
   [data-page="scan"] .scan-wrap > .card > .scan-orbit,
   [data-page="scan"] .scan-wrap > .card > h3,
@@ -3906,13 +3906,8 @@ const integrationStyle = `
   }
   [data-page="scan"] .scan-side-panel {
     align-content: stretch;
-    align-self: stretch;
-    box-sizing: border-box;
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
-    height: auto;
-    max-height: none;
-    min-height: 0;
     min-width: 0;
     overflow: hidden;
   }
@@ -4137,10 +4132,12 @@ const integrationStyle = `
   }
   [data-page="scan"] .has-analysis-result {
     justify-content: flex-start;
-    max-height: calc(100vh - 132px);
-    min-height: min(720px, calc(100vh - 132px));
     overflow: hidden;
     padding: 18px;
+  }
+  [data-page="scan"] .has-analysis-result > h3,
+  [data-page="scan"] .has-analysis-result > p {
+    display: none;
   }
   [data-page="scan"] .has-analysis-result .scan-orbit {
     aspect-ratio: 1 / 1;
