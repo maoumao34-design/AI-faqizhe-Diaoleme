@@ -1,7 +1,7 @@
 import { HAIRSTYLE_CATALOG } from '../../services/model'
 import { useUserStore } from '../../store/UserStore'
 import { renderBuddyHairStyles } from './buddyController'
-import { getLevelProgress, todayKey, WEEKDAY_LABELS } from './progress'
+import { getLevelProgress, todayKey, getCurrentWeekDays, getCheckinStreak } from './progress'
 import { escapeHtml, publicAssetUrl, setHtml } from './ui'
 
 const REWARD_ASSET_BASE = publicAssetUrl('rewards-assets/')
@@ -207,7 +207,7 @@ export function renderRewards(
   const level = getLevelProgress(s.points)
   const owned = loadOwnedRewards()
   const checkedToday = s.checkinDays.includes(todayKey())
-  const streak = s.checkinDays.length
+  const streak = getCheckinStreak(s.checkinDays)
   renderBuddyHairStyles(root)
 
   root.querySelectorAll<HTMLElement>('[data-reward-category]').forEach((btn) => {
@@ -310,19 +310,24 @@ export function renderRewards(
   const checkinHint = root.querySelector<HTMLElement>('[data-rewards-checkin-hint]')
   if (checkinHint) {
     checkinHint.innerHTML = checkedToday
-      ? '今日已打卡，积分已同步到 Home / Quests / League'
-      : '今日打卡可得 <b>+5 XP</b>（与 Quests / Me 共用）'
+      ? '今日已打卡'
+      : '今日打卡可得 <b>+5 XP</b>'
   }
 
-  setHtml(root.querySelector('#rewardsCheckin'), WEEKDAY_LABELS.map((day, index) => {
-    const done = index < Math.min(streak, 6) || (index === 6 && checkedToday && streak >= 7)
-    if (index === 6 && !done) {
-      return `<button type="button" data-action="checkin"><img class="gift-circle" src="${REWARD_ASSET_BASE}gift-day.png" alt="礼物"><small>${day}</small></button>`
+  const weekDays = getCurrentWeekDays()
+  setHtml(root.querySelector('#rewardsCheckin'), weekDays.map(({ label, key, isToday }, index) => {
+    const done = s.checkinDays.includes(key)
+    const isSunday = index === 6
+    if (!done && (isToday || isSunday)) {
+      const icon = isSunday
+        ? `<img class="gift-circle" src="${REWARD_ASSET_BASE}gift-day.png" alt="礼物">`
+        : `<span class="check-circle pending" aria-hidden="true"></span>`
+      return `<button type="button" data-action="checkin" ${checkedToday ? 'disabled' : ''} aria-label="${checkedToday ? '今日已打卡' : '今日打卡'}">${icon}<small>${label}</small></button>`
     }
     const mark = done
       ? `<span class="check-circle done" aria-label="已打卡"><svg class="check-mark" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M3.2 8.2l3.2 3.2 6.4-6.8"/></svg></span>`
       : `<span class="check-circle pending" aria-label="未打卡"></span>`
-    return `<div>${mark}<small>${day}</small></div>`
+    return `<div class="${done ? 'is-done' : ''}${isToday ? ' is-today' : ''}">${mark}<small>${label}</small></div>`
   }).join(''))
 
   const marketItems = listRewardMarketItems(activeCategory, activeSort)

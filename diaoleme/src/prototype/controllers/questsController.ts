@@ -1,4 +1,5 @@
 import { useUserStore } from '../../store/UserStore'
+import { getCheckinStreak, getCurrentWeekDays } from './progress'
 import { escapeHtml, setHtml, showToast } from './ui'
 
 export type QuestCategory = 'daily' | 'weekly' | 'growth' | 'special'
@@ -70,7 +71,17 @@ export function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
 
   setHtml(root.querySelector('[data-page="quests"] .tabs'), QUEST_CATEGORIES.map((category) => `<button class="pill ${category === activeCategory ? 'primary' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`).join(''))
   setHtml(root.querySelector('#questList'), quests.map((quest) => renderQuestItem(quest, done.has(quest.id))).join('') + renderQuestSummary(activeCategory, categoryDone, quests.length, allDailyDone))
-  setHtml(root.querySelector('#weekRewards'), ['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<span class="badge">${i < s.checkinDays.length ? '✓' : d}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`).join(''))
+  setHtml(root.querySelector('#weekRewards'), getCurrentWeekDays().map(({ label, key }, i) => {
+    const done = s.checkinDays.includes(key)
+    return `<span class="badge">${done ? '✓' : label}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`
+  }).join(''))
+  const questsStreakDays = root.querySelector<HTMLElement>('[data-quests-streak-days]')
+  if (questsStreakDays) questsStreakDays.textContent = `${getCheckinStreak(s.checkinDays)} 天`
+  setHtml(root.querySelector('#streak'), getCurrentWeekDays().map(({ label, key }, index) => {
+    const done = s.checkinDays.includes(key)
+    const mark = done ? '✓' : index === 6 ? '🎁' : label
+    return `<span class="badge">${mark}<br><small>${label}</small></span>`
+  }).join(''))
   setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(1)'), `<h3>我的任务进度</h3><div class="big-number">${overallPercent}%</div><div class="meter"><div class="fill" style="--w:${overallPercent}%"></div></div><p>完成 ${totalDone}/${totalQuests.length} 个任务</p><small>${CATEGORY_LABELS[activeCategory]}：${categoryDone}/${quests.length}</small>`)
   setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(3)'), `<h3>任务小贴士</h3><p>${questTip(activeCategory)}</p><div class="mini-buddy"></div>`)
   setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(4)'), `<h3>本周任务总览</h3><div class="donut" data-label="${totalDone}/${totalQuests.length}\\A 已完成"></div><p>${allDailyDone ? '每日建议已全部点亮，额外奖励已入账。' : '今天再点亮一个小任务，就很不错啦。'}</p>`)
