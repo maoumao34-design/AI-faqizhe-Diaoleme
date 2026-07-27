@@ -3861,7 +3861,7 @@ const integrationStyle = `
   }
   /* AIFA-92: 有/无结果同画幅；三栏同高；过长仅结果卡内滚；右栏历史卡撑满不留底空 */
   [data-page="scan"] .scan-wrap {
-    --scan-col-h: min(780px, calc(100vh - 148px));
+    --scan-col-h: 980px;
     align-items: stretch;
     grid-template-columns: minmax(220px, 250px) minmax(360px, 1fr) minmax(280px, 360px);
     min-height: 0;
@@ -3888,7 +3888,7 @@ const integrationStyle = `
   [data-page="scan"] .feature-stack > .card.soft {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-end;
     min-height: 0;
   }
   [data-page="scan"] .scan-wrap > .card {
