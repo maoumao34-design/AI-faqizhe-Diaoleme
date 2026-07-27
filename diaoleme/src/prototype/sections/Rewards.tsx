@@ -95,8 +95,8 @@ export const rewardsSection = `<section class="page" data-page="rewards">
               <section class="rewards-side-panel event-panel">
                 <div class="rewards-panel-heading"><strong>限时活动</strong></div>
                 <div class="event-list">
-                  <button type="button" class="event-banner"><img src="./rewards-assets/event-banner1.png" alt="限时活动 1"></button>
-                  <button type="button" class="event-banner"><img src="./rewards-assets/event-banner2.png" alt="限时活动 2"></button>
+                  <button type="button" class="event-banner"><img src="./rewards-assets/event-banner1.png" alt="夏日养发计划"></button>
+                  <button type="button" class="event-banner"><img src="./rewards-assets/event-banner2.png" alt="夏日养发计划"></button>
                 </div>
               </section>
 
