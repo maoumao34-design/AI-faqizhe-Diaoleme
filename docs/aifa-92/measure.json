@@ -1,0 +1,72 @@
+{
+  "bundle": "index-DkyWRKbd.js",
+  "empty": {
+    "wrapH": 980,
+    "colHs": [
+      980,
+      980,
+      980
+    ],
+    "cssHs": [
+      "980px",
+      "980px",
+      "980px"
+    ],
+    "wrapMin": "980px",
+    "recordSlots": 4,
+    "recordItemHs": [
+      68,
+      68,
+      68,
+      68
+    ],
+    "listH": 302,
+    "listCssH": "302px",
+    "bodyOverflow": 2
+  },
+  "withResult": {
+    "wrapH": 980,
+    "colHs": [
+      980,
+      980,
+      980
+    ],
+    "cardOverflowY": "hidden",
+    "resultOverflowY": "auto",
+    "resultScrollNeeded": true,
+    "cardScrollNeeded": false,
+    "titleVisible": true,
+    "scoreVisible": true,
+    "titleTop": 648,
+    "scoreTop": 730,
+    "resultClientH": 472,
+    "resultScrollH": 600,
+    "bodyOverflow": 2
+  },
+  "compare": {
+    "home": {
+      "go": "home",
+      "h": 1100,
+      "minH": "0px",
+      "cls": "page active"
+    },
+    "buddy": {
+      "go": "buddy",
+      "h": 1230,
+      "minH": "0px",
+      "cls": "page active"
+    },
+    "journey": {
+      "go": "journey",
+      "h": 898,
+      "minH": "0px",
+      "cls": "grid two-col"
+    },
+    "scan": {
+      "go": "scan",
+      "h": 980,
+      "minH": "980px",
+      "cls": "scan-wrap"
+    }
+  }
+}
