@@ -28,5 +28,46 @@ export function getLeagueTierProgress(points: number) {
 }
 
 export function todayKey() {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+export function localDateKey(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** 本周一到周日（本地时区） */
+export function getCurrentWeekDays(now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const dow = start.getDay()
+  start.setDate(start.getDate() + (dow === 0 ? -6 : 1 - dow))
+  return WEEKDAY_LABELS.map((label, index) => {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    const key = localDateKey(date)
+    return { label, key, isToday: key === todayKey() }
+  })
+}
+
+/** 连续打卡天数（从今天或昨天起往回计） */
+export function getCheckinStreak(checkinDays: string[], today = todayKey()) {
+  const set = new Set(checkinDays)
+  let streak = 0
+  const cursor = new Date()
+  if (!set.has(today)) {
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  for (;;) {
+    const key = localDateKey(cursor)
+    if (!set.has(key)) break
+    streak += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return streak
 }
