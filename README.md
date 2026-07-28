@@ -4,6 +4,14 @@
 
 本README只覆盖**协作规范**,用于统一在本仓库工作的所有人/智能体的代码提交流程。
 
+## 设计参考
+
+本项目的设计图（产品概览、各页面布局、设计系统/组件规范、品牌视觉与角色素材等）统一保存在 [`docs/design-reference/`](./docs/design-reference) 目录下，并在 [`docs/design-reference/README.md`](./docs/design-reference/README.md) 中提供了图片索引与中文说明（文件名、内容描述、对应实现模块）。
+
+在实现或修改 UI、页面结构、配色、组件或交互流程时，请先查阅这些设计图作为视觉与结构的对齐参考，避免脱离原始设计方向。
+
+🔗 [docs/design-reference](https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/tree/main/docs/design-reference)
+
 ## 后端公网部署（人类 15 分钟）
 
 固定 HTTPS 上线步骤（Render / Railway / Fly）、环境变量与验收口径见：
