@@ -4921,8 +4921,11 @@ const integrationStyle = `
     .diary-entry { grid-template-columns: 56px minmax(0, 1fr) 72px; }
     .diary-entry-more { display: none; }
   }
-  .community-post { align-items: flex-start; grid-template-columns: 56px 1fr 90px; }
-  .community-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  /* Keep media column auto-sized (final-pages). A fixed 90px third track
+     overflowed multi-thumb posts into the gutter between feed and rail. */
+  .community-post { align-items: start; grid-template-columns: 52px minmax(0, 1fr) auto; }
+  .community-post .community-media { min-width: 0; max-width: 100%; }
+  .community-post .community-media img { flex: 0 0 auto; }
   .comments { display: grid; gap: 8px; margin-top: 12px; }
   .comments.collapsed { display: none; }
   .comments-extra { display: grid; gap: 8px; }
