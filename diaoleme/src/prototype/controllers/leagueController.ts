@@ -665,7 +665,7 @@ function renderAllianceTab() {
         <div class="league-mini-list alliance-member-scroll">
           ${alliance.members.map((member) => `
             <div class="${member.isMe ? 'is-me' : ''}">
-              <img class="league-avatar" src="${escapeHtml(member.avatarSrc)}" alt="${escapeHtml(member.name)}">
+              <img class="league-avatar" src="${escapeHtml(member.avatarSrc)}" alt="${escapeHtml(member.name)}" loading="lazy" decoding="async">
               <b>${escapeHtml(member.name)}${member.isMe ? '（我）' : ''}<small>${escapeHtml(member.role)}</small></b>
               <strong>${member.weeklyXp.toLocaleString('en-US')} XP</strong>
             </div>
@@ -753,7 +753,7 @@ function renderLeagueLeader(leader: LeagueLeader) {
     <div class="league-ranking-row ${leader.isMe ? 'current-user' : ''}" role="row">
       <div class="rank-cell" role="cell"><span class="rank-badge ${rankClass}">${leader.rank}</span></div>
       <div class="player-cell" role="cell">
-        ${leader.avatarSrc ? `<img class="league-avatar" src="${escapeHtml(leader.avatarSrc)}" alt="${escapeHtml(leader.name)} 的头像">` : '<span class="avatar-dot"></span>'}
+        ${leader.avatarSrc ? `<img class="league-avatar" src="${escapeHtml(leader.avatarSrc)}" alt="${escapeHtml(leader.name)} 的头像" loading="lazy" decoding="async">` : '<span class="avatar-dot"></span>'}
         <div class="player-copy">
           <div class="player-name">${escapeHtml(leader.name)} <span class="level">${escapeHtml(leader.level)}</span>${leader.isMe ? '<span class="mini-crown" title="当前用户">●</span>' : ''}</div>
           <div class="motto">${escapeHtml(leader.note)}</div>

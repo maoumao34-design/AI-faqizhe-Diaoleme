@@ -813,7 +813,7 @@ function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') 
       : ''
     const meta = post.fromJourney ? `${escapeHtml(post.level)}　 Journey` : `${escapeHtml(post.level)}　 ${timeLabel(post.createdAt)}`
     return `<article class="community-post community-glass">
-      <img class="community-post-avatar" src="${escapeHtml(avatar)}" alt="" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(COMMUNITY_AVATAR_FALLBACK)}'">
+      <img class="community-post-avatar" src="${escapeHtml(avatar)}" alt="" loading="eager" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='${escapeHtml(COMMUNITY_AVATAR_FALLBACK)}'">
       <div class="community-post-copy">
         <h3>${escapeHtml(post.name)} <small>${meta}</small></h3>
         <p>${escapeHtml(post.body).replace(/\n/g, '<br>')}</p>
