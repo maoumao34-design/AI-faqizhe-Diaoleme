@@ -283,6 +283,8 @@ function tierShieldSrc(name: string) {
 }
 
 const MY_LEADERBOARD_RANK = 16
+/** 与上一名模拟用户分差超过该比例 → 显示 99；否则保持原有/自然名次 */
+const MY_RANK_GAP_RATIO = 0.2
 
 export type LeagueTab = '排行榜' | '我的联盟' | '好友排行' | '段位晋升'
 export type LeagueRankMetric = 'total_xp' | 'hair_care' | 'active_star' | 'streak' | 'kindness'
@@ -384,6 +386,38 @@ function myLeagueMetricNote(metric: LeagueRankMetric) {
   }
   if (metric === 'streak') return s.checkinDays.length ? `已连续打卡 ${s.checkinDays.length} 天` : '今天打卡就能上榜'
   return '给伙伴一点鼓励，爱心会回来的'
+}
+
+/**
+ * 按分数算出「我」的自然名次，再与上一名模拟用户对比：
+ * - 相差过大（超过 MY_RANK_GAP_RATIO）→ 99
+ * - 相差不大 → 榜内用自然名次，仍在模拟用户之后则保持原展示名次 16
+ */
+function resolveMyLeaderboardRank(myScore: number, simulatedSorted: LeagueLeader[]): number {
+  if (!simulatedSorted.length) return 1
+
+  let insertAt = simulatedSorted.length
+  for (let i = 0; i < simulatedSorted.length; i++) {
+    if (myScore >= simulatedSorted[i].points) {
+      insertAt = i
+      break
+    }
+  }
+
+  const naturalRank = insertAt + 1
+  const previous = insertAt === 0 ? null : simulatedSorted[insertAt - 1]
+  const compareWith =
+    previous ?? (insertAt >= simulatedSorted.length ? simulatedSorted[simulatedSorted.length - 1] : null)
+
+  if (!compareWith) return naturalRank
+
+  const prevScore = compareWith.points
+  const gap = Math.max(0, prevScore - myScore)
+  const tooLarge = prevScore > 0 ? gap / prevScore > MY_RANK_GAP_RATIO : gap > 0
+  if (tooLarge) return 99
+
+  if (insertAt < simulatedSorted.length) return naturalRank
+  return MY_LEADERBOARD_RANK
 }
 
 export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeader[] {
@@ -488,7 +522,8 @@ export function buildLeaders(metric: LeagueRankMetric = 'total_xp'): LeagueLeade
     })
     .map((leader, index) => ({ ...leader, rank: index + 1 }))
   const me = leaders.find((leader) => leader.isMe)
-  return me ? [...others, { ...me, rank: MY_LEADERBOARD_RANK }] : others
+  const myRank = me ? resolveMyLeaderboardRank(me.points, others) : MY_LEADERBOARD_RANK
+  return me ? [...others, { ...me, rank: myRank }] : others
 }
 
 export function renderLeague(
