@@ -105,19 +105,20 @@ export function renderHistory(root: HTMLElement) {
     root.querySelector('[data-page="scan"] .scan-week-card') ||
     root.querySelector('[data-page="scan"] .grid .card:nth-child(2)')
   const weekBody = weekCard?.querySelector('.scan-week')
+  // AIFA-109: 去掉「保持稳定」；三指标同行放大（扫描次数 / 状态平均分 / 最新来源及结果）
   const weekHtml =
     `<h3>本周扫描数据 <small>最近记录</small></h3><div class="scan-week">` +
     `<div><strong>${history.length}<small>次</small></strong><span>扫描次数</span></div>` +
-    `<div><strong>${avgScore ?? '--'}</strong><span>平均状态分</span></div>` +
-    `<div><strong class="scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>` +
+    `<div><strong>${avgScore ?? '--'}</strong><span>状态平均分</span></div>` +
+    `<div><strong class="scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源及结果</span></div>` +
     `</div>`
   if (weekBody && weekCard) {
     const title = weekCard.querySelector('h3')
     if (title) title.innerHTML = `本周扫描数据 <small>最近记录</small>`
     setHtml(weekBody, `
       <div><strong>${history.length}<small>次</small></strong><span>扫描次数</span></div>
-      <div><strong>${avgScore ?? '--'}</strong><span>平均状态分</span></div>
-      <div><strong class="scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>
+      <div><strong>${avgScore ?? '--'}</strong><span>状态平均分</span></div>
+      <div><strong class="scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源及结果</span></div>
     `)
   } else {
     setHtml(weekCard, weekHtml)
