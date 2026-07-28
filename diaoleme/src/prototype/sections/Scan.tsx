@@ -44,7 +44,7 @@ export const scanSection = `<section class="page" data-page="scan">
                   <div class="scan-week">
                     <div><strong>3<small>次</small></strong><span>扫描次数</span><small>比上周 +1</small></div>
                     <div><strong>126<small>根</small></strong><span>平均掉发量</span><small>比上周 -8%</small></div>
-                    <div><strong style="font-size:25px">正常</strong><span>整体状态</span><small class="scan-normal">保持稳定</small></div>
+                    <div><strong>正常</strong><span>整体状态</span><small class="scan-normal">保持稳定</small></div>
                   </div>
                 </section>
                 <section class="scan-card">
