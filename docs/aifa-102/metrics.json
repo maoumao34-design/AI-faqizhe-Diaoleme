@@ -1,0 +1,94 @@
+{
+  "gutter": {
+    "left": 938,
+    "right": 970,
+    "width": 32
+  },
+  "posts": [
+    {
+      "i": 0,
+      "postRight": 938,
+      "mediaCount": 0,
+      "mediaImgs": [],
+      "anyOutside": false,
+      "anyInGutter": false
+    },
+    {
+      "i": 1,
+      "postRight": 938,
+      "mediaCount": 3,
+      "mediaImgs": [
+        {
+          "src": "./assets/scan/sample-good.png",
+          "left": 653,
+          "right": 735,
+          "outsidePost": false,
+          "inGutter": false
+        },
+        {
+          "src": "./assets/scan/sample-tangled.png",
+          "left": 745,
+          "right": 827,
+          "outsidePost": false,
+          "inGutter": false
+        },
+        {
+          "src": "./assets/scan/sample-busy-bg.png",
+          "left": 837,
+          "right": 919,
+          "outsidePost": false,
+          "inGutter": false
+        }
+      ],
+      "anyOutside": false,
+      "anyInGutter": false
+    },
+    {
+      "i": 2,
+      "postRight": 938,
+      "mediaCount": 1,
+      "mediaImgs": [
+        {
+          "src": "./assets/diary/diary-sunset-hero.jpg",
+          "left": 837,
+          "right": 919,
+          "outsidePost": false,
+          "inGutter": false
+        }
+      ],
+      "anyOutside": false,
+      "anyInGutter": false
+    },
+    {
+      "i": 3,
+      "postRight": 938,
+      "mediaCount": 3,
+      "mediaImgs": [
+        {
+          "src": "./assets/buddy/hairstyles/dandelion.png",
+          "left": 653,
+          "right": 735,
+          "outsidePost": false,
+          "inGutter": false
+        },
+        {
+          "src": "./assets/buddy/hairstyles/blue-bob.png",
+          "left": 745,
+          "right": 827,
+          "outsidePost": false,
+          "inGutter": false
+        },
+        {
+          "src": "./assets/buddy/hairstyles/ribbon.png",
+          "left": 837,
+          "right": 919,
+          "outsidePost": false,
+          "inGutter": false
+        }
+      ],
+      "anyOutside": false,
+      "anyInGutter": false
+    }
+  ],
+  "overflowCount": 0
+}
