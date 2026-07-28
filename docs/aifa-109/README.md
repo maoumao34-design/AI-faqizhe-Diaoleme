@@ -1,17 +1,16 @@
-# AIFA-109 Scan 本周扫描数据区布局
+# AIFA-109 Scan 本周扫描数据区布局（maoumao34 验收）
 
-- After（Pages 硬刷对照）：`scan-week-after.png`
-- Right rail 上下文：`scan-right-rail.png`
-- 度量快照：`metrics.json`
-- 功能 PR：https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/154
-- Pages：https://aihpj.github.io/AI-faqizhe-Diaoleme/
-- Bundle：`index-5TZJFhpg.js`
+- After（maoumao34 硬刷）：`maoumao-scan-week-g6.png`
+- 度量：`maoumao-metrics-g6.json`
+- 功能 PR：https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/158（另有 #154 / #156）
+- 验收入口：https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/
+- Bundle：`index-G6oYcH6b.js`（≠ `index-CfrOsKRw.js` / `index-ChtAgxeg.js`）
 
-## 验收核对（2026-07-28 live）
+## 验收核对（2026-07-28 live maoumao34）
 
 | 项 | 结果 |
 |---|---|
-| 无「保持稳定」 | `hasKeepStable=false` |
-| 三指标同行 | tops=`[434,434,434]`，`aligned=true` |
-| 等比放大 | strong `font-size:42px` / `font-weight:800` / `#8054e8` |
-| 标签 | 扫描次数 / 状态平均分 / 最新来源及结果 |
+| 无「保持稳定」 | ✅ |
+| 文案「状态平均分」「最新来源及结果」 | ✅ |
+| 三指标同行等比 42px；「真实 AI」完整 | ✅ |
+| #55 | 未合 |
