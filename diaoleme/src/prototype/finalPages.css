@@ -2530,21 +2530,31 @@ body.me-page-active .topbar .page-title {
   }
 }
 
-/* === AIFA-105 / AIFA-107: 只加强 cover 铺底，不清掉已有背景、不改控件布局 === */
-body.reference-home .app {
+/* === AIFA-105 / AIFA-107: 背景 cover + 修复 main 掉进侧栏列导致整页被裁切 === */
+body.reference-home .app.design-canvas {
+  grid-template-columns: 132px minmax(0, 1fr) !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
+  overflow: hidden !important;
+}
+body.reference-home .sidebar {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+body.reference-home main.main {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  overflow: auto !important;
 }
 body.buddy-page-active .page[data-page="buddy"],
 body.scan-page-active .page[data-page="scan"] {
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
-}
-/* 防裁切：允许主栏滚动看到完整内容 */
-body.reference-home main {
-  overflow: auto !important;
 }
 body.reference-home [data-page="home"].active {
   overflow: visible !important;
@@ -2561,7 +2571,6 @@ body.buddy-page-active .hair-item img {
   visibility: visible !important;
   position: relative !important;
   z-index: 2 !important;
-  background: transparent !important;
 }
 body.buddy-page-active .hair-item.locked img {
   opacity: 0.72 !important;
