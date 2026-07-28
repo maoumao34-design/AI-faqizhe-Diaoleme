@@ -1451,9 +1451,10 @@ body.community-page-active .page[data-page="community"]{min-height:1280px;color:
         box-shadow: 0 10px 28px rgba(100,57,202,.34);
       }
       body.reference-home [data-page="home"] .mini-card-grid .mini-buddy {
-        background-image: url("./generated/home-background.png");
-        background-size: 500% auto;
-        background-position: 71% 52%;
+        background-image: url("./generated/buddy-card.png");
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
         border-radius: 50%;
       }
       body.reference-home [data-page="home"] .mini-card-grid .mini-buddy::before { display:none; }
@@ -2527,4 +2528,53 @@ body.me-page-active .topbar .page-title {
   .me-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* === AIFA-105 / AIFA-107: 只加背景铺底（cover 裁切），不改控件布局 === */
+body.reference-home .app {
+  background-image: none !important;
+}
+body.reference-home [data-page="home"] {
+  background-image:
+    linear-gradient(90deg, rgba(255,248,251,.42) 0%, rgba(255,248,251,.12) 40%, rgba(244,230,255,.06) 100%),
+    url("./generated/home-background.png") !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+body.buddy-page-active .page[data-page="buddy"] {
+  background:
+    linear-gradient(rgba(255,255,255,.08), rgba(255,255,255,.08)),
+    url("./scan/background.png") center top / cover no-repeat !important;
+}
+body.scan-page-active .page[data-page="scan"] {
+  background-image:
+    linear-gradient(rgba(255,255,255,.04), rgba(255,255,255,.04)),
+    url("./scan/background.png") !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+}
+/* 防裁切：允许滚动看到完整页，不挪控件 */
+body.reference-home main {
+  overflow: auto !important;
+}
+body.reference-home [data-page="home"].active {
+  overflow: visible !important;
+}
+body.reference-home [data-page="home"] > .hero {
+  overflow: visible !important;
+}
+
+/* Buddy 发型轨：保证 img 可见（AIFA-104） */
+body.buddy-page-active .hair-item img {
+  display: block !important;
+  width: 155px !important;
+  height: 155px !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+}
+body.buddy-page-active .hair-item.locked img {
+  opacity: 0.72;
 }

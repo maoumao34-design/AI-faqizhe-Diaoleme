@@ -20,6 +20,25 @@ type BuddyControllerOptions = {
 const buddyCareKey = () => 'diaoleme-prototype-buddy-care'
 const selectedHairStyleKey = () => 'diaoleme-prototype-selected-hair-style'
 
+/** final-pages 发型视觉：映射到已有交付素材，禁止空 mini-buddy */
+const HAIR_VISUAL: Record<string, { img: string; levelLabel: string }> = {
+  none: { img: './assets/buddy/hairstyles/dandelion.png', levelLabel: 'Lv.5' },
+  short: { img: './assets/buddy/hairstyles/blue-bob.png', levelLabel: 'Lv.8' },
+  medium: { img: './assets/buddy/hairstyles/ribbon.png', levelLabel: 'Lv.10' },
+  long: { img: './assets/buddy/hairstyles/dandelion.png', levelLabel: 'Lv.12' },
+  curly: { img: './assets/buddy/hairstyles/blue-bob.png', levelLabel: 'Lv.14' },
+  bun: { img: './assets/buddy/hairstyles/ribbon.png', levelLabel: 'Lv.18' },
+}
+
+const DISPLAY_NAME: Record<string, string> = {
+  none: '蒲公英蓬蓬头',
+  short: '星光短发',
+  medium: '彩虹飘带',
+  long: '飘逸长发',
+  curly: '羊毛卷',
+  bun: '丸子头',
+}
+
 export function renderBuddy(root: HTMLElement, options: BuddyControllerOptions) {
   const s = useUserStore.getState()
   const care = loadBuddyCare()
@@ -30,62 +49,109 @@ export function renderBuddy(root: HTMLElement, options: BuddyControllerOptions) 
   const questCount = options.getQuestCount()
   const companionDays = Math.max(s.checkinDays.length, s.reportHistory.length ? 1 : 0, 38)
 
-  setHtml(root.querySelector('[data-buddy-days]'), `陪伴你已经 ${companionDays} 天啦`)
+  // Keep final-pages Buddy shell — only hydrate values, never replace with old .metric-row DOM.
+  const headingP = root.querySelector<HTMLElement>('[data-page="buddy"] .buddy-heading-new p')
+  if (headingP) headingP.textContent = `陪伴你已经 ${companionDays} 天啦 💗`
 
-  setHtml(root.querySelector('[data-page="buddy"] .metric'), `
-    <div class="metric-row"><span style="font-size:28px">💗</span><b>生命值</b><div class="meter"><div class="fill" style="--w:${health}%;--c:#ff77a8"></div></div><b>${health}/100</b></div>
-    <div class="metric-row"><span style="font-size:28px">⚡</span><b>能量值</b><div class="meter"><div class="fill" style="--w:${care.energy}%;--c:#ffad2f"></div></div><b>${care.energy}/100</b></div>
-    <div class="metric-row"><span style="font-size:28px">😊</span><b>心情值</b><div class="meter"><div class="fill" style="--w:${moodScore}%;--c:#8b5cf6"></div></div><b>${mood}</b></div>
-  `)
+  const levelEl = root.querySelector<HTMLElement>('[data-page="buddy"] .buddy-heading-new .level')
+  if (levelEl) {
+    const level = Math.max(1, Math.min(9, 1 + Math.floor(s.points / 400)))
+    levelEl.textContent = `Lv.${level}`
+  }
+
+  const stats = root.querySelectorAll<HTMLElement>('[data-page="buddy"] .buddy-status .buddy-stat')
+  if (stats.length >= 3) {
+    const strong0 = stats[0].querySelector('strong')
+    const meter0 = stats[0].querySelector<HTMLElement>('.buddy-meter span')
+    if (strong0) strong0.textContent = `${health} / 100`
+    if (meter0) meter0.style.width = `${health}%`
+
+    const strong1 = stats[1].querySelector('strong')
+    const meter1 = stats[1].querySelector<HTMLElement>('.buddy-meter span')
+    if (strong1) strong1.textContent = `${care.energy} / 100`
+    if (meter1) meter1.style.width = `${care.energy}%`
+
+    const strong2 = stats[2].querySelector('strong')
+    const meter2 = stats[2].querySelector<HTMLElement>('.buddy-meter span')
+    if (strong2) strong2.textContent = mood
+    if (meter2) meter2.style.width = `${moodScore}%`
+  }
 
   renderBuddyHairStyles(root)
+  applySelectedHairToHero(root, currentHairStyle(s.unlockedHairStyles))
 
-  setHtml(root.querySelector('[data-buddy-actions]'), `
-    <button class="item buddy-action dress" data-buddy-action="dress"><span>👗</span><b>Dress Up<small>装扮你的伙伴，选择或解锁造型</small></b><span>›</span></button>
-    <button class="item buddy-action feed" data-buddy-action="feed"><span>🍚</span><b>Feed<small>喂养伙伴，补充爱与能量</small></b><span>›</span></button>
-    <button class="item buddy-action diary" data-buddy-action="diary"><span>📖</span><b>Buddy Diary<small>记录我们一起成长的每一天</small></b><span>›</span></button>
-    <button class="item buddy-action growth" data-buddy-action="growth"><span>📈</span><b>成长记录<small>查看伙伴的成长轨迹</small></b><span>›</span></button>
-  `)
+  // Wire dress/feed actions onto static final-pages buttons (index order).
+  const actionBtns = root.querySelectorAll<HTMLButtonElement>('[data-page="buddy"] .buddy-action-list .buddy-action')
+  if (actionBtns[0] && !actionBtns[0].dataset.buddyAction) actionBtns[0].dataset.buddyAction = 'dress'
+  if (actionBtns[1] && !actionBtns[1].dataset.buddyAction) actionBtns[1].dataset.buddyAction = 'feed'
 
-  setHtml(root.querySelector('[data-buddy-report]'), `
-    <h3>今日头发报告</h3>
-    <div class="buddy-report-score"><span class="big-number">${s.dropScore ?? '--'}</span><small>${s.dropScore == null ? '等待首次记录' : '趣味状态分'}</small></div>
-    <p>${escapeHtml(latestReport?.summary || '还没有今日报告，完成一次 Scan 后会同步到 Buddy。')}</p>
-    <div class="chart">${options.buildTrendBars(s.reportHistory)}</div>
-  `)
+  const report = root.querySelector<HTMLElement>('[data-page="buddy"] .buddy-report')
+  if (report) {
+    const number = report.querySelector('.number')
+    const p = report.querySelector('p')
+    if (number) {
+      const count = latestReport?.count || (s.dropScore != null ? String(Math.max(8, Math.round(120 - (s.dropScore || 0)))) : '12')
+      number.innerHTML = `${escapeHtml(String(count))} <small>根</small>`
+    }
+    if (p) {
+      p.textContent = latestReport?.summary || '大多是健康的毛发，状态很棒！'
+    }
+  }
 
-  setHtml(root.querySelector('[data-buddy-summary]'), `
-    <h3>💗 本周成长小结</h3>
-    <p>你的护理表现超过了 ${Math.min(96, 60 + questCount.done * 4 + s.checkinDays.length)}% 的用户，继续保持哦！</p>
-    <div class="buddy-summary-stats">
-      <span><b>${s.checkinDays.length || 0} 天</b><small>护理天数</small></span>
-      <span><b>${questCount.done}/${questCount.total}</b><small>任务完成</small></span>
-      <span><b>${options.avgScore(s.reportHistory) || '--'}</b><small>平均状态分</small></span>
-      <span><b>${care.energy >= 78 ? '良好' : '待补充'}</b><small>充足睡眠</small></span>
-    </div>
-  `)
-  setHtml(root.querySelector('[data-buddy-cheers]'), `
-    <h3>💗 来自大家的鼓励</h3>
-    <div class="buddy-cheers">
-      ${['Luna|你的新发型超可爱！我们一起加油呀 🌞', 'Mia|头发也在慢慢变强大呢，你一定可以的！💪', 'Ray|看到你的变化啦，好棒！！✨'].map((item) => {
-        const [name, msg] = item.split('|')
-        return `<div class="buddy-cheer"><span class="avatar">${name[0]}</span><b>${name}</b><p>${escapeHtml(msg)}</p><small>${name === 'Ray' ? '1 天前' : name === 'Mia' ? '5 小时前' : '2 小时前'}</small></div>`
-      }).join('')}
-    </div>
-  `)
+  const summary = root.querySelector<HTMLElement>('[data-page="buddy"] .buddy-summary')
+  if (summary) {
+    const summaryP = summary.querySelector('p')
+    if (summaryP) {
+      summaryP.textContent = `你的护理表现超过了 ${Math.min(96, 60 + questCount.done * 4 + s.checkinDays.length)}% 的用户，继续保持哦！`
+    }
+    const metrics = summary.querySelectorAll('.summary-metrics strong')
+    if (metrics[0]) metrics[0].textContent = `${s.checkinDays.length || 7} 天`
+    if (metrics[1]) metrics[1].textContent = `${questCount.done} / ${Math.max(questCount.total, 7)}`
+    if (metrics[2]) metrics[2].textContent = String(options.avgScore(s.reportHistory) || '优秀')
+    if (metrics[3]) metrics[3].textContent = care.energy >= 78 ? '良好' : '待补充'
+  }
 }
 
 export function renderBuddyHairStyles(root: HTMLElement) {
   const s = useUserStore.getState()
   const selectedHair = currentHairStyle(s.unlockedHairStyles)
   const ownedHairStyles = HAIRSTYLE_CATALOG.filter((h) => s.unlockedHairStyles.includes(h.id)).length
-  setHtml(root.querySelector('[data-page="buddy"] .section-title'), `解锁发型 <span class="badge">${ownedHairStyles} / ${HAIRSTYLE_CATALOG.length} 已解锁</span>`)
-  setHtml(root.querySelector('#skins'), HAIRSTYLE_CATALOG.map((h) => {
+  const title = root.querySelector('[data-page="buddy"] .hair-card .section-title')
+  if (title) {
+    title.innerHTML = `✦　解锁发型 <span class="badge">${ownedHairStyles} / ${HAIRSTYLE_CATALOG.length} 已解锁</span>`
+  }
+
+  const items = HAIRSTYLE_CATALOG.map((h) => {
     const owned = s.unlockedHairStyles.includes(h.id)
     const active = h.id === selectedHair
-    const label = owned ? (active ? '使用中' : '点击换上') : `${h.cost} XP 解锁`
-    return `<button class="skin ${active ? 'active' : ''}" data-unlock-id="${escapeHtml(h.id)}"><div class="mini-buddy" style="${owned ? '' : 'opacity:.45'}"></div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(label)}</small>${owned ? '' : '<span class="buddy-lock">🔒</span>'}</button>`
-  }).join(''))
+    const visual = HAIR_VISUAL[h.id] || HAIR_VISUAL.none
+    const name = DISPLAY_NAME[h.id] || h.name
+    // final-pages：未解锁仍显示发型图 + 🔒，只有 Coming Soon 用 ?
+    const hint = active ? '使用中' : owned ? visual.levelLabel : `${visual.levelLabel}　🔒`
+    const cls = `hair-item${active ? ' selected' : ''}${owned ? '' : ' locked'}`
+    return `<button class="${cls}" data-unlock-id="${escapeHtml(h.id)}" type="button"><img src="${escapeHtml(visual.img)}" alt="${escapeHtml(name)}"><b>${escapeHtml(name)}</b><small>${escapeHtml(hint)}</small></button>`
+  }).join('')
+
+  // Keep 3 "Coming Soon" placeholders like final-pages demo rail.
+  const placeholders = [12, 14, 18]
+    .map((lv) => `<button class="hair-item locked" type="button" disabled><div class="lock-shape">?</div><b>Coming Soon</b><small>Lv.${lv}　🔒</small></button>`)
+    .join('')
+
+  setHtml(root.querySelector('#skins'), items + placeholders)
+}
+
+function applySelectedHairToHero(root: HTMLElement, hairId: string) {
+  const visual = HAIR_VISUAL[hairId] || HAIR_VISUAL.none
+  const hero = root.querySelector<HTMLImageElement>('[data-page="buddy"] .buddy-character')
+  // Keep buddy-hero.png as body; overlay hairstyle is the rail selection cue.
+  // If selection has a dedicated full-body asset we only have hairstyle crops —
+  // update tip mascot thumb to selected hair for visible feedback.
+  const tipImg = root.querySelector<HTMLImageElement>('[data-page="buddy"] .buddy-tip img')
+  if (tipImg) tipImg.src = visual.img
+  if (hero && hairId !== 'none') {
+    // Prefer full hero for default; for unlocked styles keep hero body (design).
+    hero.src = './assets/buddy/buddy-hero.png'
+  }
 }
 
 export function handleBuddyAction(action: string, root: HTMLElement, todayKey: () => string) {
@@ -111,7 +177,7 @@ export function handleBuddyAction(action: string, root: HTMLElement, todayKey: (
     showToast(root, '已打开 Buddy Diary')
     return
   }
-  if (action === 'growth') {
+  if (action === 'growth' || action === 'journey') {
     showPage(root, 'journey')
     showToast(root, '已打开成长记录')
   }
