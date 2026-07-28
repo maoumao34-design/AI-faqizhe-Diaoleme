@@ -858,7 +858,7 @@ function attachChatAssistant(root: HTMLElement) {
   const widget = document.createElement('div')
   widget.className = 'ai-chat-widget'
   widget.innerHTML = `
-    <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手">🌱<span>AI 助手</span></button>
+    <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手"><img src="./assets/logo-mascot.png" alt=""><span>AI 助手</span></button>
     <section class="ai-chat-panel" aria-label="AI 助手对话">
       <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" data-chat-close aria-label="关闭 AI 助手">×</button></header>
       <div class="ai-chat-messages" data-chat-messages></div>
@@ -4066,6 +4066,27 @@ const integrationStyle = `
   [data-page="scan"] .scan-stat-grid {
     align-items: start;
   }
+  [data-page="scan"] .scan-week strong {
+    display: block;
+    color: #8054e8 !important;
+    font-size: 36px !important;
+    line-height: 1.1 !important;
+    font-weight: 800;
+  }
+  [data-page="scan"] .scan-week strong small {
+    margin-left: 2px;
+    font-size: 16px !important;
+    color: #8054e8 !important;
+    font-weight: 800;
+  }
+  [data-page="scan"] .scan-week .scan-source-value {
+    font-size: 25px !important;
+    line-height: 1.15 !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   [data-page="scan"] .scan-stat-item {
     display: flex;
     flex-direction: column;
@@ -4690,12 +4711,19 @@ const integrationStyle = `
     gap: 8px;
     border: 0;
     border-radius: 999px;
-    padding: 14px 18px;
+    padding: 10px 16px 10px 10px;
     background: linear-gradient(135deg, #8b5cf6, #65c982);
     color: #fff;
     box-shadow: 0 20px 55px rgba(99, 75, 168, 0.32);
     cursor: grab;
     font-weight: 900;
+  }
+  .ai-chat-bubble img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex: 0 0 36px;
+    filter: drop-shadow(0 2px 4px rgba(40, 20, 80, 0.18));
   }
   .ai-chat-bubble:active { cursor: grabbing; }
   .ai-chat-panel {

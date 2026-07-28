@@ -101,24 +101,23 @@ export function renderHistory(root: HTMLElement) {
   const rawAvg = history.length ? Math.round(history.reduce((sum, record) => sum + record.score, 0) / history.length) : null
   // 状态分产品预期 0–99；异常 3–4 位数钳到 99，布局仍按 1–4 位居中兜底（AIFA-64）
   const avgScore = rawAvg == null ? null : Math.max(0, Math.min(99, rawAvg))
-  const avgDigits = avgScore == null ? 2 : String(avgScore).length
   const weekCard =
     root.querySelector('[data-page="scan"] .scan-week-card') ||
     root.querySelector('[data-page="scan"] .grid .card:nth-child(2)')
   const weekBody = weekCard?.querySelector('.scan-week')
   const weekHtml =
-    `<h3>本周扫描数据 <small>最近记录</small></h3><div class="scan-week three grid scan-stat-grid">` +
-    `<div class="scan-stat-item"><strong><span class="big-number" data-digits="${String(history.length).length}">${history.length}</span><small>次</small></strong><span>扫描次数</span></div>` +
-    `<div class="scan-stat-item"><strong><span class="big-number" data-digits="${avgDigits}">${avgScore ?? '--'}</span></strong><span>平均状态分</span></div>` +
-    `<div class="scan-stat-item scan-source-stat"><strong style="font-size:18px" class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>` +
+    `<h3>本周扫描数据 <small>最近记录</small></h3><div class="scan-week">` +
+    `<div><strong>${history.length}<small>次</small></strong><span>扫描次数</span></div>` +
+    `<div><strong>${avgScore ?? '--'}</strong><span>平均状态分</span></div>` +
+    `<div><strong class="scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>` +
     `</div>`
   if (weekBody && weekCard) {
     const title = weekCard.querySelector('h3')
     if (title) title.innerHTML = `本周扫描数据 <small>最近记录</small>`
     setHtml(weekBody, `
-      <div class="scan-stat-item"><strong><span class="big-number" data-digits="${String(history.length).length}">${history.length}</span><small>次</small></strong><span>扫描次数</span></div>
-      <div class="scan-stat-item"><strong><span class="big-number" data-digits="${avgDigits}">${avgScore ?? '--'}</span></strong><span>平均状态分</span></div>
-      <div class="scan-stat-item scan-source-stat"><strong style="font-size:18px" class="badge scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>
+      <div><strong>${history.length}<small>次</small></strong><span>扫描次数</span></div>
+      <div><strong>${avgScore ?? '--'}</strong><span>平均状态分</span></div>
+      <div><strong class="scan-source-value" title="${latestSourceText}" data-full-source="${latestSourceText}">${latestSourceShort}</strong><span>最新来源</span><small class="scan-normal">保持稳定</small></div>
     `)
   } else {
     setHtml(weekCard, weekHtml)
