@@ -143,11 +143,13 @@ export function renderHistory(root: HTMLElement) {
 function shortenScanSource(label: string) {
   const text = label.trim()
   if (!text) return '等待分析'
+  // AIFA-109: 周数据第三项必须短标签，禁止「CC clu…」类截断展示
   if (/本地|fallback|demo/i.test(text)) return '本地兜底'
-  if (/CC club|OpenAI|openai|真实 AI|api/i.test(text)) return '真实 AI'
+  if (/cc\s*club|openai|真实\s*AI|\bapi\b|compatible/i.test(text)) return '真实 AI'
   if (/mock/i.test(text)) return 'Mock'
   if (/等待/.test(text)) return '等待分析'
-  return text.length > 8 ? `${text.slice(0, 7)}…` : text
+  // 兜底：过长来源压成「真实 AI」而不是切片省略号
+  return text.length > 6 ? '真实 AI' : text
 }
 
 export function renderJourney(root: HTMLElement, history: ReportRecord[]) {

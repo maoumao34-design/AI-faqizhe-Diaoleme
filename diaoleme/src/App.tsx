@@ -4093,11 +4093,11 @@ const integrationStyle = `
   [data-page="scan"] .scan-stat-grid {
     align-items: start;
   }
-  /* AIFA-109: 三指标同行放大占满本周扫描框（在 AIFA-100 对齐基础上抬字号） */
+  /* AIFA-109: 三指标同行等比放大；短标签保证「真实 AI」完整可读、无 ellipsis */
   [data-page="scan"] .scan-week {
     align-items: center !important;
     min-height: 132px;
-    grid-template-columns: 1fr 1fr 1.25fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
   [data-page="scan"] .scan-week strong {
     display: block;
@@ -4122,23 +4122,20 @@ const integrationStyle = `
   [data-page="scan"] .scan-week > div > small {
     display: none !important;
   }
-  /* AIFA-109 QA: 第三项不可 ellipsis 截断；可换行 + 自适应字号保证「真实 AI」完整可读 */
   [data-page="scan"] .scan-week .scan-source-value {
     display: block !important;
     height: auto !important;
     max-width: 100% !important;
     min-width: 0 !important;
     margin: 0 !important;
-    padding: 0 2px !important;
-    font-size: clamp(22px, 3.6vw, 36px) !important;
-    line-height: 1.15 !important;
+    padding: 0 !important;
+    font-size: 42px !important;
+    line-height: 1.1 !important;
     font-weight: 800;
     color: #8054e8 !important;
     overflow: visible !important;
     text-overflow: clip !important;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: keep-all;
+    white-space: nowrap !important;
   }
   [data-page="scan"] .scan-stat-item {
     display: flex;
