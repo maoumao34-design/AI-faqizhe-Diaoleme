@@ -44,7 +44,7 @@ export const scanSection = `<section class="page" data-page="scan">
                   <div class="scan-week">
                     <div><strong>3<small>次</small></strong><span>扫描次数</span></div>
                     <div><strong>86</strong><span>状态平均分</span></div>
-                    <div><strong class="scan-source-value">真实AI</strong><span>最新来源及结果</span></div>
+                    <div><strong class="scan-source-value">真实 AI</strong><span>最新来源及结果</span></div>
                   </div>
                 </section>
                 <section class="scan-card">
