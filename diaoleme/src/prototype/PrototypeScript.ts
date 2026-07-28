@@ -89,31 +89,8 @@ document.querySelector(".small-leaders").innerHTML = leaders
   )
   .join("");
 
-const skinNames = [
-  " 蒲公英蓬蓬头 ",
-  " 星光短发 ",
-  " 彩虹飘带 ",
-  "Coming Soon",
-  "Coming Soon",
-  "Coming Soon"
-];
-const skinsRoot = document.querySelector("#skins");
-if (skinsRoot) {
-  skinsRoot.innerHTML = skinNames
-    .map(
-      (name, i) =>
-        \`<button class="skin \${i === 0 ? "active" : ""}"><div class="mini-buddy" style="\${i > 2 ? "opacity:.45" : ""}"></div><b>\${name}</b><small>Lv.\${[5, 8, 10, 12, 14, 18][i]}</small></button>\`
-    )
-    .join("");
-  skinsRoot.addEventListener("click", (event) => {
-    const skin = event.target.closest(".skin");
-    if (!skin) return;
-    document.querySelectorAll(".skin").forEach((item) =>
-      item.classList.remove("active")
-    );
-    skin.classList.add("active");
-  });
-}
+// AIFA-104: do NOT overwrite #skins here — Buddy hydrate owns .hair-item + hairstyle images.
+// Legacy empty .mini-buddy skin rail caused missing Buddy hair previews.
 
 const questListRoot = document.querySelector("#questList");
 if (questListRoot) {
