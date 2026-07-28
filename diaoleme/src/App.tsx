@@ -653,7 +653,6 @@ const COMMUNITY_SEED_POSTS: CommunityPost[] = [
     body: '分享一个我最近超喜欢的头皮按摩方法！每天睡前按 5 分钟，放松又助眠 😊\n推荐给大家试试～',
     media: '🪮',
     avatar: './assets/buddy/hairstyles/blue-bob.png',
-    mediaUrls: ['./assets/scan/sample-good.png', './assets/scan/sample-tangled.png', './assets/scan/sample-busy-bg.png'],
     likes: 96,
     comments: ['求一个手法教程！', '睡前按摩 + 早睡，感觉小发球都开心了。'],
     tag: '头皮护理',
