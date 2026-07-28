@@ -2531,12 +2531,25 @@ body.me-page-active .topbar .page-title {
 }
 
 /* === AIFA-105 / AIFA-107: 背景 cover + 修复 main 掉进侧栏列导致整页被裁切 === */
+/* AIFA-103: keep meadow scene + hero mascot visible (not pink flat flash) */
 body.reference-home .app.design-canvas {
   grid-template-columns: 132px minmax(0, 1fr) !important;
+  background-image: url("./generated/scene-background-1920x1280.jpg") !important;
   background-size: cover !important;
-  background-position: center top !important;
+  background-position: center 28% !important;
   background-repeat: no-repeat !important;
   overflow: hidden !important;
+}
+body.reference-home .hero-mascot-layer {
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 12 !important;
+}
+body.reference-home [data-page="home"] .mini-card-grid .mini-buddy {
+  background-image: url("./generated/buddy-card.png") !important;
+  background-size: contain !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
 body.reference-home .sidebar {
   grid-column: 1 !important;
