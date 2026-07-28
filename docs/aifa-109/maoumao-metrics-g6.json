@@ -1,0 +1,39 @@
+{
+  "bundle": "https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/assets/index-G6oYcH6b.js",
+  "hasKeepStable": false,
+  "spans": [
+    "扫描次数",
+    "状态平均分",
+    "最新来源及结果"
+  ],
+  "strongs": [
+    {
+      "text": "1次",
+      "fontSize": "42px",
+      "overflow": "visible",
+      "textOverflow": "clip",
+      "top": 434,
+      "truncated": false
+    },
+    {
+      "text": "92",
+      "fontSize": "42px",
+      "overflow": "visible",
+      "textOverflow": "clip",
+      "top": 434,
+      "truncated": false
+    },
+    {
+      "text": "真实 AI",
+      "fontSize": "42px",
+      "overflow": "visible",
+      "textOverflow": "clip",
+      "top": 434,
+      "truncated": true
+    }
+  ],
+  "aligned": true,
+  "equalFont": true,
+  "anyTruncated": true,
+  "cardText": "本周扫描数据\n最近记录\n1次\n扫描次数\n92\n状态平均分\n真实 AI\n最新来源及结果"
+}
