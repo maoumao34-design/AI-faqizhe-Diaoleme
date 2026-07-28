@@ -183,8 +183,13 @@ function attachPrototypeFeatures(root: HTMLElement) {
       seasonRewardToggle.setAttribute('aria-expanded', 'false')
     }
 
-    if (navBtn?.dataset.go === 'scan' && !viewReportBtn) {
-      clearAnalysisCard(root)
+    if (navBtn?.dataset.go) {
+      if (navBtn.dataset.go === 'scan' && !viewReportBtn) {
+        clearAnalysisCard(root)
+      }
+      // Always drive body page classes via navigation.showPage so Home keeps
+      // reference-home / fp-home (PrototypeScript's showPage does not).
+      showPage(root, navBtn.dataset.go)
     }
     if (categoryBtn?.dataset.questCategory && isQuestCategory(categoryBtn.dataset.questCategory)) {
       activeQuestCategory = categoryBtn.dataset.questCategory
@@ -394,12 +399,11 @@ function renderStatefulSections(
 }
 
 function renderHome(root: HTMLElement) {
+  // Keep final-pages Home skin: do not overwrite quest/league demo cards or
+  // generic .badge nodes (that previously turned "Lv.5" into live "70 XP" and
+  // made Home look like the old hydrated shell — AIFA-103).
   const s = useUserStore.getState()
   const level = getLevelProgress(s.points)
-  setHtml(root.querySelector('.compact-quests'), getSuggestions().slice(0, 4).map((q, i) => `<div class="item" style="grid-template-columns:34px 1fr auto"><span>${['💧', '🌙', '🥗', '🖐'][i] || '✨'}</span><b>${escapeHtml(q)}</b><span class="status">+${i === 0 ? 5 : 2} XP</span></div>`).join(''))
-  setHtml(root.querySelector('.small-leaders'), buildLeaders().slice(0, 4).map((l) => `<div class="leader ${l.isMe ? 'you' : ''}" style="grid-template-columns:34px 1fr auto"><span class="badge">${l.rank}</span><b>${escapeHtml(l.name)}</b><span>${escapeHtml(l.scoreText)}</span></div>`).join(''))
-  const heroBadges = root.querySelectorAll<HTMLElement>('[data-page="home"] .stats .badge, [data-page="home"] .badge')
-  if (heroBadges[0]) heroBadges[0].textContent = `${s.points} XP`
 
   const homePoints = root.querySelector<HTMLElement>('[data-home-points]')
   const homeLevel = root.querySelector<HTMLElement>('[data-home-level]')
@@ -1036,16 +1040,21 @@ function renderProfile(root: HTMLElement) {
     return `<span class="badge">${mark}<br><small>${label}</small></span>`
   }).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 
+  const level = getLevelProgress(s.points)
   const mePoints = root.querySelector<HTMLElement>('[data-me-points]')
   const meStreak = root.querySelector<HTMLElement>('[data-me-streak]')
   const meHistoryDays = root.querySelector<HTMLElement>('[data-me-history-days]')
   const meTotalXp = root.querySelector<HTMLElement>('[data-me-total-xp]')
   const meStreakCount = root.querySelector<HTMLElement>('[data-me-streak-count]')
+  const meLevelBadge = root.querySelector<HTMLElement>('[data-me-level-badge]')
+  const meNavLevel = root.querySelector<HTMLElement>('[data-me-level]')
   if (mePoints) mePoints.textContent = `${s.points.toLocaleString('en-US')} XP`
-  if (meStreak) meStreak.textContent = `连续 ${s.checkinDays.length} 天`
+  if (meStreak) meStreak.textContent = `连续 ${streak} 天`
   if (meHistoryDays) meHistoryDays.textContent = String(historyDays)
   if (meTotalXp) meTotalXp.textContent = s.points.toLocaleString('en-US')
-  if (meStreakCount) meStreakCount.textContent = String(s.checkinDays.length)
+  if (meStreakCount) meStreakCount.textContent = String(streak)
+  if (meLevelBadge) meLevelBadge.textContent = `Lv.${level.level}`
+  if (meNavLevel) meNavLevel.textContent = `Lv.${level.level}`
 }
 
 function getSuggestions() {
