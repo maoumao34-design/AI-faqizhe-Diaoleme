@@ -3344,10 +3344,21 @@ const integrationStyle = `
     position: relative;
   }
 
-  [data-page="rewards"] .reward-image-wrap img {
+  [data-page="rewards"] .reward-image-wrap .reward-product-image {
     height: 108px;
     object-fit: contain;
     width: 108px;
+  }
+
+  [data-page="rewards"] .reward-lock-icon {
+    height: 36px;
+    object-fit: contain;
+    pointer-events: none;
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 28px;
+    z-index: 1;
   }
 
   [data-page="rewards"] .reward-copy {

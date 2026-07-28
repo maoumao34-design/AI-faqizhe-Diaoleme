@@ -337,9 +337,14 @@ export function renderRewards(
       ? marketItems.map((item) => {
         const state = shopStatusForItem(item, s.points, owned)
         const stateClass = state.owned ? 'owned' : state.canBuy ? 'can-buy' : 'locked'
+        // 未兑换且 XP 不足：右上角锁；可兑换 / 已拥有时不显示
+        const lockIcon = !state.owned && !state.canBuy
+          ? '<img class="reward-lock-icon" src="/rewards-assets/icon-lock.png" alt="" aria-hidden="true">'
+          : ''
         return `<button class="reward-card ${stateClass}" type="button" data-reward-buy="${escapeHtml(item.id)}" ${state.owned ? 'disabled' : ''}>
       <div class="reward-image-wrap">
-        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
+        <img class="reward-product-image" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
+        ${lockIcon}
       </div>
       <div class="reward-copy">
         <strong>${escapeHtml(item.name)}</strong>
