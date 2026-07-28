@@ -94,7 +94,6 @@ export function renderHistory(root: HTMLElement) {
   // 始终占位分页条，避免有/无翻页时历史卡高度跳动（AIFA-80/88）
   const pagerDisabled = history.length <= scanPageSize
   const pager = `<div class="scan-record-pager"${pagerDisabled ? ' data-pager-idle="1"' : ''}><button class="pill" data-scan-record-page="${Math.max(0, currentPage - 1)}" ${currentPage === 0 || pagerDisabled ? 'disabled' : ''}>上一页</button><small>${currentPage + 1} / ${totalPages}</small><button class="pill" data-scan-record-page="${Math.min(totalPages - 1, currentPage + 1)}" ${currentPage >= totalPages - 1 || pagerDisabled ? 'disabled' : ''}>下一页</button></div>`
-  const latest = history.slice(0, 4)
   const latestSource = history[0]?.source_label || '等待分析'
   const latestSourceText = escapeHtml(latestSource)
   const latestSourceShort = escapeHtml(shortenScanSource(latestSource))
@@ -138,24 +137,7 @@ export function renderHistory(root: HTMLElement) {
     setHtml(historyCard, `<h3>最近扫描记录</h3><div class="scan-record-list">${renderRecordItems(pageRecords, false, scanPageSize)}</div>${pager}`)
   }
   renderJourney(root, history)
-  const diaryList = root.querySelector('#diaries')
-  if (diaryList?.classList.contains('diary-list-new')) {
-    setHtml(
-      diaryList,
-      latest.length
-        ? latest
-            .map((r) => {
-              const d = new Date(r.date)
-              const day = Number.isNaN(d.getTime()) ? '--' : String(d.getDate())
-              const month = Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}月`
-              return `<article class="diary-row-new"><div class="diary-date"><strong>${day}</strong><small>${month}</small></div><div class="diary-copy"><b>${escapeHtml(r.title)}</b><p>${escapeHtml(r.summary)}</p></div><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></article>`
-            })
-            .join('')
-        : `<article class="diary-row-new"><div class="diary-copy"><b>还没有日记</b><p>上传图片后会自动保存分析记录。</p></div></article>`,
-    )
-  } else {
-    setHtml(diaryList, latest.length ? latest.map((r) => `<div class="item"><span><b>${formatShortDate(r.date)}</b><br>报告</span><b>${escapeHtml(r.title)}<small>${escapeHtml(r.summary)}</small></b><button class="pill" data-view-report="${escapeHtml(r.id)}">查看</button></div>`).join('') : `<div class="item"><span>📷</span><b>还没有日记<small>上传图片后会自动保存分析记录。</small></b><span>⋯</span></div>`)
-  }
+  // AIFA-99: Diary 列表由 App.renderDiary 独占水合 final-pages 新皮；此处勿再写 #diaries。
 }
 
 function shortenScanSource(label: string) {
