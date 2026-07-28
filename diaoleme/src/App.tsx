@@ -8,7 +8,7 @@ import { prototypeStyle } from './prototype/PrototypeStyle'
 import './prototype/finalPages.css'
 import { renderBuddy, handleBuddyAction, selectHairStyle } from './prototype/controllers/buddyController'
 import { showPage } from './prototype/controllers/navigation'
-import { escapeHtml, setHtml, showToast } from './prototype/controllers/ui'
+import { escapeHtml, publicAssetUrl, setHtml, showToast } from './prototype/controllers/ui'
 import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay } from './prototype/controllers/journeyController'
 import { attachPrototypeAnalysis, clearAnalysisCard, currentAnalysisFromStore, renderAnalysisCard } from './prototype/controllers/scanController'
 import { configureQuestController, renderTasks, completeQuest, clearQuestProgress, getQuestCount, isQuestCategory, type QuestCategory } from './prototype/controllers/questsController'
@@ -444,15 +444,34 @@ function diaryMoodIconSrc(moodKey: DiaryDayEntry['mood']['key']) {
   return './assets/diary/icons/mood-tired.svg'
 }
 
-const COMMUNITY_AVATAR_FALLBACK = './assets/shared-brand/brand-avatar-tile.png'
-/** 关注流用交付角色头像（league-avatars），不用发型 PNG 当头像（易成空紫块） */
+const COMMUNITY_AVATAR_FALLBACK = publicAssetUrl('assets/shared-brand/brand-avatar-tile.png')
+/** AIFA-99：小体积角色头像放 assets/community/avatars（~25KB），避免根目录 1MB+ league-avatars 加载失败显空紫块 */
 const COMMUNITY_ROLE_AVATARS = {
-  dandelion: './league-avatars/luna.png',
-  strawberry: './league-avatars/bella.png',
-  mint: './league-avatars/mia.png',
-  sunflower: './league-avatars/sophia.png',
-  me: './league-avatars/you.png',
+  dandelion: publicAssetUrl('assets/community/avatars/dandelion.png'),
+  strawberry: publicAssetUrl('assets/community/avatars/strawberry.png'),
+  mint: publicAssetUrl('assets/community/avatars/mint.png'),
+  sunflower: publicAssetUrl('assets/community/avatars/sunflower.png'),
+  me: publicAssetUrl('assets/community/avatars/me.png'),
 } as const
+
+function resolveCommunityAvatar(src?: string) {
+  const raw = String(src || '').trim()
+  if (!raw) return COMMUNITY_AVATAR_FALLBACK
+  if (/assets\/community\/avatars\//.test(raw)) return raw
+  if (/league-avatars\/(luna|bella|mia|sophia|you)\.png/i.test(raw)) {
+    const name = raw.match(/league-avatars\/(luna|bella|mia|sophia|you)\.png/i)?.[1]?.toLowerCase()
+    const map: Record<string, string> = {
+      luna: COMMUNITY_ROLE_AVATARS.dandelion,
+      bella: COMMUNITY_ROLE_AVATARS.strawberry,
+      mia: COMMUNITY_ROLE_AVATARS.mint,
+      sophia: COMMUNITY_ROLE_AVATARS.sunflower,
+      you: COMMUNITY_ROLE_AVATARS.me,
+    }
+    return map[name || ''] || COMMUNITY_AVATAR_FALLBACK
+  }
+  if (/buddy\/hairstyles\//.test(raw)) return COMMUNITY_AVATAR_FALLBACK
+  return raw
+}
 
 function synthesizeDayTitle(reports: ReportRecord[], score: number) {
   const latest = reports[0]
@@ -788,13 +807,13 @@ function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') 
   setHtml(root.querySelector('#posts'), posts.length ? posts.map((post) => {
     const isLiked = liked.has(post.id)
     const likeCount = post.likes + (isLiked ? 1 : 0)
-    const avatar = post.avatar || COMMUNITY_AVATAR_FALLBACK
+    const avatar = resolveCommunityAvatar(post.avatar)
     const mediaHtml = post.mediaUrls?.length
       ? `<div class="community-media">${post.mediaUrls.map((src) => `<img src="${escapeHtml(src)}" alt="">`).join('')}</div>`
       : ''
     const meta = post.fromJourney ? `${escapeHtml(post.level)}　 Journey` : `${escapeHtml(post.level)}　 ${timeLabel(post.createdAt)}`
     return `<article class="community-post community-glass">
-      <img class="community-post-avatar" src="${escapeHtml(avatar)}" alt="">
+      <img class="community-post-avatar" src="${escapeHtml(avatar)}" alt="" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${escapeHtml(COMMUNITY_AVATAR_FALLBACK)}'">
       <div class="community-post-copy">
         <h3>${escapeHtml(post.name)} <small>${meta}</small></h3>
         <p>${escapeHtml(post.body).replace(/\n/g, '<br>')}</p>
