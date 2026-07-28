@@ -4066,22 +4066,27 @@ const integrationStyle = `
   [data-page="scan"] .scan-stat-grid {
     align-items: start;
   }
+  /* AIFA-100: 扫描次数/平均状态分与「最新来源·真实AI」结果字号/色/字重对齐 */
   [data-page="scan"] .scan-week strong {
     display: block;
     color: #8054e8 !important;
-    font-size: 36px !important;
-    line-height: 1.1 !important;
+    font-size: 25px !important;
+    line-height: 1.15 !important;
     font-weight: 800;
   }
   [data-page="scan"] .scan-week strong small {
+    display: inline !important;
     margin-left: 2px;
-    font-size: 16px !important;
+    margin-top: 0 !important;
+    font-size: 14px !important;
     color: #8054e8 !important;
     font-weight: 800;
   }
   [data-page="scan"] .scan-week .scan-source-value {
     font-size: 25px !important;
     line-height: 1.15 !important;
+    font-weight: 800;
+    color: #8054e8 !important;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
