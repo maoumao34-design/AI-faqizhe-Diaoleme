@@ -445,6 +445,14 @@ function diaryMoodIconSrc(moodKey: DiaryDayEntry['mood']['key']) {
 }
 
 const COMMUNITY_AVATAR_FALLBACK = './assets/shared-brand/brand-avatar-tile.png'
+/** 关注流用交付角色头像（league-avatars），不用发型 PNG 当头像（易成空紫块） */
+const COMMUNITY_ROLE_AVATARS = {
+  dandelion: './league-avatars/luna.png',
+  strawberry: './league-avatars/bella.png',
+  mint: './league-avatars/mia.png',
+  sunflower: './league-avatars/sophia.png',
+  me: './league-avatars/you.png',
+} as const
 
 function synthesizeDayTitle(reports: ReportRecord[], score: number) {
   const latest = reports[0]
@@ -637,7 +645,7 @@ const COMMUNITY_SEED_POSTS: CommunityPost[] = [
     level: 'Lv.6',
     body: '今天终于连续打卡第 7 天啦！虽然掉发还是有，但头皮状态明显舒服多了～\n坚持护理真的会有改变，相信时间！🌱',
     media: '📋',
-    avatar: './assets/shared-brand/brand-avatar-tile.png',
+    avatar: COMMUNITY_ROLE_AVATARS.dandelion,
     mediaUrls: ['./assets/diary/diary-sunset-hero.jpg'],
     likes: 128,
     comments: ['我也在做 7 天挑战，一起坚持！', '这种轻松记录真的比焦虑刷帖舒服。', '打卡第七天太有成就感了！'],
@@ -652,7 +660,7 @@ const COMMUNITY_SEED_POSTS: CommunityPost[] = [
     level: 'Lv.4',
     body: '分享一个我最近超喜欢的头皮按摩方法！每天睡前按 5 分钟，放松又助眠 😊\n推荐给大家试试～',
     media: '🪮',
-    avatar: './assets/buddy/hairstyles/blue-bob.png',
+    avatar: COMMUNITY_ROLE_AVATARS.strawberry,
     likes: 96,
     comments: ['求一个手法教程！', '睡前按摩 + 早睡，感觉小发球都开心了。'],
     tag: '头皮护理',
@@ -666,7 +674,7 @@ const COMMUNITY_SEED_POSTS: CommunityPost[] = [
     level: 'Lv.6',
     body: '最近压力有点大，掉发也跟着严重了…深呼吸、运动、喝水，给自己一些温柔的时间 🍀',
     media: '🌿',
-    avatar: './assets/buddy/hairstyles/ribbon.png',
+    avatar: COMMUNITY_ROLE_AVATARS.mint,
     likes: 76,
     comments: ['抱抱，先把记录坚持下来就很棒。', '今天也给自己一点松弛感。'],
     tag: '情绪管理',
@@ -680,7 +688,7 @@ const COMMUNITY_SEED_POSTS: CommunityPost[] = [
     level: 'Lv.3',
     body: '新发型解锁啦！看着宝宝一点点成长出来的碎发，成就感满满！💪',
     media: '🌱',
-    avatar: './assets/shared-brand/brand-avatar-tile.png',
+    avatar: COMMUNITY_ROLE_AVATARS.sunflower,
     mediaUrls: ['./assets/buddy/hairstyles/dandelion.png', './assets/buddy/hairstyles/blue-bob.png', './assets/buddy/hairstyles/ribbon.png'],
     likes: 143,
     comments: ['这个发型也太可爱了！', '奖励机制好有动力，我也要攒 XP。'],
@@ -747,7 +755,7 @@ function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean
         : `分享我的护发旅程：打卡 ${s.checkinDays.length} 天，累计 ${s.reportHistory.length} 次记录。最近一次是「${report.title}」${report.score} 分，${report.summary}`)
       : `先在社区打个招呼：我开始记录护发旅程啦！打卡 ${s.checkinDays.length} 天，一起轻松坚持～`,
     media: '✨',
-    avatar: COMMUNITY_AVATAR_FALLBACK,
+    avatar: COMMUNITY_ROLE_AVATARS.me,
     likes: 0,
     comments: ['欢迎分享旅程，我们一起轻松记录～'],
     tag: report?.tags[0] || '旅程分享',
