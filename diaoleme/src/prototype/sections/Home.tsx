@@ -9,7 +9,7 @@ export const homeSection = `<section class="page active" data-page="home">
               </div>
               <p>💗 Trusted by 100,000+ users · +99K growth journeys</p>
             </div>
-            <img class="hero-mascot-layer" src="./assets/buddy/buddy-hero.png" alt="Fluffy Seedling">
+            <img class="hero-mascot-layer" src="./assets/buddy/buddy-hero.png" alt="Fluffy Seedling" fetchpriority="high" decoding="async">
             <div class="buddy-stage">
               <div class="ground"></div>
               <div class="buddy">
