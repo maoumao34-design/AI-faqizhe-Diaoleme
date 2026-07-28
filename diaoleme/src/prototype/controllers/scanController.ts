@@ -15,7 +15,10 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
   const uploadBtn = root.querySelector<HTMLButtonElement>('#uploadBtn')
   const completeBtn = root.querySelector<HTMLButtonElement>('#scanCompleteBtn')
   const percent = root.querySelector<HTMLElement>('#scanPercent')
-  const scanCard = scanSection?.querySelector<HTMLElement>('.card[style*="text-align:center"]')
+  const scanCard =
+    scanSection?.querySelector<HTMLElement>('[data-scan-card]') ||
+    scanSection?.querySelector<HTMLElement>('.scan-center') ||
+    scanSection?.querySelector<HTMLElement>('.card[style*="text-align:center"]')
   const cameraInput = document.createElement('input')
   const galleryInput = document.createElement('input')
   let selectedFile: File | null = null
@@ -56,7 +59,9 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
   const showPreview = (file: File) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     previewUrl = URL.createObjectURL(file)
-    const orbit = root.querySelector<HTMLElement>('.scan-orbit')
+    const orbit =
+      root.querySelector<HTMLElement>('.scanner-ring') ||
+      root.querySelector<HTMLElement>('.scan-orbit')
     const existing = orbit?.querySelector<HTMLImageElement>('[data-upload-preview]')
     const img = existing || document.createElement('img')
     img.dataset.uploadPreview = 'true'
@@ -73,6 +78,8 @@ export function attachPrototypeAnalysis(root: HTMLElement, options: ScanControll
       zIndex: '3',
     })
     if (!existing) orbit?.appendChild(img)
+    const stateText = root.querySelector<HTMLElement>('#scanStateText')
+    if (stateText) stateText.textContent = '照片已选'
     if (percent) {
       percent.textContent = '已选'
       percent.style.zIndex = '4'
@@ -280,16 +287,26 @@ export function currentAnalysisFromStore(): AnalysisResult {
   }
 }
 
+function getScanCard(root: HTMLElement) {
+  return (
+    root.querySelector<HTMLElement>('[data-page="scan"] [data-scan-card]') ||
+    root.querySelector<HTMLElement>('[data-page="scan"] .scan-center') ||
+    root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
+  )
+}
+
 export function clearAnalysisCard(root: HTMLElement) {
-  const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
+  const scanCard = getScanCard(root)
   scanCard?.querySelector('[data-analysis-result]')?.remove()
   scanCard?.classList.remove('has-analysis-result')
 }
 
 export function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
   const percent = root.querySelector<HTMLElement>('#scanPercent')
-  const scanCard = root.querySelector<HTMLElement>('[data-page="scan"] .card[style*="text-align:center"]')
+  const scanCard = getScanCard(root)
   if (percent) percent.textContent = `${result.score}%`
+  const stateText = root.querySelector<HTMLElement>('#scanStateText')
+  if (stateText) stateText.textContent = '分析完成'
   if (!scanCard || useUserStore.getState().dropScore == null) return
   const old = scanCard.querySelector('[data-analysis-result]')
   old?.remove()
@@ -298,7 +315,9 @@ export function renderAnalysisCard(root: HTMLElement, result: AnalysisResult) {
   const fallbackDetail = result.fallback_code
     ? `<p class="analysis-source-detail">当前为明确 fallback（${escapeHtml(result.fallback_code)}），不是实时 AI 分析</p>`
     : ''
-  const orbit = scanCard.querySelector<HTMLElement>('.scan-orbit')
+  const orbit =
+    scanCard.querySelector<HTMLElement>('.scanner-ring') ||
+    scanCard.querySelector<HTMLElement>('.scan-orbit')
   if (orbit) orbit.style.filter = 'saturate(1.08)'
   const resultHtml = `
     <div class="card soft scan-result-card" data-analysis-result>

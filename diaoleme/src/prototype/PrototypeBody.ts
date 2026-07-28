@@ -9,9 +9,10 @@ import { diarySection } from './sections/Diary'
 import { communitySection } from './sections/Community'
 import { meSection } from './sections/Me'
 
-export const prototypeBody = `<div class="app">
+export const prototypeBody = `<div class="app design-canvas final-pages-integrated">
       <aside class="sidebar">
         <div class="brand">
+          <img class="shared-brand-lockup" src="./assets/shared-brand/brand-lockup-tile.png" alt="掉了么 Diaoleme">
           <div class="mini-buddy"></div>
           <div>
             <h1>掉了么</h1>
@@ -33,7 +34,7 @@ export const prototypeBody = `<div class="app">
           </div>
         </nav>
         <div class="profile">
-          <img alt="" src="data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; width=&#39;64&#39; height=&#39;64&#39;%3E%3Crect width=&#39;64&#39; height=&#39;64&#39; rx=&#39;32&#39; fill=&#39;%23ffe4ee&#39;/%3E%3Ccircle cx=&#39;32&#39; cy=&#39;25&#39; r=&#39;13&#39; fill=&#39;%23f0b899&#39;/%3E%3Cpath d=&#39;M14 60c2-14 12-22 18-22s16 8 18 22&#39; fill=&#39;%238b5cf6&#39;/%3E%3C/svg%3E">
+          <img class="shared-profile-avatar" alt="" src="./assets/shared-brand/brand-avatar-tile.png">
           <label>Me<br><small>Lv.5</small></label>
         </div>
       </aside>

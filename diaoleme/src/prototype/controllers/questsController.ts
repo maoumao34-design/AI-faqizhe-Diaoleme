@@ -69,22 +69,50 @@ export function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
   const overallPercent = totalQuests.length ? Math.round((totalDone / totalQuests.length) * 100) : 0
   const allDailyDone = getQuests('daily').every((quest) => loadDoneQuests('daily').has(quest.id))
 
-  setHtml(root.querySelector('[data-page="quests"] .tabs'), QUEST_CATEGORIES.map((category) => `<button class="pill ${category === activeCategory ? 'primary' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`).join(''))
+  setHtml(root.querySelector('[data-page="quests"] .tabs'), QUEST_CATEGORIES.map((category) => `<button class="pill ${category === activeCategory ? 'primary' : ''}${category === activeCategory ? ' active' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`).join(''))
   setHtml(root.querySelector('#questList'), quests.map((quest) => renderQuestItem(quest, done.has(quest.id))).join('') + renderQuestSummary(activeCategory, categoryDone, quests.length, allDailyDone))
-  setHtml(root.querySelector('#weekRewards'), getCurrentWeekDays().map(({ label, key }, i) => {
-    const done = s.checkinDays.includes(key)
-    return `<span class="badge">${done ? '✓' : label}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`
-  }).join(''))
+  const weekRewards = root.querySelector('#weekRewards')
+  if (weekRewards?.classList.contains('reward-days')) {
+    const todayIdx = (new Date().getDay() + 6) % 7
+    setHtml(weekRewards, getCurrentWeekDays().map(({ label, key }, i) => {
+      const checked = s.checkinDays.includes(key)
+      const xp = i < 5 ? 10 + i * 5 : 25
+      const isToday = i === todayIdx
+      if (checked) return `<button class="reward-day"><b>${escapeHtml(label)}</b><i>✓</i><strong>已领取</strong><small>+${xp} XP</small></button>`
+      if (isToday) return `<button class="reward-day active"><b>${escapeHtml(label)}</b><i>☯</i><strong style="color:#8257e8">今天</strong><small>+${xp} XP</small></button>`
+      return `<button class="reward-day"><b>${escapeHtml(label)}</b><i>⚡</i><span>+${xp} XP</span></button>`
+    }).join(''))
+  } else {
+    setHtml(weekRewards, getCurrentWeekDays().map(({ label, key }, i) => {
+      const doneDay = s.checkinDays.includes(key)
+      return `<span class="badge">${doneDay ? '✓' : label}<br><small>+${i < 5 ? 10 + i * 5 : 25} XP</small></span>`
+    }).join(''))
+  }
   const questsStreakDays = root.querySelector<HTMLElement>('[data-quests-streak-days]')
   if (questsStreakDays) questsStreakDays.textContent = `${getCheckinStreak(s.checkinDays)} 天`
   setHtml(root.querySelector('#streak'), getCurrentWeekDays().map(({ label, key }, index) => {
-    const done = s.checkinDays.includes(key)
-    const mark = done ? '✓' : index === 6 ? '🎁' : label
-    return `<span class="badge">${mark}<br><small>${label}</small></span>`
+    const doneDay = s.checkinDays.includes(key)
+    const mark = doneDay ? '✓' : index === 6 ? '🎁' : label
+    return `<span><b>${mark}</b>${escapeHtml(label)}</span>`
   }).join(''))
-  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(1)'), `<h3>我的任务进度</h3><div class="big-number">${overallPercent}%</div><div class="meter"><div class="fill" style="--w:${overallPercent}%"></div></div><p>完成 ${totalDone}/${totalQuests.length} 个任务</p><small>${CATEGORY_LABELS[activeCategory]}：${categoryDone}/${quests.length}</small>`)
-  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(3)'), `<h3>任务小贴士</h3><p>${questTip(activeCategory)}</p><div class="mini-buddy"></div>`)
-  setHtml(root.querySelector('[data-page="quests"] aside .card:nth-child(4)'), `<h3>本周任务总览</h3><div class="donut" data-label="${totalDone}/${totalQuests.length}\\A 已完成"></div><p>${allDailyDone ? '每日建议已全部点亮，额外奖励已入账。' : '今天再点亮一个小任务，就很不错啦。'}</p>`)
+  const progressCard = root.querySelector('[data-page="quests"] .progress-card-new') || root.querySelector('[data-page="quests"] aside .card:nth-child(1)')
+  const tipCard = root.querySelector('[data-page="quests"] .tip-card-new') || root.querySelector('[data-page="quests"] aside .card:nth-child(3)')
+  const overviewCard = root.querySelector('[data-page="quests"] .overview-card-new') || root.querySelector('[data-page="quests"] aside .card:nth-child(4)')
+  if (progressCard?.classList.contains('progress-card-new')) {
+    setHtml(progressCard, `<h2>我的任务进度</h2><div class="progress-content"><div><p>本周完成度</p><strong class="progress-big">${overallPercent}%</strong><div class="progress-line"><i style="width:${overallPercent}%"></i></div><p>完成 ${totalDone}/${totalQuests.length} 个任务</p><small>${CATEGORY_LABELS[activeCategory]}：${categoryDone}/${quests.length}</small></div></div>`)
+  } else {
+    setHtml(progressCard, `<h3>我的任务进度</h3><div class="big-number">${overallPercent}%</div><div class="meter"><div class="fill" style="--w:${overallPercent}%"></div></div><p>完成 ${totalDone}/${totalQuests.length} 个任务</p><small>${CATEGORY_LABELS[activeCategory]}：${categoryDone}/${quests.length}</small>`)
+  }
+  if (tipCard?.classList.contains('tip-card-new')) {
+    setHtml(tipCard, `<h2>任务小贴士</h2><p><b>${questTip(activeCategory)}</b></p>`)
+  } else {
+    setHtml(tipCard, `<h3>任务小贴士</h3><p>${questTip(activeCategory)}</p><div class="mini-buddy"></div>`)
+  }
+  if (overviewCard?.classList.contains('overview-card-new')) {
+    setHtml(overviewCard, `<h2>本周任务总览</h2><div class="overview"><div class="quest-donut" data-label="${totalDone}/${totalQuests.length}"></div><ul><li><span>🟢 已完成</span><b>${totalDone}</b></li><li><span>⚪ 未完成</span><b>${Math.max(0, totalQuests.length - totalDone)}</b></li></ul><p>${allDailyDone ? '每日建议已全部点亮，额外奖励已入账。' : '今天再点亮一个小任务，就很不错啦。'}</p></div>`)
+  } else {
+    setHtml(overviewCard, `<h3>本周任务总览</h3><div class="donut" data-label="${totalDone}/${totalQuests.length}\\A 已完成"></div><p>${allDailyDone ? '每日建议已全部点亮，额外奖励已入账。' : '今天再点亮一个小任务，就很不错啦。'}</p>`)
+  }
   void options
 }
 
@@ -156,13 +184,14 @@ export function isQuestCategory(value: string): value is QuestCategory {
 }
 
 function renderQuestItem(quest: QuestDefinition, isDone: boolean) {
-  return `<div class="item"><span style="font-size:26px">${quest.icon}</span><b>${escapeHtml(quest.title)}<small>${escapeHtml(quest.description)}</small></b><span>${isDone ? '1/1' : escapeHtml(quest.target)}</span><button data-quest-category="${quest.category}" data-quest-id="${quest.id}" class="quest-btn ${isDone ? 'done' : ''}">${isDone ? '✓ 已领取' : escapeHtml(quest.actionLabel)}</button></div>`
+  const progress = isDone ? 100 : 0
+  return `<article class="quest-row item"><span style="font-size:26px">${quest.icon}</span><div class="quest-copy"><b>${escapeHtml(quest.title)}</b><small>${escapeHtml(quest.description)}</small></div><div><span class="quest-count">${isDone ? '1/1' : escapeHtml(quest.target)}</span><div class="quest-meter"><i style="width:${progress}%"></i></div></div><span class="quest-xp">${isDone ? '' : `+${quest.reward} XP`}</span><button data-quest-category="${quest.category}" data-quest-id="${quest.id}" class="quest-do quest-btn ${isDone ? 'done' : ''}">${isDone ? '✓ 已领取' : escapeHtml(quest.actionLabel)}</button></article>`
 }
 
 function renderQuestSummary(category: QuestCategory, doneCount: number, total: number, allDailyDone: boolean) {
   const reward = category === 'daily' ? 10 : Math.max(20, total * 10)
   const complete = doneCount >= total
-  return `<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${category === 'daily' ? (allDailyDone ? '今日建议全部完成！' : '完成所有每日任务可获得额外奖励！') : `${CATEGORY_LABELS[category]}完成度 ${doneCount}/${total}`}<small>${complete ? '小发球已经收到这份能量。' : '慢慢来，完成一个也算数。'}</small></b><span>+${reward} XP</span><button class="quest-btn done">${complete ? '已点亮' : '未完成'}</button></div>`
+  return `<section class="quest-card quest-bonus item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>${category === 'daily' ? (allDailyDone ? '今日建议全部完成！' : '完成所有每日任务可获得额外奖励！') : `${CATEGORY_LABELS[category]}完成度 ${doneCount}/${total}`}</b><span>✦ +${reward} XP</span><button class="quest-btn done">${complete ? '已点亮' : '未完成'}</button></section>`
 }
 
 function questTip(category: QuestCategory) {
