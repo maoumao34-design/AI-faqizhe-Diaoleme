@@ -2530,51 +2530,48 @@ body.me-page-active .topbar .page-title {
   }
 }
 
-/* === AIFA-105 / AIFA-107: 只加背景铺底（cover 裁切），不改控件布局 === */
-body.reference-home .app {
-  background-image: none !important;
-}
-body.reference-home [data-page="home"] {
-  background-image:
-    linear-gradient(90deg, rgba(255,248,251,.42) 0%, rgba(255,248,251,.12) 40%, rgba(244,230,255,.06) 100%),
-    url("./generated/home-background.png") !important;
+/* === AIFA-105 / AIFA-107: 背景 cover + 修复 main 掉进侧栏列导致整页被裁切 === */
+body.reference-home .app.design-canvas {
+  grid-template-columns: 132px minmax(0, 1fr) !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+  overflow: hidden !important;
 }
-body.buddy-page-active .page[data-page="buddy"] {
-  background:
-    linear-gradient(rgba(255,255,255,.08), rgba(255,255,255,.08)),
-    url("./scan/background.png") center top / cover no-repeat !important;
+body.reference-home .sidebar {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
 }
-body.scan-page-active .page[data-page="scan"] {
-  background-image:
-    linear-gradient(rgba(255,255,255,.04), rgba(255,255,255,.04)),
-    url("./scan/background.png") !important;
-  background-size: cover !important;
-  background-position: center top !important;
-  background-repeat: no-repeat !important;
-}
-/* 防裁切：允许滚动看到完整页，不挪控件 */
-body.reference-home main {
+body.reference-home main.main {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
   overflow: auto !important;
+}
+body.buddy-page-active .page[data-page="buddy"],
+body.scan-page-active .page[data-page="scan"] {
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
 }
 body.reference-home [data-page="home"].active {
   overflow: visible !important;
 }
-body.reference-home [data-page="home"] > .hero {
-  overflow: visible !important;
-}
 
-/* Buddy 发型轨：保证 img 可见（AIFA-104） */
+/* AIFA-104：发型图强制可见 */
 body.buddy-page-active .hair-item img {
   display: block !important;
   width: 155px !important;
   height: 155px !important;
   object-fit: contain !important;
   margin: 0 auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 2 !important;
 }
 body.buddy-page-active .hair-item.locked img {
-  opacity: 0.72;
+  opacity: 0.72 !important;
 }
