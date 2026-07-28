@@ -3351,13 +3351,13 @@ const integrationStyle = `
   }
 
   [data-page="rewards"] .reward-lock-icon {
-    height: 36px;
+    height: 15px;
     object-fit: contain;
     pointer-events: none;
     position: absolute;
     right: 6px;
     top: 6px;
-    width: 28px;
+    width: 15px;
     z-index: 1;
   }
 

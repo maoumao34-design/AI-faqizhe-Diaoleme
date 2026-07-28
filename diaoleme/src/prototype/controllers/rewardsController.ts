@@ -20,7 +20,7 @@ export const REWARD_MARKET_ITEMS: Array<{
   { id: 'flower', name: '樱花发箍', subtitle: '发型装扮', points: 200, image: `${REWARD_ASSET_BASE}reward-flower.png`, category: '发型装扮', unlockId: 'medium' },
   { id: 'starlight', name: '星光泡泡发型', subtitle: '发型装扮', points: 350, image: `${REWARD_ASSET_BASE}reward-starlight.png`, category: '发型装扮', unlockId: 'curly' },
   { id: 'serum', name: '生发精华液 30ml', subtitle: '实物好物', points: 480, image: `${REWARD_ASSET_BASE}reward-serum.png`, category: '护发好物' },
-  { id: 'healing', name: '治愈蘑菇帽', subtitle: '陪伴道具', points: 280, image: `${REWARD_ASSET_BASE}reward-healing.png`, category: '陪伴道具' },
+  { id: 'healing', name: '治愈蘑菇帽', subtitle: '发行装扮', points: 280, image: `${REWARD_ASSET_BASE}reward-healing.png`, category: '发型装扮' },
   { id: 'gift', name: '护发礼盒套装', subtitle: '实物好物', points: 650, image: `${REWARD_ASSET_BASE}reward-gift.png`, category: '护发好物' },
   { id: 'lamp', name: '蒲公英小夜灯', subtitle: '限量周边', points: 320, image: `${REWARD_ASSET_BASE}reward-lamp.png`, category: '定制周边' },
   { id: 'sprout', name: '嫩芽发型', subtitle: '发型装扮', points: 250, image: `${REWARD_ASSET_BASE}reward-sprout.png`, category: '发型装扮', unlockId: 'long' },
