@@ -4085,28 +4085,45 @@ const integrationStyle = `
   [data-page="scan"] .scan-stat-grid {
     align-items: start;
   }
-  /* AIFA-100: 扫描次数/平均状态分与「最新来源·真实AI」结果字号/色/字重对齐 */
+  /* AIFA-109: 三指标同行放大占满本周扫描框（在 AIFA-100 对齐基础上抬字号） */
+  [data-page="scan"] .scan-week {
+    align-items: center !important;
+    min-height: 132px;
+  }
   [data-page="scan"] .scan-week strong {
     display: block;
     color: #8054e8 !important;
-    font-size: 25px !important;
-    line-height: 1.15 !important;
+    font-size: 42px !important;
+    line-height: 1.1 !important;
     font-weight: 800;
   }
   [data-page="scan"] .scan-week strong small {
     display: inline !important;
-    margin-left: 2px;
+    margin-left: 3px;
     margin-top: 0 !important;
-    font-size: 14px !important;
+    font-size: 20px !important;
     color: #8054e8 !important;
     font-weight: 800;
   }
+  [data-page="scan"] .scan-week span {
+    margin-top: 12px !important;
+    font-size: 16px !important;
+    font-weight: 700;
+  }
+  [data-page="scan"] .scan-week > div > small {
+    display: none !important;
+  }
   [data-page="scan"] .scan-week .scan-source-value {
-    font-size: 25px !important;
-    line-height: 1.15 !important;
+    display: block !important;
+    height: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 42px !important;
+    line-height: 1.1 !important;
     font-weight: 800;
     color: #8054e8 !important;
-    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
