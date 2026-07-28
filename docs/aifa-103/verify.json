@@ -1,0 +1,78 @@
+{
+  "homeInfo": {
+    "body": "reference-home fp-home",
+    "heroDisplay": "block",
+    "stageDisplay": "none",
+    "buddyBadge": "Lv.5",
+    "quests": [
+      "喝够 8 杯水",
+      "23:30 前睡觉",
+      "吃一份蔬果",
+      "头皮按摩 5 分钟"
+    ],
+    "canvasBg": "url(\"http://127.0.0.1:4188/assets/assets/generated/scene-background-1920x1280.jpg\")",
+    "serviceStrip": true
+  },
+  "report": {
+    "home": {
+      "body": "reference-home fp-home",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "hero card"
+    },
+    "scan": {
+      "body": "scan-page-active fp-scan",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "scan-page-shell"
+    },
+    "buddy": {
+      "body": "buddy-page-active",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "buddy-shell"
+    },
+    "quests": {
+      "body": "quest-page-active",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "quest-shell"
+    },
+    "journey": {
+      "body": "journey-page-active",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "journey-shell"
+    },
+    "diary": {
+      "body": "diary-page-active",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "diary-shell"
+    },
+    "community": {
+      "body": "community-page-active",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "community-shell"
+    },
+    "me": {
+      "body": "me-page-active",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "me-shell"
+    },
+    "league": {
+      "body": "",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "grid two-col"
+    },
+    "rewards": {
+      "body": "",
+      "active": true,
+      "fingerprint": true,
+      "shellClass": "rewards-dashboard"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "body": "reference-home fp-home",
+  "heroDisplay": "block",
+  "stageDisplay": "none",
+  "buddyBadge": "Lv.5",
+  "quests": [
+    "喝够 8 杯水",
+    "23:30 前睡觉",
+    "吃一份蔬果",
+    "头皮按摩 5 分钟"
+  ],
+  "canvasBg": "url(\"http://127.0.0.1:4188/assets/generated/scene-background-1920x1280.jpg\")",
+  "bgStatus": 200,
+  "serviceStrip": true
+}

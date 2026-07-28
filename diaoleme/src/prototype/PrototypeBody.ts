@@ -33,10 +33,10 @@ export const prototypeBody = `<div class="app design-canvas final-pages-integrat
             <button data-go="community" class="nav-later-item"><span class="icon">☷</span><label>Community</label></button>
           </div>
         </nav>
-        <div class="profile">
+        <button class="profile" data-go="me" type="button" aria-label="Me">
           <img class="shared-profile-avatar" alt="" src="./assets/shared-brand/brand-avatar-tile.png">
-          <label>Me<br><small>Lv.5</small></label>
-        </div>
+          <label>Me<br><small data-me-level>Lv.5</small></label>
+        </button>
       </aside>
 
       <main class="main">

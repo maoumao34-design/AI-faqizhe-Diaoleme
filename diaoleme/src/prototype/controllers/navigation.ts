@@ -8,6 +8,7 @@ const PAGE_BODY_CLASSES = [
   'journey-page-active',
   'diary-page-active',
   'community-page-active',
+  'me-page-active',
 ] as const
 
 const PAGE_TO_BODY: Record<string, string[]> = {
@@ -18,6 +19,7 @@ const PAGE_TO_BODY: Record<string, string[]> = {
   journey: ['journey-page-active'],
   diary: ['diary-page-active'],
   community: ['community-page-active'],
+  me: ['me-page-active'],
 }
 
 export function showPage(root: HTMLElement, id: string) {
