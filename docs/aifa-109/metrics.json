@@ -1,0 +1,41 @@
+{
+  "bundleHint": "https://aihpj.github.io/AI-faqizhe-Diaoleme/assets/index-5TZJFhpg.js",
+  "hasKeepStable": false,
+  "spans": [
+    "扫描次数",
+    "状态平均分",
+    "最新来源及结果"
+  ],
+  "strongs": [
+    {
+      "text": "1次",
+      "fontSize": "42px",
+      "fontWeight": "800",
+      "color": "rgb(128, 84, 232)",
+      "top": 434
+    },
+    {
+      "text": "92",
+      "fontSize": "42px",
+      "fontWeight": "800",
+      "color": "rgb(128, 84, 232)",
+      "top": 434
+    },
+    {
+      "text": "真实 AI",
+      "fontSize": "42px",
+      "fontWeight": "800",
+      "color": "rgb(128, 84, 232)",
+      "top": 434
+    }
+  ],
+  "smallVisible": [],
+  "aligned": true,
+  "tops": [
+    434,
+    434,
+    434
+  ],
+  "weekMinHeight": "132px",
+  "cardText": "本周扫描数据\n最近记录\n1次\n扫描次数\n92\n状态平均分\n真实 AI\n最新来源及结果"
+}
