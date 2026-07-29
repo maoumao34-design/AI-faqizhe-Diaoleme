@@ -9,7 +9,7 @@ import './prototype/finalPages.css'
 import { renderBuddy, handleBuddyAction, selectHairStyle, syncAssistantFabAvatar, AIFA_110B_BUILD } from './prototype/controllers/buddyController'
 import { showPage } from './prototype/controllers/navigation'
 import { escapeHtml, publicAssetUrl, setHtml, showToast } from './prototype/controllers/ui'
-import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay } from './prototype/controllers/journeyController'
+import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay, loadMoreJourneyTimeline } from './prototype/controllers/journeyController'
 import { attachPrototypeAnalysis, clearAnalysisCard, currentAnalysisFromStore, renderAnalysisCard } from './prototype/controllers/scanController'
 import { configureQuestController, renderTasks, completeQuest, clearQuestProgress, getQuestCount, isQuestCategory, type QuestCategory } from './prototype/controllers/questsController'
 import { renderRewards, purchaseReward, REWARD_MARKET_ITEMS, clearOwnedRewards, isRewardCategoryFilter, isRewardSortMode, type RewardCategoryFilter, type RewardSortMode } from './prototype/controllers/rewardsController'
@@ -138,6 +138,7 @@ function attachPrototypeFeatures(root: HTMLElement) {
     const communityTabBtn = target.closest<HTMLElement>('[data-community-tab]')
     const diaryMoodBtn = target.closest<HTMLElement>('[data-diary-mood]')
     const diaryLoadMoreBtn = target.closest<HTMLElement>('[data-action="diary-load-more"]')
+    const journeyLoadMoreBtn = target.closest<HTMLElement>('[data-action="journey-load-more"]')
     const questBtn = target.closest<HTMLElement>('[data-quest-id]')
     const checkinBtn = target.closest<HTMLElement>('[data-action="checkin"]')
     const unlockBtn = target.closest<HTMLElement>('[data-unlock-id]')
@@ -247,6 +248,13 @@ function attachPrototypeFeatures(root: HTMLElement) {
     if (diaryLoadMoreBtn) {
       diaryVisibleCount += 6
       render()
+    }
+    if (journeyLoadMoreBtn) {
+      event.preventDefault()
+      const result = loadMoreJourneyTimeline(root)
+      const list = root.querySelector<HTMLElement>('#timeline')
+      list?.scrollTo({ top: list.scrollHeight, behavior: 'smooth' })
+      if (result.exhausted) showToast(root, '已经看完啦～')
     }
     if (questBtn?.dataset.questId && questBtn.dataset.questCategory && isQuestCategory(questBtn.dataset.questCategory)) {
       completeQuest(questBtn.dataset.questCategory, questBtn.dataset.questId, root)
