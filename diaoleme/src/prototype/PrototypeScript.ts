@@ -176,50 +176,7 @@ if (leadersRoot) {
     .join("");
 }
 
-document.querySelector("#calendar").innerHTML = [
-  "Sun",
-  "Mon",
-  "Tue",
-  "Wed",
-  "Thu",
-  "Fri",
-  "Sat",
-  28,
-  29,
-  30,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  16,
-  17,
-  18,
-  19,
-  20,
-  21,
-  22,
-  23,
-  24,
-  25,
-  26,
-  27,
-  28,
-  29,
-  30,
-  31
-]
-  .map((d) => \`<span class="\${d === 18 ? "selected" : ""}">\${d}</span>\`)
-  .join("");
+// AIFA-113: do NOT overwrite #calendar — Diary.tsx owns final-pages day grid
+// (design-reference/12+18). Legacy weekday+day injection broke calendar-grid layout.
 // AIFA-99: 勿覆盖 #diaries / #posts——交给 App renderDiary / renderCommunity 水合 final-pages 新皮与角色头像。
 `;
