@@ -93,18 +93,21 @@ const QUEST_CONFIG: Record<Exclude<QuestCategory, 'daily'>, QuestDefinition[]> =
     { id: 'weekly-sleep-4', category: 'weekly', icon: '🌙', title: '4 天温柔早睡', description: '不卷到深夜，给头皮也放个小假。', current: 0, target: 4, reward: 40, actionLabel: '打卡早睡' },
     { id: 'weekly-share', category: 'weekly', icon: '💬', title: '分享一次发球周报', description: '把本周小进步发给朋友，轻松晒一下。', current: 0, target: 1, reward: 25, actionLabel: '去分享' },
     { id: 'weekly-massage', category: 'weekly', icon: '🪮', title: '完成 3 次头皮放松', description: '睡前 5 分钟，给自己按下暂停键。', current: 0, target: 3, reward: 30, actionLabel: '开始放松' },
+    { id: 'weekly-water-5', category: 'weekly', icon: '💧', title: '本周喝水打卡 5 天', description: '润一点、松一点，头发也跟着轻松。', current: 0, target: 5, reward: 30, actionLabel: '去打卡' },
   ],
   growth: [
     { id: 'growth-first-report', category: 'growth', icon: '🌱', title: '生成第一份种子报告', description: '上传照片后获得你的第一枚趣味称号。', current: 0, target: 1, reward: 45, actionLabel: '去扫描' },
     { id: 'growth-7-day', category: 'growth', icon: '🔥', title: '连续记录 7 天', description: '把小习惯养成小成就，不求完美只求坚持。', current: 0, target: 7, reward: 80, actionLabel: '点亮进度' },
     { id: 'growth-unlock-style', category: 'growth', icon: '🎀', title: '解锁一个新造型', description: '给小发球换套新皮肤，奖励认真生活的你。', current: 0, target: 1, reward: 60, actionLabel: '去解锁' },
     { id: 'growth-history', category: 'growth', icon: '📒', title: '查看一次历史趋势', description: '回头看看，最近的自己已经很棒啦。', current: 0, target: 1, reward: 25, actionLabel: '看趋势' },
+    { id: 'growth-diary', category: 'growth', icon: '📝', title: '写一篇护发小日记', description: '记一记今天的状态，成长感会更看得见。', current: 0, target: 1, reward: 35, actionLabel: '去写日记' },
   ],
   special: [
     { id: 'special-spring', category: 'special', icon: '🌸', title: '春风吹发季签到', description: '参与 8.1–8.31 赛季限时活动，领取赛季能量。', current: 0, target: 1, reward: 50, actionLabel: '领取能量' },
     { id: 'special-mood', category: 'special', icon: '😊', title: '写下今日心情弹幕', description: '把压力吐槽给小发球听，轻轻放过自己。', current: 0, target: 1, reward: 30, actionLabel: '写一句' },
     { id: 'special-buddy', category: 'special', icon: '☁️', title: '和 Buddy 互动一次', description: '摸摸小发球，让陪伴感上线。', current: 0, target: 1, reward: 35, actionLabel: '去互动' },
     { id: 'special-community', category: 'special', icon: '✨', title: '逛逛社区治愈帖', description: '看看大家的小妙招，找到一点轻松感。', current: 0, target: 1, reward: 25, actionLabel: '去看看' },
+    { id: 'special-photo', category: 'special', icon: '🎞', title: '晒一张本周发色光影', description: '随便拍一张好看光影，轻松参与就行。', current: 0, target: 1, reward: 30, actionLabel: '去拍照' },
   ],
 }
 
