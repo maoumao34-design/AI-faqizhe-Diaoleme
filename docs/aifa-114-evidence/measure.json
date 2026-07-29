@@ -1,0 +1,22 @@
+{
+  "metrics": {
+    "title": "我",
+    "motto": "每一根头发，都是生命力的见证 ✨",
+    "cols": "841.219px 390.766px",
+    "unlocks": true,
+    "goals": true,
+    "badges": 5,
+    "calCells": 35,
+    "doneCells": 0,
+    "overflowX": false,
+    "bannerBg": "linear-gradient(rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.55)), url(\"http://127.0.0.1:4314/assets/buddy/buddy-he",
+    "level": "Lv.1",
+    "xpLabel": "70 / 200 XP"
+  },
+  "smoke": {
+    "home": true,
+    "league": true,
+    "rewards": true
+  },
+  "bundle": "index-D1d0uC8q.js"
+}

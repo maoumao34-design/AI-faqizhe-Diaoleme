@@ -41,7 +41,7 @@ export function showPage(root: HTMLElement, id: string) {
     rewards: ['Rewards', '用成长兑换惊喜，奖励每一次认真生活'],
     diary: ['My Diary ✨', '记录每一个小瞬间，见证成长的每一步 💜'],
     community: ['Community', '在这里，分享治愈，收获力量'],
-    me: ['Me', '你的成长档案'],
+    me: ['我', '每一根头发，都是生命力的见证 ✨'],
   }
   if (heading && meta[id]) heading.textContent = meta[id][0]
   if (sub && meta[id]) sub.textContent = meta[id][1]
