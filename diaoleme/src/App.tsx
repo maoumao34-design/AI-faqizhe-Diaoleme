@@ -891,7 +891,7 @@ function attachChatAssistant(root: HTMLElement) {
   widget.innerHTML = `
     <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手"><img src="./assets/logo-mascot.png" alt=""><span>AI 助手</span></button>
     <section class="ai-chat-panel" aria-label="AI 助手对话">
-      <header class="ai-chat-header"><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" data-chat-close aria-label="关闭 AI 助手">×</button></header>
+      <header class="ai-chat-header"><img class="ai-chat-header-avatar" src="./assets/logo-mascot.png" alt=""><b>掉了么 AI 助手</b><small>轻松陪聊，不做医疗判断</small><button type="button" data-chat-close aria-label="关闭 AI 助手">×</button></header>
       <div class="ai-chat-messages" data-chat-messages></div>
       <form class="ai-chat-form" data-chat-form>
         <input data-chat-input aria-label="输入对 AI 助手的问题" placeholder="问问护发习惯、记录建议或今天怎么坚持..." maxlength="300" />
@@ -937,6 +937,8 @@ function attachChatAssistant(root: HTMLElement) {
     const nextOpen = open ?? !widget.classList.contains('open')
     widget.classList.toggle('open', nextOpen)
     if (nextOpen) {
+      // AIFA-115: 每次打开面板再对齐一次「使用中」头像（关开面板仍一致）
+      syncAssistantFabAvatar()
       placeOpenPanel()
       input.focus()
     }
@@ -4817,15 +4819,37 @@ const integrationStyle = `
   }
   .ai-chat-header {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
     gap: 2px 12px;
     padding: 16px 18px;
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(101, 201, 130, 0.18));
   }
-  .ai-chat-header small { color: #65709e; }
+  /* AIFA-115: 标题左圆形头像，与 FAB 同源（Buddy「使用中」） */
+  .ai-chat-header-avatar {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 2px 8px rgba(40, 20, 80, 0.12);
+  }
+  .ai-chat-header b {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .ai-chat-header small {
+    grid-column: 2;
+    grid-row: 2;
+    color: #65709e;
+  }
   .ai-chat-header button {
     grid-row: 1 / span 2;
-    grid-column: 2;
+    grid-column: 3;
     border: 0;
     border-radius: 50%;
     width: 30px;
