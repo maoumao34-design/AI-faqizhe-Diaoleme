@@ -3,6 +3,9 @@ import { useUserStore, type ReportRecord } from '../../store/UserStore'
 import { showPage } from './navigation'
 import { escapeHtml, setHtml, showToast } from './ui'
 
+/** Build marker for AIFA-110 title-favicon follow-up (must survive minify). */
+export const AIFA_110B_BUILD = 'aifa-110b-title-favicon-logo-mascot'
+
 export type BuddyCareState = {
   energy: number
   love: number

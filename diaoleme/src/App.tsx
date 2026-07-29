@@ -6,7 +6,7 @@ import { prototypeBody } from './prototype/PrototypeBody'
 import { prototypeScript } from './prototype/PrototypeScript'
 import { prototypeStyle } from './prototype/PrototypeStyle'
 import './prototype/finalPages.css'
-import { renderBuddy, handleBuddyAction, selectHairStyle, syncAssistantFabAvatar } from './prototype/controllers/buddyController'
+import { renderBuddy, handleBuddyAction, selectHairStyle, syncAssistantFabAvatar, AIFA_110B_BUILD } from './prototype/controllers/buddyController'
 import { showPage } from './prototype/controllers/navigation'
 import { escapeHtml, publicAssetUrl, setHtml, showToast } from './prototype/controllers/ui'
 import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay } from './prototype/controllers/journeyController'
@@ -887,6 +887,7 @@ function buildWordCloud(records: ReportRecord[]) {
 function attachChatAssistant(root: HTMLElement) {
   const widget = document.createElement('div')
   widget.className = 'ai-chat-widget'
+  widget.dataset.aifa110b = AIFA_110B_BUILD
   widget.innerHTML = `
     <button class="ai-chat-bubble" type="button" aria-label="打开 AI 助手"><img src="./assets/logo-mascot.png" alt=""><span>AI 助手</span></button>
     <section class="ai-chat-panel" aria-label="AI 助手对话">
