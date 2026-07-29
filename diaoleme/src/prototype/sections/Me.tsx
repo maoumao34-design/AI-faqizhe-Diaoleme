@@ -15,8 +15,8 @@ export const meSection = `<section class="page" data-page="me">
                 <h2>一起变好呀 <span class="badge" data-me-level-badge>Lv.5</span></h2>
                 <p>掉了么陪你把每一天的小坚持，收成看得见的成长。</p>
                 <div class="me-hero-badges">
-                  <span class="badge" data-me-points>0 XP</span>
-                  <span class="badge" data-me-streak>连续 0 天</span>
+                  <span class="badge" data-me-points>1,620 XP</span>
+                  <span class="badge" data-me-streak>连续 12 天</span>
                 </div>
               </div>
               <img class="me-hero-mascot" src="./assets/buddy/buddy-hero.png" alt="Fluffy Seedling">
@@ -26,9 +26,9 @@ export const meSection = `<section class="page" data-page="me">
               <div class="card me-stats">
                 <h3>个人统计</h3>
                 <div class="me-stat-row">
-                  <div><span class="big-number" data-me-history-days>0</span><small>记录天数</small></div>
-                  <div><span class="big-number" data-me-total-xp>0</span><small>总 XP</small></div>
-                  <div><span class="big-number" data-me-streak-count>0</span><small>连续天数</small></div>
+                  <div><span class="big-number" data-me-history-days>32</span><small>记录天数</small></div>
+                  <div><span class="big-number" data-me-total-xp>1,620</span><small>总 XP</small></div>
+                  <div><span class="big-number" data-me-streak-count>12</span><small>连续天数</small></div>
                 </div>
               </div>
 
