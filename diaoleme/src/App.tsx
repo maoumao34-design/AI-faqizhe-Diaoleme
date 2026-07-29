@@ -769,25 +769,36 @@ function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean
   const report = options?.reportId
     ? s.reportHistory.find((item) => item.id === options.reportId)
     : s.reportHistory[0]
+  const dayCount = Object.keys(
+    s.reportHistory.reduce<Record<string, true>>((days, item) => {
+      days[item.date] = true
+      return days
+    }, {}),
+  ).length
+  const streak = s.checkinDays.length
 
   const existing = loadUserCommunityPosts()
   if (report && existing.some((post) => post.reportId === report.id)) {
-    return { ok: true, message: '这份旅程已经分享过啦，已打开社区最新流' }
+    return { ok: true, message: '已分享到' }
   }
+
+  const body = report
+    ? (options?.reportId
+      ? `我的今日旅程：${report.title}（${report.score} 分）。${report.summary}`
+      : `分享我的护发旅程：已记录 ${dayCount} 天，连续 ${streak} 天，累计 ${s.points} XP。最近一次是「${report.title}」${report.score} 分，${report.summary}`)
+    : (dayCount > 0 || streak > 0 || s.points > 0
+      ? `分享我的护发旅程：已记录 ${dayCount} 天，连续 ${streak} 天，累计 ${s.points} XP，继续轻松坚持～`
+      : '我开始记录护发旅程啦，一起轻松坚持～')
 
   const post: CommunityPost = {
     id: `journey-${Date.now().toString(36)}`,
     name: '我',
     level: userLevelLabel(s.points),
-    body: report
-      ? (options?.reportId
-        ? `从 Journey 分享：${report.title}（${report.score} 分）。${report.summary}`
-        : `分享我的护发旅程：打卡 ${s.checkinDays.length} 天，累计 ${s.reportHistory.length} 次记录。最近一次是「${report.title}」${report.score} 分，${report.summary}`)
-      : `先在社区打个招呼：我开始记录护发旅程啦！打卡 ${s.checkinDays.length} 天，一起轻松坚持～`,
+    body,
     media: '✨',
     avatar: COMMUNITY_ROLE_AVATARS.me,
     likes: 0,
-    comments: ['欢迎分享旅程，我们一起轻松记录～'],
+    comments: ['加油，一起慢慢变好～'],
     tag: report?.tags[0] || '旅程分享',
     createdAt: Date.now(),
     featured: false,
@@ -796,7 +807,7 @@ function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean
     reportId: report?.id,
   }
   saveUserCommunityPosts([post, ...existing])
-  return { ok: true, message: '已发到 Community，可在「最新 / 关注」看到，不会再下载图片' }
+  return { ok: true, message: '已分享到' }
 }
 
 function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') {

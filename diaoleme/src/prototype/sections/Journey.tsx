@@ -26,7 +26,7 @@ export const journeySection = `<section class="page" data-page="journey">
               </div>
               <aside class="journey-side">
                 <nav class="period-switch"><button class="active">This Month</button><button>All Time</button></nav>
-                <section class="journey-glass journey-side-card journey-summary-new"><h2>旅程总览</h2><div class="journey-metrics"><div><i>📅</i><strong>32</strong><small>记录天数</small></div><div><i>⭐</i><strong>1,620</strong><small>总 XP</small></div><div><i>🔥</i><strong>12</strong><small>连续天数</small></div></div></section>
+                <section class="journey-glass journey-side-card journey-summary-new"><h2>旅程总览</h2><div class="journey-metrics"><div><i>📅</i><strong>0</strong><small>记录天数</small></div><div><i>⭐</i><strong>0</strong><small>总 XP</small></div><div><i>🔥</i><strong>0</strong><small>连续天数</small></div></div></section>
                 <section class="journey-glass journey-side-card mood-card"><h2>心情轨迹　<small>更多分析 ›</small></h2>
                   <div class="mood-chart-wrap">
                     <div class="mood-chart-emojis" aria-hidden="true"><span>😄</span><span>😊</span><span>😐</span><span>😔</span><span>😢</span></div>
