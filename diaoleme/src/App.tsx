@@ -643,12 +643,11 @@ function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibl
       ? visible.map((entry) => {
           const day = entry.date.slice(8)
           const month = Number(entry.date.slice(5, 7))
-          return `<article class="diary-row-new" data-view-day="${escapeHtml(entry.date)}" role="button" tabindex="0">
+          return `<article class="diary-row-new" data-view-day="${escapeHtml(entry.date)}" role="button" tabindex="0" title="查看当天日记">
             <div class="diary-date"><strong>${escapeHtml(day)}</strong><small>${month}月</small></div>
             <div class="diary-mood-col"><img class="mood-icon" src="${escapeHtml(diaryMoodIconSrc(entry.mood.key))}" alt="${escapeHtml(entry.mood.label)}"><small class="mood-label">${escapeHtml(entry.mood.label)}</small></div>
-            <div class="diary-copy"><b>${escapeHtml(entry.title)}</b><p>${escapeHtml(entry.snippet)}</p></div>
-            <img class="diary-thumb" src="${escapeHtml(entry.thumbSrc)}" alt="">
-            <button class="diary-menu" type="button" data-view-report="${escapeHtml(entry.primaryReportId)}" title="查看当天报告">•••</button>
+            <div class="diary-copy" data-view-day="${escapeHtml(entry.date)}"><b>${escapeHtml(entry.title)}</b><p>${escapeHtml(entry.snippet)}</p></div>
+            <img class="diary-thumb" src="${escapeHtml(entry.thumbSrc)}" alt="" data-view-day="${escapeHtml(entry.date)}">
           </article>`
         }).join('')
       : `<div class="diary-empty"><span>📖</span><b>${activeMood === 'all' ? '还没有日记' : '这个心情还没有日记'}<small>${activeMood === 'all' ? '去 Scan 完成一次上传后，这里会按天整理成 blog 小结。' : '换个心情筛选，或继续记录新的一天。'}</small></b><button class="pill primary" data-go="scan">去上传今天的记录</button></div>`,
@@ -792,8 +791,23 @@ function postsForCommunityTab(tab: CommunityTab): CommunityPost[] {
   return [...posts].sort((a, b) => b.createdAt - a.createdAt)
 }
 
+const GROWTH_DEMO_STATS = { dayCount: 32, points: 1620, streak: 12 }
+
+/** Same source as Journey overview: live store when present, else demo 32 / 1,620 / 12. */
+function getSharedGrowthStats(): { dayCount: number; points: number; streak: number } {
+  const s = useUserStore.getState()
+  const dayCount = new Set(s.reportHistory.map((item) => item.date)).size
+  const points = s.points
+  const streak = s.checkinDays.length
+  return {
+    dayCount: dayCount > 0 ? dayCount : GROWTH_DEMO_STATS.dayCount,
+    points: points > 0 ? points : GROWTH_DEMO_STATS.points,
+    streak: streak > 0 ? streak : GROWTH_DEMO_STATS.streak,
+  }
+}
+
 function readJourneyOverviewStats(): { dayCount: number; points: number; streak: number } {
-  // Prefer numbers currently shown on Journey (demo 32 / 1,620 / 12, or live overrides).
+  // Prefer numbers currently shown on Journey when present; otherwise shared growth stats.
   const metrics = document.querySelectorAll<HTMLElement>('.journey-metrics strong')
   const parseMetric = (el: HTMLElement | undefined, fallback: number) => {
     if (!el) return fallback
@@ -801,13 +815,14 @@ function readJourneyOverviewStats(): { dayCount: number; points: number; streak:
     return Number.isFinite(n) ? n : fallback
   }
   if (metrics.length >= 3) {
+    const fallback = getSharedGrowthStats()
     return {
-      dayCount: parseMetric(metrics[0], 32),
-      points: parseMetric(metrics[1], 1620),
-      streak: parseMetric(metrics[2], 12),
+      dayCount: parseMetric(metrics[0], fallback.dayCount),
+      points: parseMetric(metrics[1], fallback.points),
+      streak: parseMetric(metrics[2], fallback.streak),
     }
   }
-  return { dayCount: 32, points: 1620, streak: 12 }
+  return getSharedGrowthStats()
 }
 
 function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean; message: string } {
@@ -1148,7 +1163,8 @@ function renderProfile(root: HTMLElement) {
     return `<span class="badge${done ? ' done' : index === 6 ? ' gift' : ''}"><b>${mark}</b><small>${label}</small></span>`
   }).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 
-  const level = getLevelProgress(s.points)
+  const growth = getSharedGrowthStats()
+  const level = getLevelProgress(growth.points)
   const mePoints = root.querySelector<HTMLElement>('[data-me-points]')
   const meStreak = root.querySelector<HTMLElement>('[data-me-streak]')
   const meHistoryDays = root.querySelector<HTMLElement>('[data-me-history-days]')
@@ -1156,11 +1172,11 @@ function renderProfile(root: HTMLElement) {
   const meStreakCount = root.querySelector<HTMLElement>('[data-me-streak-count]')
   const meLevelBadge = root.querySelector<HTMLElement>('[data-me-level-badge]')
   const meNavLevel = root.querySelector<HTMLElement>('[data-me-level]')
-  if (mePoints) mePoints.textContent = `${s.points.toLocaleString('en-US')} XP`
-  if (meStreak) meStreak.textContent = `连续 ${streak} 天`
-  if (meHistoryDays) meHistoryDays.textContent = String(historyDays)
-  if (meTotalXp) meTotalXp.textContent = s.points.toLocaleString('en-US')
-  if (meStreakCount) meStreakCount.textContent = String(streak)
+  if (mePoints) mePoints.textContent = `${growth.points.toLocaleString('en-US')} XP`
+  if (meStreak) meStreak.textContent = `连续 ${growth.streak} 天`
+  if (meHistoryDays) meHistoryDays.textContent = String(growth.dayCount)
+  if (meTotalXp) meTotalXp.textContent = growth.points.toLocaleString('en-US')
+  if (meStreakCount) meStreakCount.textContent = String(growth.streak)
   if (meLevelBadge) meLevelBadge.textContent = `Lv.${level.level}`
   if (meNavLevel) meNavLevel.textContent = `Lv.${level.level}`
 }
