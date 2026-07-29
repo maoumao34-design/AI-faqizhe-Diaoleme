@@ -92,43 +92,9 @@ document.querySelector(".small-leaders").innerHTML = leaders
 // AIFA-104: do NOT overwrite #skins here — Buddy hydrate owns .hair-item + hairstyle images.
 // Legacy empty .mini-buddy skin rail caused missing Buddy hair previews.
 
-const questListRoot = document.querySelector("#questList");
-if (questListRoot) {
-  questListRoot.innerHTML =
-    quests
-      .map(
-        (q, i) =>
-          \`<div class="item"><span style="font-size:26px">\${q[0]}</span><b>\${q[1]}<small>\${q[2]}</small></b><span>\${q[3]}</span><button class="quest-btn \${q[4] === "已完成" ? "done" : ""}">\${q[4] === "已完成" ? "✓ 已完成" : "去完成"}</button></div>\`
-      )
-      .join("") +
-    \`<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>完成所有每日任务可获得额外奖励！</b><span>+100 XP</span><button class="quest-btn done">未完成</button></div>\`;
-
-  questListRoot.addEventListener("click", (event) => {
-    const btn = event.target.closest(".quest-btn");
-    if (!btn || btn.classList.contains("done")) return;
-    btn.classList.add("done");
-    btn.textContent = "✓ 已完成";
-  });
-}
-
-const weekRewardsRoot = document.querySelector("#weekRewards");
-if (weekRewardsRoot) {
-  weekRewardsRoot.innerHTML = ["一", "二", "三", "四", "五", "六", "日"]
-    .map(
-      (d, i) =>
-        \`<span class="badge">\${i < 2 ? "✓" : d}<br><small>+\${i < 5 ? 10 + i * 5 : 25} XP</small></span>\`
-    )
-    .join("");
-}
-const streakRoot = document.querySelector("#streak");
-if (streakRoot) {
-  streakRoot.innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
-    .map(
-      (d, i) =>
-        \`<span class="badge">\${i < 6 ? "✓" : "🎁"}<br><small>\${d}</small></span>\`
-    )
-    .join("");
-}
+// AIFA-108: do NOT overwrite #questList / #weekRewards / #streak here.
+// questsController.renderTasks owns Quests list + week rewards + streak;
+// legacy .item markup here caused duplicate bonus bars and layout overlap on live.
 const checkinRoot = document.querySelector("#checkin");
 if (checkinRoot) {
   checkinRoot.innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
@@ -139,7 +105,9 @@ if (checkinRoot) {
     .join("");
 }
 
-const ms = [
+// AIFA-112: do NOT overwrite #milestones / #timeline — Journey.tsx owns final-pages markup
+// (design-reference/19). Legacy .milestone / .item injection destroyed the new skin.
+const _journeyLegacyMs = [
   [" 开始记录 ", "5/1"],
   [" 坚持 3 天 ", "5/4"],
   [" 完成第一个任务 ", "5/7"],
@@ -147,24 +115,7 @@ const ms = [
   [" 头皮健康改善 ", "5/18"],
   [" 解锁新发型 ", "5/24"]
 ];
-document.querySelector("#milestones").innerHTML = ms
-  .map(
-    (m, i) =>
-      \`<div class="milestone"><div class="dot">\${["⚑", "🌱", "⭐", "7", "💧", "✂"][i]}</div>\${m[0]}<br><small>\${m[1]}</small></div>\`
-  )
-  .join("");
-document.querySelector("#timeline").innerHTML = [
-  ["5/18", " 头皮健康评分提升 ", " 你的头皮健康评分从 72 提升到 82，继续保持哦！", "+10 健康分 "],
-  ["5/15", " 早睡打卡 ", " 你在 22:30 前入睡，睡眠质量很棒！", "+60 XP"],
-  ["5/12", " 连续打卡 7 天 ", " 太棒了！你已经连续 7 天坚持记录和护理！", "+200 XP"],
-  ["5/10", " 健康饮食 ", " 你记录了健康餐饮，营养均衡。", "+40 XP"],
-  ["5/8", " 运动 20 分钟 ", " 运动可以促进血液循环，头发会更健康哦！", "+50 XP"]
-]
-  .map(
-    (t) =>
-      \`<div class="item"><span>\${t[0]}</span><b>\${t[1]}<small>\${t[2]}</small></b><span class="status">\${t[3]}</span></div>\`
-  )
-  .join("");
+void _journeyLegacyMs;
 
 const leadersRoot = document.querySelector("#leaders");
 if (leadersRoot) {
@@ -176,50 +127,7 @@ if (leadersRoot) {
     .join("");
 }
 
-document.querySelector("#calendar").innerHTML = [
-  "Sun",
-  "Mon",
-  "Tue",
-  "Wed",
-  "Thu",
-  "Fri",
-  "Sat",
-  28,
-  29,
-  30,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  16,
-  17,
-  18,
-  19,
-  20,
-  21,
-  22,
-  23,
-  24,
-  25,
-  26,
-  27,
-  28,
-  29,
-  30,
-  31
-]
-  .map((d) => \`<span class="\${d === 18 ? "selected" : ""}">\${d}</span>\`)
-  .join("");
+// AIFA-113: do NOT overwrite #calendar — Diary.tsx owns final-pages day grid
+// (design-reference/12+18). Legacy weekday+day injection broke calendar-grid layout.
 // AIFA-99: 勿覆盖 #diaries / #posts——交给 App renderDiary / renderCommunity 水合 final-pages 新皮与角色头像。
 `;
