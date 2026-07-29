@@ -2,10 +2,14 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- AIFA-110: browser tab icon = original AI assistant (logo-mascot), not pink smile / dress-up face -->
+    <link rel="icon" type="image/png" href="./assets/logo-mascot.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#FFF8F0" />
     <title>掉了么 · 你的掉发陪伴日记</title>
+    <!-- AIFA-103: preload Home meadow + hero so hard-refresh does not flash old pink shell -->
+    <link rel="preload" as="image" href="./assets/generated/scene-background-1920x1280.jpg" />
+    <link rel="preload" as="image" href="./assets/buddy/buddy-hero.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,8 +17,8 @@
       rel="stylesheet"
     />
       <script src="./config.js"></script>
-    <script type="module" crossorigin src="./assets/index-CpFVX_ed.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CQ4E0Yl7.css">
+    <script type="module" crossorigin src="./assets/index-yCpe6pXL.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C7JXqJvk.css">
   </head>
   <body>
     <div id="root"></div>
