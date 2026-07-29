@@ -193,9 +193,15 @@ body.quest-page-active .page[data-page="quests"]{min-height:100vh;color:#17245c;
 [data-page="quests"] .quest-count{color:#68729a;font-weight:700}
 [data-page="quests"] .quest-meter{height:8px;margin-top:6px;border-radius:5px;background:rgba(152,137,183,.12);overflow:hidden}
 [data-page="quests"] .quest-meter i{display:block;height:100%;border-radius:inherit;background:#64bc7c}
-[data-page="quests"] .quest-xp{color:#f18b2e;font-weight:800;text-align:center;min-height:1.2em;white-space:nowrap}
-[data-page="quests"] .quest-do{width:110px;height:46px;border:0;border-radius:23px;color:#fff;background:linear-gradient(135deg,#b589f3,#7042df);font-weight:800;justify-self:end}
+[data-page="quests"] .quest-xp{grid-column:4;color:#f18b2e;font-weight:800;text-align:center;min-height:1.2em;white-space:nowrap;justify-self:center}
+[data-page="quests"] .quest-do{grid-column:5;width:110px;height:46px;border:0;border-radius:23px;color:#fff;background:linear-gradient(135deg,#b589f3,#7042df);font-weight:800;justify-self:end;flex-shrink:0}
 [data-page="quests"] .quest-do.done{color:#5fc184;background:transparent}
+/* AIFA-108: 双保险 — 即便误带 .item 也不回退成全局三列 */
+[data-page="quests"] .quest-list-new .quest-row.item{
+  display:grid!important;
+  grid-template-columns:64px minmax(0,1.5fr) minmax(120px,165px) 96px 110px!important;
+  gap:12px!important;
+}
 [data-page="quests"] .quest-bonus{
   height:auto;min-height:99px;margin:0;padding:16px 24px;
   display:grid;grid-template-columns:45px minmax(0,1fr) auto auto 110px;gap:14px;align-items:center;
