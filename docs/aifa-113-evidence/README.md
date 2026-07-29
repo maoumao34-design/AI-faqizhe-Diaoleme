@@ -1,7 +1,7 @@
 # AIFA-113 Diary 视觉对齐证据
 
 - 对照：`docs/design-reference/` 12 + 18
-- Live bundle：`index-MDkrzrYs.js`
+- Live bundle：`index-CkR7gIQh.js`
 - Pages：https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/ （aihpj 同步）
 - PR：https://github.com/maoumao34-design/AI-faqizhe-Diaoleme/pull/166
 
