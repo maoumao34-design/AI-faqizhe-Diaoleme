@@ -139,7 +139,9 @@ if (checkinRoot) {
     .join("");
 }
 
-const ms = [
+// AIFA-112: do NOT overwrite #milestones / #timeline — Journey.tsx owns final-pages markup
+// (design-reference/19). Legacy .milestone / .item injection destroyed the new skin.
+const _journeyLegacyMs = [
   [" 开始记录 ", "5/1"],
   [" 坚持 3 天 ", "5/4"],
   [" 完成第一个任务 ", "5/7"],
@@ -147,24 +149,7 @@ const ms = [
   [" 头皮健康改善 ", "5/18"],
   [" 解锁新发型 ", "5/24"]
 ];
-document.querySelector("#milestones").innerHTML = ms
-  .map(
-    (m, i) =>
-      \`<div class="milestone"><div class="dot">\${["⚑", "🌱", "⭐", "7", "💧", "✂"][i]}</div>\${m[0]}<br><small>\${m[1]}</small></div>\`
-  )
-  .join("");
-document.querySelector("#timeline").innerHTML = [
-  ["5/18", " 头皮健康评分提升 ", " 你的头皮健康评分从 72 提升到 82，继续保持哦！", "+10 健康分 "],
-  ["5/15", " 早睡打卡 ", " 你在 22:30 前入睡，睡眠质量很棒！", "+60 XP"],
-  ["5/12", " 连续打卡 7 天 ", " 太棒了！你已经连续 7 天坚持记录和护理！", "+200 XP"],
-  ["5/10", " 健康饮食 ", " 你记录了健康餐饮，营养均衡。", "+40 XP"],
-  ["5/8", " 运动 20 分钟 ", " 运动可以促进血液循环，头发会更健康哦！", "+50 XP"]
-]
-  .map(
-    (t) =>
-      \`<div class="item"><span>\${t[0]}</span><b>\${t[1]}<small>\${t[2]}</small></b><span class="status">\${t[3]}</span></div>\`
-  )
-  .join("");
+void _journeyLegacyMs;
 
 const leadersRoot = document.querySelector("#leaders");
 if (leadersRoot) {
