@@ -251,9 +251,10 @@ function attachPrototypeFeatures(root: HTMLElement) {
     }
     if (journeyLoadMoreBtn) {
       event.preventDefault()
-      loadMoreJourneyTimeline(root)
+      const result = loadMoreJourneyTimeline(root)
       const list = root.querySelector<HTMLElement>('#timeline')
       list?.scrollTo({ top: list.scrollHeight, behavior: 'smooth' })
+      if (result.exhausted) showToast(root, '已经看完啦～')
     }
     if (questBtn?.dataset.questId && questBtn.dataset.questCategory && isQuestCategory(questBtn.dataset.questCategory)) {
       completeQuest(questBtn.dataset.questCategory, questBtn.dataset.questId, root)

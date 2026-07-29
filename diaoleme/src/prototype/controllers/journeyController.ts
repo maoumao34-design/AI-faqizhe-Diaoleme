@@ -5,8 +5,9 @@ import { escapeHtml, setHtml } from './ui'
 /** Scan「最近扫描记录」每页条数（AIFA-88）；布局按此固定 4 槽，不足时占位不塌 */
 export const SCAN_RECORD_PAGE_SIZE = 4
 
-/** Journey 时间线初始 / 每次「加载更多」条数 */
+/** Journey 时间线首屏条数；之后每次「加载更多」追加条数 */
 export const JOURNEY_TIMELINE_PAGE_SIZE = 6
+export const JOURNEY_TIMELINE_LOAD_MORE = 5
 
 function renderRecordPlaceholder() {
   return `<div class="item scan-record-placeholder" aria-hidden="true"><span></span><b class="scan-record-text"><span class="scan-record-title">&nbsp;</span><small class="scan-record-meta">&nbsp;</small></b><span class="status">&nbsp;</span></div>`
@@ -161,7 +162,7 @@ export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
           usedIcons.push(icon)
           const [, m, d] = r.date.split('-')
           const weekday = weekdayLabel(r.date)
-          return `<article class="timeline-row-new${index === 0 ? ' selected' : ''}" data-view-report="${escapeHtml(r.id)}"><div class="timeline-date"><b>${escapeHtml(`${m}/${d}`)}</b><small>${escapeHtml(weekday)}</small></div><img src="${escapeHtml(icon)}" alt=""><div class="timeline-copy"><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.summary)}</small></div><span class="${rewardClass}">${escapeHtml(scoreLabel)}</span></article>`
+          return `<article class="timeline-row-new${index === 0 ? ' selected' : ''}" data-view-report="${escapeHtml(r.id)}"><div class="timeline-date"><b>${escapeHtml(`${m}/${d}`)}</b><small>${escapeHtml(weekday)}</small></div><span class="timeline-icon" aria-hidden="true">${icon}</span><div class="timeline-copy"><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.summary)}</small></div><span class="${rewardClass}">${escapeHtml(scoreLabel)}</span></article>`
         })
         .join('')
       setHtml(timeline, liveRows)
@@ -173,48 +174,45 @@ export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
     const hasMore = history.length > visibleCount
     loadMore.hidden = history.length === 0 || !hasMore
     loadMore.disabled = !hasMore
-    loadMore.textContent = hasMore ? '加载更多　⌄' : '没有更多啦'
+    loadMore.textContent = hasMore ? '加载更多　⌄' : '已经看完啦～'
   }
 }
 
-const TIMELINE_ICON_POOL = [
-  './assets/journey/icons/timeline-spark.svg',
-  './assets/journey/icons/timeline-camera.svg',
-  './assets/journey/icons/timeline-shield.svg',
-  './assets/journey/icons/timeline-wind.svg',
-  './assets/journey/icons/timeline-moon.svg',
-  './assets/journey/icons/timeline-food.svg',
-  './assets/journey/icons/timeline-streak.svg',
-  './assets/journey/icons/timeline-exercise.svg',
-  './assets/journey/icons/milestone-task.svg',
-  './assets/journey/icons/milestone-sprout.svg',
-  './assets/journey/icons/milestone-heart.svg',
-  './assets/journey/icons/milestone-scissors.svg',
-] as const
+// AIFA-119 UI/UX locked emoji map (primary / alternate when adjacent collision)
+const TIMELINE_FALLBACK = ['🌱', '🎀', '🫧', '🍀'] as const
 
 function timelineIconForReport(r: ReportRecord, usedRecently: string[] = []) {
-  const text = `${r.title} ${r.summary} ${(r.tags || []).join(' ')}`.toLowerCase()
-  let preferred: string | null = null
-  if (/睡眠|早睡|熬夜|moon|晚安/.test(text)) preferred = './assets/journey/icons/timeline-moon.svg'
-  else if (/饮食|营养|salad|food|吃/.test(text)) preferred = './assets/journey/icons/timeline-food.svg'
-  else if (/连续|打卡|streak|坚持/.test(text)) preferred = './assets/journey/icons/timeline-streak.svg'
-  else if (/运动|健身|exercise|dumbbell/.test(text)) preferred = './assets/journey/icons/timeline-exercise.svg'
-  else if (/守护|保护|shield|稳住/.test(text)) preferred = './assets/journey/icons/timeline-shield.svg'
-  else if (/微风|观察|wind|桌面|隐身/.test(text)) preferred = './assets/journey/icons/timeline-wind.svg'
-  else if (/奖|称号|spark|闪耀|努力/.test(text)) preferred = './assets/journey/icons/timeline-spark.svg'
-  else if (/扫描|拍照|报告|camera|发量|模糊/.test(text)) preferred = './assets/journey/icons/timeline-camera.svg'
-  else if (/任务|完成|task/.test(text)) preferred = './assets/journey/icons/milestone-task.svg'
-  else if (/头皮|健康|评分|health/.test(text)) preferred = './assets/journey/icons/milestone-sprout.svg'
+  const text = `${r.title} ${r.summary} ${(r.tags || []).join(' ')}`
+  const lower = text.toLowerCase()
+  let primary: string | null = null
+  let alternate: string | null = null
 
-  if (preferred && !usedRecently.includes(preferred)) return preferred
+  if (/模糊|努力|看不清|看不清/.test(text) || /blur/.test(lower)) {
+    primary = '🌫️'
+    alternate = '💪'
+  } else if (/发量|守护|保护|稳住/.test(text)) {
+    primary = '🛡️'
+    alternate = '✨'
+  } else if (/隐身|低调/.test(text)) {
+    primary = '🫥'
+    alternate = '🌙'
+  } else if (/微观|桌面|观察|微风/.test(text)) {
+    primary = '🔍'
+    alternate = '📷'
+  } else if (r.score >= 75 || /稳|高光|闪耀|进步/.test(text)) {
+    primary = '⭐'
+    alternate = '🌟'
+  }
 
-  // Diversify entertainment titles: hash id into pool, skip recent duplicates.
+  if (primary && !usedRecently.includes(primary)) return primary
+  if (alternate && !usedRecently.includes(alternate)) return alternate
+
   const seed = hashText(r.id || r.title || text)
-  for (let i = 0; i < TIMELINE_ICON_POOL.length; i += 1) {
-    const candidate = TIMELINE_ICON_POOL[(seed + i) % TIMELINE_ICON_POOL.length]
+  for (let i = 0; i < TIMELINE_FALLBACK.length; i += 1) {
+    const candidate = TIMELINE_FALLBACK[(seed + i) % TIMELINE_FALLBACK.length]
     if (!usedRecently.includes(candidate)) return candidate
   }
-  return TIMELINE_ICON_POOL[seed % TIMELINE_ICON_POOL.length]
+  return TIMELINE_FALLBACK[seed % TIMELINE_FALLBACK.length]
 }
 
 function hashText(value: string) {
@@ -225,11 +223,18 @@ function hashText(value: string) {
 
 export function loadMoreJourneyTimeline(root: HTMLElement) {
   const page = root.querySelector<HTMLElement>('[data-page="journey"]')
-  if (!page) return
+  if (!page) return { loaded: false, exhausted: true }
   const history = useUserStore.getState().reportHistory
-  const current = Number(page.dataset.journeyVisible || JOURNEY_TIMELINE_PAGE_SIZE)
-  page.dataset.journeyVisible = String(Math.min(history.length, current + JOURNEY_TIMELINE_PAGE_SIZE))
+  const loadMore = page.querySelector<HTMLButtonElement>('[data-action="journey-load-more"]')
+  if (loadMore) {
+    loadMore.disabled = true
+    loadMore.textContent = '加载中…'
+  }
+  const current = Number(page.dataset.journeyVisible || JOURNEY_TIMELINE_PAGE_SIZE) || JOURNEY_TIMELINE_PAGE_SIZE
+  const next = Math.min(history.length, current + JOURNEY_TIMELINE_LOAD_MORE)
+  page.dataset.journeyVisible = String(next)
   renderJourney(root, history)
+  return { loaded: next > current, exhausted: next >= history.length }
 }
 
 function weekdayLabel(date: string) {
