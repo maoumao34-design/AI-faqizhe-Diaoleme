@@ -2,11 +2,6 @@ import { useUserStore, type ReportRecord } from '../../store/UserStore'
 import { showPage } from './navigation'
 import { escapeHtml, setHtml } from './ui'
 
-function formatShortDate(date: string) {
-  const [y, m, d] = date.split('-')
-  return `${m}/${d}`
-}
-
 /** Scan「最近扫描记录」每页条数（AIFA-88）；布局按此固定 4 槽，不足时占位不塌 */
 export const SCAN_RECORD_PAGE_SIZE = 4
 
@@ -47,36 +42,6 @@ export function groupReportsByDay(records: ReportRecord[]) {
   }, {})
 }
 
-function buildJourneyMilestones(records: ReportRecord[], groupedDays: Record<string, ReportRecord[]>) {
-  const days = Object.keys(groupedDays).sort().reverse()
-  if (!records.length) {
-    return [
-      { icon: '📷', title: '等待首次扫描', note: '点击去 Scan 上传', date: '' },
-      { icon: '🌱', title: '报告会自动保存', note: '生成后出现在这里', date: '' },
-      { icon: '✨', title: '趋势稍后生成', note: '多次记录后更清晰', date: '' },
-    ]
-  }
-  const best = records.reduce((top, item) => (item.score > top.score ? item : top), records[0])
-  return [
-    { icon: '⚑', title: '开始记录', note: formatShortDate(days[days.length - 1] || records[records.length - 1].date), date: days[days.length - 1] || records[records.length - 1].date },
-    { icon: '📄', title: `${records.length} 份报告`, note: 'Scan 自动沉淀', date: records[0].date },
-    { icon: '⭐', title: '最高状态分', note: `${best.score} 分`, date: best.date },
-    { icon: '🗓', title: `${days.length} 个记录日`, note: '持续观察中', date: days[0] || records[0].date },
-  ]
-}
-
-function buildJourneyHighlights(records: ReportRecord[], groupedDays: Record<string, ReportRecord[]>) {
-  if (!records.length) {
-    return `<div class="item"><span>🌱</span><b>还没有高光<small>完成一次 Scan 后自动生成。</small></b><button class="pill" data-go="scan">去扫描</button></div>`
-  }
-  const latest = records[0]
-  const best = records.reduce((top, item) => (item.score > top.score ? item : top), latest)
-  return [
-    `<div class="item"><span>📄</span><b>最新报告已保存<small>${escapeHtml(latest.title)}</small></b><button class="pill" data-view-report="${escapeHtml(latest.id)}">查看</button></div>`,
-    `<div class="item"><span>⭐</span><b>本月最高状态分<small>${best.score} 分，仅作趣味记录。</small></b><button class="pill" data-view-report="${escapeHtml(best.id)}">打开</button></div>`,
-    `<div class="item"><span>🗓</span><b>${Object.keys(groupedDays).length} 个记录日<small>每次上传都会沉淀到 Journey。</small></b><button class="pill" data-action="open-journey">回看</button></div>`,
-  ].join('')
-}
 
 export function buildTrendBars(records: ReportRecord[]) {
   const values = records.slice(0, 7).reverse().map((item) => Math.max(18, Math.min(96, item.score)))
@@ -153,66 +118,54 @@ function shortenScanSource(label: string) {
 }
 
 export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
+  const page = root.querySelector<HTMLElement>('[data-page="journey"]')
+  if (!page) return
+
+  // AIFA-112: keep final-pages Journey shell (design-reference/19).
+  // Never replace #milestones / #timeline with legacy .milestone / .journey-record markup.
   const groupedDays = groupReportsByDay(history)
-  const latest = history.slice(0, 4)
-  const avg = history.length ? Math.round(history.reduce((sum, item) => sum + item.score, 0) / history.length) : null
+  const dayCount = Object.keys(groupedDays).length
   const streak = useUserStore.getState().checkinDays.length
+  const points = useUserStore.getState().points
 
-  setHtml(root.querySelector('#milestones'), buildJourneyMilestones(history, groupedDays).map((m) => `
-    <button class="milestone" ${m.date ? `data-view-day="${escapeHtml(m.date)}"` : 'data-go="scan"'}>
-      <div class="dot">${m.icon}</div>${escapeHtml(m.title)}<br><small>${escapeHtml(m.note)}</small>
-    </button>
-  `).join(''))
+  const metrics = page.querySelectorAll<HTMLElement>('.journey-metrics strong')
+  if (metrics.length >= 3) {
+    // Prefer live Scan/checkin when present; otherwise keep demo placeholders visible.
+    if (dayCount > 0) metrics[0].textContent = String(dayCount)
+    if (points > 0) metrics[1].textContent = points.toLocaleString('en-US')
+    if (streak > 0) metrics[2].textContent = String(streak)
+  }
 
-  setHtml(root.querySelector('#timeline'), latest.length ? latest.map((r, index) => {
-    const delta = typeof r.score_delta === 'number'
-      ? r.score_delta > 0 ? `↑${r.score_delta}` : r.score_delta < 0 ? `↓${Math.abs(r.score_delta)}` : '持平'
-      : null
-    const compareBadge = delta
-      ? `<span class="badge">${escapeHtml(delta)}${typeof r.exp_added === 'number' && r.exp_added > 0 ? ` · +${r.exp_added}XP` : ''}</span>`
-      : (index === 0 ? '<span class="badge">最新</span>' : '')
-    const compareLine = delta && r.prev_title
-      ? `<small>对比上一份「${escapeHtml(r.prev_title)}」· ${escapeHtml(r.summary)}</small>`
-      : `<small>${escapeHtml(r.summary)}</small>`
-    return `
-    <div class="item journey-record">
-      <span>${escapeHtml(formatShortDate(r.date))}</span>
-      <b>${escapeHtml(r.title)}${compareLine}</b>
-      <span class="status">${r.score} 分</span>
-      <button class="pill primary" data-view-report="${escapeHtml(r.id)}">查看报告</button>
-      <button class="pill" data-share-report="${escapeHtml(r.id)}">分享到社区</button>
-      ${compareBadge}
-    </div>
-  `
-  }).join('') : `
-    <div class="item journey-empty">
-      <span>📷</span>
-      <b>还没有旅程记录<small>完成一次 Scan 上传后，你的趣味报告和历史对比会自动出现在这里。</small></b>
-      <button class="pill primary" data-go="scan">去上传第一张</button>
-    </div>
-  `)
+  const timeline = page.querySelector<HTMLElement>('#timeline')
+  if (timeline && history.length) {
+    const liveRows = history.slice(0, 6).map((r, index) => {
+      const xp = typeof r.exp_added === 'number' && r.exp_added > 0 ? `+${r.exp_added} XP` : `${r.score} 分`
+      const rewardClass = typeof r.score_delta === 'number' && r.score_delta > 0 ? 'timeline-reward green' : 'timeline-reward'
+      const icon = timelineIconForReport(r)
+      const [y, m, d] = r.date.split('-')
+      const weekday = weekdayLabel(r.date)
+      return `<article class="timeline-row-new${index === 0 ? ' selected' : ''}" data-view-report="${escapeHtml(r.id)}"><div class="timeline-date"><b>${escapeHtml(`${m}/${d}`)}</b><small>${escapeHtml(weekday)}</small></div><img src="${escapeHtml(icon)}" alt=""><div class="timeline-copy"><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.summary)}</small></div><span class="${rewardClass}">${escapeHtml(xp)}</span></article>`
+    }).join('')
+    setHtml(timeline, liveRows)
+  }
+}
 
-  setHtml(root.querySelector('[data-page="journey"] aside .card:nth-child(1)'), `
-    <h3>旅程总览</h3>
-    <div class="three grid">
-      <div><span class="big-number">${history.length}</span><br>历史报告</div>
-      <div><span class="big-number">${avg || '--'}</span><br>平均状态分</div>
-      <div><span class="big-number">${streak}</span><br>打卡天数</div>
-    </div>
-    <button class="pill primary" data-go="scan">新增扫描</button>
-  `)
-  setHtml(root.querySelector('[data-page="journey"] aside .card:nth-child(2)'), `
-    <h3>状态趋势</h3>
-    <div class="chart">${buildTrendBars(history)}</div>
-    <p>${history.length ? '根据最近扫描报告生成，只做轻松记录参考。' : '完成一次 Scan 后，这里会显示报告趋势。'}</p>
-  `)
-  setHtml(root.querySelector('[data-page="journey"] aside .card:nth-child(3)'), `
-    <h3>本月高光时刻</h3>
-    <div class="item-list">
-      ${buildJourneyHighlights(history, groupedDays)}
-    </div>
-    <button class="pill" data-action="journey-share">分享到 Community</button>
-  `)
+function timelineIconForReport(r: ReportRecord) {
+  const text = `${r.title} ${r.summary}`.toLowerCase()
+  if (/睡眠|早睡|熬夜|moon/.test(text)) return './assets/journey/icons/timeline-moon.svg'
+  if (/饮食|营养|salad|food/.test(text)) return './assets/journey/icons/timeline-food.svg'
+  if (/连续|打卡|streak/.test(text)) return './assets/journey/icons/timeline-streak.svg'
+  if (/运动|健身|exercise|dumbbell/.test(text)) return './assets/journey/icons/timeline-exercise.svg'
+  if (/头皮|健康|评分|health|drop/.test(text)) return './assets/journey/icons/timeline-health.svg'
+  if (/任务|完成|task|star/.test(text)) return './assets/journey/icons/milestone-task.svg'
+  return './assets/journey/icons/timeline-health.svg'
+}
+
+function weekdayLabel(date: string) {
+  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const dt = new Date(`${date}T12:00:00`)
+  if (Number.isNaN(dt.getTime())) return ''
+  return days[dt.getDay()] || ''
 }
 
 export function openJourney(root: HTMLElement) {
