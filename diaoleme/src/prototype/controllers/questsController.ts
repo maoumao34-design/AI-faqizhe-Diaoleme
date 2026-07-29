@@ -139,10 +139,10 @@ export function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
   const streak = getCheckinStreak(s.checkinDays)
 
   setHtml(
-    root.querySelector('[data-page="quests"] .tabs'),
+    root.querySelector('[data-page="quests"] .quest-tabs-new'),
     QUEST_CATEGORIES.map(
       (category) =>
-        `<button class="pill ${category === activeCategory ? 'primary active' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`,
+        `<button type="button" class="quest-tab${category === activeCategory ? ' is-active' : ''}" data-quest-category="${category}">${CATEGORY_LABELS[category]}</button>`,
     ).join(''),
   )
   setHtml(
