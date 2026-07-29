@@ -134,10 +134,10 @@ export function renderJourney(root: HTMLElement, history: ReportRecord[]) {
 
   const metrics = page.querySelectorAll<HTMLElement>('.journey-metrics strong')
   if (metrics.length >= 3) {
-    // Always show live store stats so share/overview never disagree with demo placeholders.
-    metrics[0].textContent = String(dayCount)
-    metrics[1].textContent = points.toLocaleString('en-US')
-    metrics[2].textContent = String(streak)
+    // Keep design demo (32 / 1,620 / 12) until real Scan/checkin data exists.
+    if (dayCount > 0) metrics[0].textContent = String(dayCount)
+    if (points > 0) metrics[1].textContent = points.toLocaleString('en-US')
+    if (streak > 0) metrics[2].textContent = String(streak)
   }
 
   const requested = Number(page.dataset.journeyVisible || JOURNEY_TIMELINE_PAGE_SIZE) || JOURNEY_TIMELINE_PAGE_SIZE
