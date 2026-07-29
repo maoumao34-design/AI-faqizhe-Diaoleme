@@ -553,6 +553,32 @@ function buildDiaryMoodStats(entries: DiaryDayEntry[]) {
   }
 }
 
+const DIARY_CLOUD_LEXICON = [
+  '护理', '头皮按摩', '睡眠', '营养', '运动', '心情', '焦虑',
+  '黑芝麻', '早睡', '坚持', '生发', '洗头', '放松', '喝水',
+  '阳光', '冥想', '梳发', '护发', '头皮', '日记', '打卡',
+  '平静', '开心', '疲惫', '按摩', '清爽', '成长',
+]
+
+function buildDiaryCloudWords(history: ReportRecord[]): string[] {
+  const counts = new Map<string, number>()
+  const bump = (raw: string, weight = 1) => {
+    const word = String(raw || '').trim()
+    if (!word || word.length > 8) return
+    counts.set(word, (counts.get(word) || 0) + weight)
+  }
+  for (const report of history) {
+    for (const tag of report.tags || []) bump(tag, 3)
+    const blob = `${report.title || ''} ${report.summary || ''}`
+    for (const word of DIARY_CLOUD_LEXICON) {
+      if (blob.includes(word)) bump(word, 1)
+    }
+  }
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([word]) => word)
+  return [...new Set([...ranked, ...DIARY_CLOUD_LEXICON])].slice(0, 16)
+}
+
+
 function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibleCount = 6) {
   const history = useUserStore.getState().reportHistory
   const allEntries = buildDiaryDayEntries(history)
@@ -581,6 +607,10 @@ function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibl
     setHtml(root.querySelector('#diaryFeedTitle'), `共 24 篇日记　　<small>最新在前⌄</small>`)
     const loadMore = root.querySelector<HTMLButtonElement>('#diaryLoadMore')
     if (loadMore) loadMore.hidden = false
+    setHtml(
+      root.querySelector('[data-page="diary"] .keyword-card .word-cloud'),
+      buildDiaryCloudWords([]).map((w) => `<span>${escapeHtml(w)}</span>`).join(''),
+    )
     return
   }
 
@@ -630,10 +660,8 @@ function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibl
     loadMore.textContent = `加载更多日记　⌄`
   }
 
-  // Preserve final-pages trend chart markup; only refresh keyword chips + memory copy.
-  const preferredOrder = ['护理', '头皮按摩', '睡眠', '营养', '运动', '心情', '焦虑']
-  const fromHistory = history.flatMap((r) => r.tags)
-  const cloudWords = [...new Set([...preferredOrder.filter((w) => fromHistory.includes(w)), ...fromHistory, ...preferredOrder])].slice(0, 7)
+  // Preserve final-pages trend chart markup; refresh keyword cloud (up to 16 words).
+  const cloudWords = buildDiaryCloudWords(history)
   setHtml(root.querySelector('[data-page="diary"] .keyword-card .word-cloud'), cloudWords.map((w) => `<span>${escapeHtml(w)}</span>`).join(''))
 
   const memory = allEntries.find((entry) => entry.mood.key === 'happy') || allEntries[allEntries.length - 1]
