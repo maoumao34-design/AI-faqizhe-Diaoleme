@@ -1070,20 +1070,25 @@ function renderProfile(root: HTMLElement) {
   const streak = getCheckinStreak(s.checkinDays)
   const historyDays = new Set(s.reportHistory.map((item) => item.date)).size
   const weekDays = getCurrentWeekDays()
-  setHtml(
-    root.querySelector('#streak'),
-    weekDays.map(({ label, key }, index) => {
-      const done = s.checkinDays.includes(key)
-      const mark = done ? '✓' : index === 6 ? '🎁' : label
-      return `<span class="badge">${mark}<br><small>${label}</small></span>`
-    }).join(''),
-  )
+  // AIFA-108: Quests `#streak` is owned by questsController (✓/空/🎁 + weekday outside).
+  // renderProfile must only touch Me-page streak, never clobber Quests side card.
+  const meStreakWeek = root.querySelector<HTMLElement>('[data-page="me"] #streak')
+  if (meStreakWeek) {
+    setHtml(
+      meStreakWeek,
+      weekDays.map(({ label, key }, index) => {
+        const done = s.checkinDays.includes(key)
+        const mark = done ? '✓' : index === 6 ? '🎁' : ''
+        return `<span class="badge${done ? ' done' : index === 6 ? ' gift' : ''}"><b>${mark}</b><small>${label}</small></span>`
+      }).join(''),
+    )
+  }
   const questsStreakDays = root.querySelector<HTMLElement>('[data-quests-streak-days]')
   if (questsStreakDays) questsStreakDays.textContent = `${streak} 天`
   setHtml(root.querySelector('#checkin'), weekDays.map(({ label, key }, index) => {
     const done = s.checkinDays.includes(key)
-    const mark = done ? '✓' : index === 6 ? '🎁' : label
-    return `<span class="badge">${mark}<br><small>${label}</small></span>`
+    const mark = done ? '✓' : index === 6 ? '🎁' : ''
+    return `<span class="badge${done ? ' done' : index === 6 ? ' gift' : ''}"><b>${mark}</b><small>${label}</small></span>`
   }).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 
   const level = getLevelProgress(s.points)

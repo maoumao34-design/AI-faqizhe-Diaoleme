@@ -198,8 +198,10 @@ export function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
     getCurrentWeekDays()
       .map(({ label, key }, index) => {
         const doneDay = s.checkinDays.includes(key)
-        const mark = doneDay ? '✓' : index === 6 ? '🎁' : label
-        return `<span class="${doneDay ? 'done' : index === 6 ? 'gift' : 'pending'}"><b>${mark}</b>${escapeHtml(label)}</span>`
+        // AIFA-108: circle = ✓ / empty / 🎁 only; weekday label always outside below
+        const mark = doneDay ? '✓' : index === 6 ? '🎁' : ''
+        const cls = doneDay ? 'done' : index === 6 ? 'gift' : 'pending'
+        return `<span class="${cls}"><b aria-hidden="true">${mark}</b><small>${escapeHtml(label)}</small></span>`
       })
       .join(''),
   )
@@ -238,15 +240,19 @@ export function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
   }
 
   if (tipCard?.classList.contains('tip-card-new')) {
+    // AIFA-108: locked tip copy (design fig.4) — do not switch to special-tab dense lines
     setHtml(
       tipCard,
       `<h2>任务小贴士</h2>
-      <p><b>${escapeHtml(questTipTitle(activeCategory))}</b></p>
-      <p>${escapeHtml(questTip(activeCategory))}</p>
+      <p class="tip-lead"><b>定期护理 + 健康生活习惯 = 健康的头发！</b></p>
+      <p class="tip-body">保持好心情，规律作息，均衡饮食，<br>你的头发会越来越喜欢你哦～</p>
       <img class="tip-mascot" src="${MASCOT_SITTING}" alt="">`,
     )
   } else {
-    setHtml(tipCard, `<h3>任务小贴士</h3><p>${escapeHtml(questTip(activeCategory))}</p><div class="mini-buddy"></div>`)
+    setHtml(
+      tipCard,
+      `<h3>任务小贴士</h3><p>定期护理 + 健康生活习惯 = 健康的头发！保持好心情，规律作息，均衡饮食，你的头发会越来越喜欢你哦～</p><div class="mini-buddy"></div>`,
+    )
   }
 
   if (overviewCard?.classList.contains('overview-card-new')) {
