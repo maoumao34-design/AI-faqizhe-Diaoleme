@@ -92,43 +92,9 @@ document.querySelector(".small-leaders").innerHTML = leaders
 // AIFA-104: do NOT overwrite #skins here — Buddy hydrate owns .hair-item + hairstyle images.
 // Legacy empty .mini-buddy skin rail caused missing Buddy hair previews.
 
-const questListRoot = document.querySelector("#questList");
-if (questListRoot) {
-  questListRoot.innerHTML =
-    quests
-      .map(
-        (q, i) =>
-          \`<div class="item"><span style="font-size:26px">\${q[0]}</span><b>\${q[1]}<small>\${q[2]}</small></b><span>\${q[3]}</span><button class="quest-btn \${q[4] === "已完成" ? "done" : ""}">\${q[4] === "已完成" ? "✓ 已完成" : "去完成"}</button></div>\`
-      )
-      .join("") +
-    \`<div class="item" style="background:rgba(139,92,246,.1)"><span>⭐</span><b>完成所有每日任务可获得额外奖励！</b><span>+100 XP</span><button class="quest-btn done">未完成</button></div>\`;
-
-  questListRoot.addEventListener("click", (event) => {
-    const btn = event.target.closest(".quest-btn");
-    if (!btn || btn.classList.contains("done")) return;
-    btn.classList.add("done");
-    btn.textContent = "✓ 已完成";
-  });
-}
-
-const weekRewardsRoot = document.querySelector("#weekRewards");
-if (weekRewardsRoot) {
-  weekRewardsRoot.innerHTML = ["一", "二", "三", "四", "五", "六", "日"]
-    .map(
-      (d, i) =>
-        \`<span class="badge">\${i < 2 ? "✓" : d}<br><small>+\${i < 5 ? 10 + i * 5 : 25} XP</small></span>\`
-    )
-    .join("");
-}
-const streakRoot = document.querySelector("#streak");
-if (streakRoot) {
-  streakRoot.innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
-    .map(
-      (d, i) =>
-        \`<span class="badge">\${i < 6 ? "✓" : "🎁"}<br><small>\${d}</small></span>\`
-    )
-    .join("");
-}
+// AIFA-108: do NOT overwrite #questList / #weekRewards / #streak here.
+// questsController.renderTasks owns Quests list + week rewards + streak;
+// legacy .item markup here caused duplicate bonus bars and layout overlap on live.
 const checkinRoot = document.querySelector("#checkin");
 if (checkinRoot) {
   checkinRoot.innerHTML = [" 一 ", " 二 ", " 三 ", " 四 ", " 五 ", " 六 ", " 日 "]
