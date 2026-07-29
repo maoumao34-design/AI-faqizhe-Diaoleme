@@ -27,3 +27,11 @@ B) 允许用现有 Diary/Scan 样图占位
 C) demo 阶段永久省略
 
 成就徽章目前为 CSS 六边形 + 星标，非设计系统切图（仓库无 Me 成就切图）。
+
+
+## Live Pages
+
+- URL: https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/
+- Bundle: `index-D1d0uC8q.js` + `index-R_oGqsss.css`
+- Screenshots: `live-me-viewport.png` / `live-me-full.png`
+- 未推 aihpj Pages（保留 108/112/113/115 合并包）
