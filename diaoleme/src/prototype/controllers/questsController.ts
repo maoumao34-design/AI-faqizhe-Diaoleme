@@ -193,14 +193,16 @@ export function renderTasks(root: HTMLElement, activeCategory: QuestCategory) {
     if (questsStreakDays) questsStreakDays.textContent = `${streak} 天`
   }
 
+  // AIFA-108: Mon–Sat pending = unique dessert emoji; Sun = 🎁; done Mon–Sat = ✓
+  const STREAK_PENDING_MARKS = ['🍬', '🧁', '🍪', '🍩', '🍦', '🍰', '🎁'] as const
   setHtml(
     root.querySelector('#streak'),
     getCurrentWeekDays()
       .map(({ label, key }, index) => {
         const doneDay = s.checkinDays.includes(key)
-        // AIFA-108: circle = ✓ / empty / 🎁 only; weekday label always outside below
-        const mark = doneDay ? '✓' : index === 6 ? '🎁' : ''
-        const cls = doneDay ? 'done' : index === 6 ? 'gift' : 'pending'
+        const isGiftDay = index === 6
+        const mark = isGiftDay ? '🎁' : doneDay ? '✓' : (STREAK_PENDING_MARKS[index] ?? '🍬')
+        const cls = doneDay && !isGiftDay ? 'done' : isGiftDay ? 'gift' : 'pending'
         return `<span class="${cls}"><b aria-hidden="true">${mark}</b><small>${escapeHtml(label)}</small></span>`
       })
       .join(''),
