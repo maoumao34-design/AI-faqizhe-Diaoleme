@@ -437,12 +437,21 @@ function diaryThumbFor(moodKey: DiaryDayEntry['mood']['key'], tags: string[]) {
   return { emoji: '🕯️', tone: 'warm', src: './assets/shared-brand/brand-avatar-tile.png' }
 }
 
-function diaryMoodIconSrc(moodKey: DiaryDayEntry['mood']['key']) {
+function diaryMoodIconSrc(moodKey: DiaryDayEntry['mood']['key'] | 'all') {
+  if (moodKey === 'all') return './assets/diary/icons/mood-all.svg'
   if (moodKey === 'happy') return './assets/diary/icons/mood-happy.svg'
   if (moodKey === 'calm') return './assets/diary/icons/mood-calm.svg'
   if (moodKey === 'anxious') return './assets/diary/icons/mood-anxious.svg'
   return './assets/diary/icons/mood-tired.svg'
 }
+
+const DIARY_MOOD_FILTERS: Array<{ key: DiaryMoodKey; label: string }> = [
+  { key: 'all', label: '全部' },
+  { key: 'happy', label: '开心' },
+  { key: 'calm', label: '平静' },
+  { key: 'anxious', label: '焦虑' },
+  { key: 'tired', label: '疲惫' },
+]
 
 const COMMUNITY_AVATAR_FALLBACK = publicAssetUrl('assets/shared-brand/brand-avatar-tile.png')
 /** AIFA-99：小体积角色头像放 assets/community/avatars（~25KB），避免根目录 1MB+ league-avatars 加载失败显空紫块 */
@@ -542,60 +551,52 @@ function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibl
   const filtered = activeMood === 'all' ? allEntries : allEntries.filter((entry) => entry.mood.key === activeMood)
   const visible = filtered.slice(0, visibleCount)
   const latestEntry = allEntries[0]
-  const suggestion = buildLocalDiaryAdvice(history)
   const moodStats = buildDiaryMoodStats(allEntries)
-  const todayMood = latestEntry?.mood || { key: 'calm' as const, label: '平静', emoji: '😊' }
+  const todayMood = latestEntry?.mood || { key: 'happy' as const, label: '开心', emoji: '😊' }
 
-  // Keep final-pages hero shell; only refresh date/mood + advice line.
-  const hero = root.querySelector<HTMLElement>('[data-page="diary"] .diary-hero-new, [data-page="diary"] .card.hero')
-  if (hero) {
-    const dateMood = hero.querySelector('.date-mood')
-    if (dateMood) {
-      dateMood.innerHTML = `<span>${latestEntry ? formatDiaryWeekday(latestEntry.date) : '等待第一篇'}</span><span>${todayMood.emoji} ${todayMood.label}　⌄</span>`
-    } else {
-      setHtml(hero, `
-        <h2>今天也要好好爱自己呀 ✨</h2>
-        <p>每一根头发都在努力生长，<br>你也是！</p>
-        <div class="date-mood"><span>${latestEntry ? formatDiaryWeekday(latestEntry.date) : '等待第一篇'}</span><span>${todayMood.emoji} ${todayMood.label}　⌄</span></div>
-        <p class="diary-hero-advice"><b>智能建议：</b>${escapeHtml(suggestion)}</p>
-      `)
-    }
+  // AIFA-113: only touch .date-mood — never replace .diary-hero-new (design-ref/12 banner).
+  const hero = root.querySelector<HTMLElement>('[data-page="diary"] .diary-hero-new')
+  const dateMood = hero?.querySelector('.date-mood')
+  if (dateMood) {
+    dateMood.innerHTML = `<span>${latestEntry ? formatDiaryWeekday(latestEntry.date) : '5月18日 · 星期日'}</span><span>${todayMood.emoji} ${todayMood.label}　⌄</span>`
   }
 
-  setHtml(root.querySelector('#calendar'), buildDiaryCalendar(history))
   setHtml(
     root.querySelector('#diaryMoodFilters'),
-    [
-      ['all', '⊕'],
-      ['happy', '😊'],
-      ['calm', '😌'],
-      ['anxious', '😟'],
-      ['tired', '😴'],
-    ].map(([key, label]) => `<button class="${activeMood === key ? 'active' : ''}" data-diary-mood="${key}">${label}</button>`).join(''),
+    DIARY_MOOD_FILTERS.map(({ key, label }) => (
+      `<button class="${activeMood === key ? 'active' : ''}" data-diary-mood="${key}" type="button"><img src="${escapeHtml(diaryMoodIconSrc(key))}" alt=""><small>${label}</small></button>`
+    )).join(''),
   )
 
-  const happyEnd = moodStats.percents.happy
-  const calmEnd = happyEnd + moodStats.percents.calm
-  const anxiousEnd = calmEnd + moodStats.percents.anxious
-  const donut = root.querySelector<HTMLElement>('#diaryMoodDonut')
-  if (donut) {
-    donut.dataset.label = `${allEntries.length}\n篇日记`
-    donut.style.background = allEntries.length
-      ? `conic-gradient(#65c982 0 ${happyEnd}%, #8b5cf6 ${happyEnd}% ${calmEnd}%, #c4b5fd ${calmEnd}% ${anxiousEnd}%, #f59e0b ${anxiousEnd}% 100%)`
-      : 'conic-gradient(#e8e4f8 0 100%)'
-  }
-  setHtml(
-    root.querySelector('#diaryMoodLegend'),
-    `<li><span>🟢 开心</span><b>${moodStats.percents.happy}%</b></li><li><span>🟣 平静</span><b>${moodStats.percents.calm}%</b></li><li><span>🟪 疲惫</span><b>${moodStats.percents.tired}%</b></li><li><span>🟠 焦虑</span><b>${moodStats.percents.anxious}%</b></li>`,
-  )
-
-  // No Scan history yet: keep final-pages demo list so Diary still shows the new skin.
+  // No Scan history: keep design-ref demo calendar/list/donut/side rail (do not rehydrate to live month).
   if (allEntries.length === 0) {
-    setHtml(root.querySelector('#diaryFeedTitle'), `共 5 篇日记　　<small>最新在前⌄</small>`)
+    setHtml(root.querySelector('#diaryFeedTitle'), `共 24 篇日记　　<small>最新在前⌄</small>`)
     const loadMore = root.querySelector<HTMLButtonElement>('#diaryLoadMore')
     if (loadMore) loadMore.hidden = false
     return
   }
+
+  const calendarTitle = root.querySelector('#diaryCalendarTitle')
+  if (calendarTitle) {
+    const now = new Date()
+    const monthName = now.toLocaleString('en-US', { month: 'long' })
+    calendarTitle.textContent = `‹　 ${monthName} ${now.getFullYear()}　 ›`
+  }
+  setHtml(root.querySelector('#calendar'), buildDiaryCalendar(history, allEntries))
+
+  const happyEnd = moodStats.percents.happy
+  const calmEnd = happyEnd + moodStats.percents.calm
+  const tiredEnd = calmEnd + moodStats.percents.tired
+  const anxiousEnd = tiredEnd + moodStats.percents.anxious
+  const donut = root.querySelector<HTMLElement>('#diaryMoodDonut')
+  if (donut) {
+    donut.dataset.label = `${allEntries.length}\n篇日记`
+    donut.style.background = `conic-gradient(#65c982 0 ${happyEnd}%, #8b5cf6 ${happyEnd}% ${calmEnd}%, #d37ae7 ${calmEnd}% ${tiredEnd}%, #f59e0b ${tiredEnd}% ${anxiousEnd}%, #aeb6d0 ${anxiousEnd}% 100%)`
+  }
+  setHtml(
+    root.querySelector('#diaryMoodLegend'),
+    `<li><span>🟢 开心</span><b>${moodStats.percents.happy}%</b></li><li><span>🟣 平静</span><b>${moodStats.percents.calm}%</b></li><li><span>🟪 疲惫</span><b>${moodStats.percents.tired}%</b></li><li><span>🟠 焦虑</span><b>${moodStats.percents.anxious}%</b></li><li><span>⚪ 其他</span><b>${Math.max(0, 100 - happyEnd - moodStats.percents.calm - moodStats.percents.tired - moodStats.percents.anxious)}%</b></li>`,
+  )
 
   setHtml(root.querySelector('#diaryFeedTitle'), `共 ${filtered.length} 篇日记　　<small>最新在前⌄</small>`)
   setHtml(
@@ -606,7 +607,7 @@ function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibl
           const month = Number(entry.date.slice(5, 7))
           return `<article class="diary-row-new" data-view-day="${escapeHtml(entry.date)}" role="button" tabindex="0">
             <div class="diary-date"><strong>${escapeHtml(day)}</strong><small>${month}月</small></div>
-            <img class="mood-icon" src="${escapeHtml(diaryMoodIconSrc(entry.mood.key))}" alt="${escapeHtml(entry.mood.label)}">
+            <div class="diary-mood-col"><img class="mood-icon" src="${escapeHtml(diaryMoodIconSrc(entry.mood.key))}" alt="${escapeHtml(entry.mood.label)}"><small class="mood-label">${escapeHtml(entry.mood.label)}</small></div>
             <div class="diary-copy"><b>${escapeHtml(entry.title)}</b><p>${escapeHtml(entry.snippet)}</p></div>
             <img class="diary-thumb" src="${escapeHtml(entry.thumbSrc)}" alt="">
             <button class="diary-menu" type="button" data-view-report="${escapeHtml(entry.primaryReportId)}" title="查看当天报告">•••</button>
@@ -621,18 +622,20 @@ function renderDiary(root: HTMLElement, activeMood: DiaryMoodKey = 'all', visibl
     loadMore.textContent = `加载更多日记　⌄`
   }
 
-  // Preserve final-pages SVG trend card; only refresh keyword chips + memory.
-  const words = history.flatMap((r) => r.tags).slice(0, 8)
-  const cloudWords = words.length ? words : ['头皮按摩', '睡眠', '护理', '营养', '黑芝麻', '焦虑']
+  // Preserve final-pages trend chart markup; only refresh keyword chips + memory copy.
+  const preferredOrder = ['护理', '头皮按摩', '睡眠', '营养', '运动', '心情', '焦虑']
+  const fromHistory = history.flatMap((r) => r.tags)
+  const cloudWords = [...new Set([...preferredOrder.filter((w) => fromHistory.includes(w)), ...fromHistory, ...preferredOrder])].slice(0, 7)
   setHtml(root.querySelector('[data-page="diary"] .keyword-card .word-cloud'), cloudWords.map((w) => `<span>${escapeHtml(w)}</span>`).join(''))
 
   const memory = allEntries.find((entry) => entry.mood.key === 'happy') || allEntries[allEntries.length - 1]
-  setHtml(
-    root.querySelector('#diaryMemoryCard'),
-    memory
-      ? `<h2>回忆精选　<small>更多回忆 ›</small></h2><div class="memory-image"><img src="${escapeHtml(memory.thumbSrc)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:16px"></div><blockquote>“${escapeHtml(memory.snippet.slice(0, 48))}…”　💗</blockquote>`
-      : `<h2>回忆精选　<small>更多回忆 ›</small></h2><div class="memory-image">第一篇日记 ⚡</div><blockquote>“希望通过记录，找到适合自己的护发方法，让头发健康起来～”　💗</blockquote>`,
-  )
+  const memoryCard = root.querySelector('#diaryMemoryCard')
+  if (memoryCard && memory) {
+    setHtml(
+      memoryCard,
+      `<h2>回忆精选　<small>更多回忆 ›</small></h2><div class="memory-image" style="background-image:url('${escapeHtml(memory.thumbSrc)}')"><span>第一篇日记 ⚡</span></div><blockquote>“${escapeHtml(memory.snippet.slice(0, 48))}…”　💗</blockquote>`,
+    )
+  }
 }
 
 function formatDiaryWeekday(date: string) {
@@ -840,7 +843,8 @@ function toggleCommunityLike(id: string) {
   localStorage.setItem('diaoleme-community-likes', JSON.stringify([...liked]))
 }
 
-function buildDiaryCalendar(records: ReportRecord[]) {
+function buildDiaryCalendar(records: ReportRecord[], entries: DiaryDayEntry[] = []) {
+  const moodByDate = new Map(entries.map((entry) => [entry.date, entry.mood.key]))
   const marked = new Map<string, ReportRecord>()
   records.forEach((record) => {
     if (!marked.has(record.date)) marked.set(record.date, record)
@@ -859,8 +863,19 @@ function buildDiaryCalendar(records: ReportRecord[]) {
   for (let day = 1; day <= daysInMonth; day += 1) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const rec = marked.get(date)
-    const cls = rec ? 'selected diary-record-day' : date === todayKey() ? 'today' : ''
-    const attrs = rec ? ` class="${cls}" data-view-day="${escapeHtml(date)}" role="button" tabindex="0" title="${rec.score} 分 ${escapeHtml(rec.title)}"` : cls ? ` class="${cls}"` : ''
+    const moodKey = moodByDate.get(date)
+    const selected = date === todayKey() || Boolean(rec && date === entries[0]?.date)
+    const classes = [
+      rec || moodKey ? 'has-mood' : '',
+      moodKey ? `mood-${moodKey}` : '',
+      selected ? 'selected' : '',
+      date === todayKey() ? 'today' : '',
+    ].filter(Boolean).join(' ')
+    const attrs = rec
+      ? ` class="${classes}" data-view-day="${escapeHtml(date)}" role="button" tabindex="0" title="${rec.score} 分 ${escapeHtml(rec.title)}"`
+      : classes
+        ? ` class="${classes}"`
+        : ''
     cells.push(`<span${attrs}>${day}</span>`)
   }
   const remainder = (cells.length % 7 === 0) ? 0 : 7 - (cells.length % 7)
