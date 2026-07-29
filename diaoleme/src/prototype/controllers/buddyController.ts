@@ -140,6 +140,27 @@ export function renderBuddyHairStyles(root: HTMLElement) {
   setHtml(root.querySelector('#skins'), items + placeholders)
 }
 
+/** Resolve Buddy「使用中」发型对应素材（与换装轨同一套，供 FAB 共用）。 */
+export function hairVisualSrc(hairId: string): string {
+  return (HAIR_VISUAL[hairId] || HAIR_VISUAL.none).img
+}
+
+/** Sync cross-page AI 助手 FAB avatar to current Buddy hairstyle (AIFA-110). */
+export function syncAssistantFabAvatar(hairId?: string) {
+  const list = useUserStore.getState().unlockedHairStyles
+  const id =
+    hairId ||
+    (() => {
+      const saved = localStorage.getItem(selectedHairStyleKey())
+      if (saved && list.includes(saved)) return saved
+      return list[list.length - 1] || HAIRSTYLE_CATALOG[0]?.id || 'none'
+    })()
+  const src = hairVisualSrc(id)
+  document.querySelectorAll<HTMLImageElement>('.ai-chat-bubble img').forEach((img) => {
+    if (img.getAttribute('src') !== src) img.src = src
+  })
+}
+
 function applySelectedHairToHero(root: HTMLElement, hairId: string) {
   const visual = HAIR_VISUAL[hairId] || HAIR_VISUAL.none
   const hero = root.querySelector<HTMLImageElement>('[data-page="buddy"] .buddy-character')
@@ -152,6 +173,8 @@ function applySelectedHairToHero(root: HTMLElement, hairId: string) {
     // Prefer full hero for default; for unlocked styles keep hero body (design).
     hero.src = './assets/buddy/buddy-hero.png'
   }
+  // AIFA-110: FAB must mirror「使用中」造型 across pages (and after hard refresh via localStorage).
+  syncAssistantFabAvatar(hairId)
 }
 
 export function handleBuddyAction(action: string, root: HTMLElement, todayKey: () => string) {
@@ -183,15 +206,20 @@ export function handleBuddyAction(action: string, root: HTMLElement, todayKey: (
   }
 }
 
-export function selectHairStyle(id: string) {
+function persistHairStyle(id: string) {
   localStorage.setItem(selectedHairStyleKey(), id)
+}
+
+export function selectHairStyle(id: string) {
+  persistHairStyle(id)
+  syncAssistantFabAvatar(id)
 }
 
 export function currentHairStyle(unlocked: string[]) {
   const saved = localStorage.getItem(selectedHairStyleKey())
   if (saved && unlocked.includes(saved)) return saved
   const fallback = unlocked[unlocked.length - 1] || HAIRSTYLE_CATALOG[0]?.id || 'none'
-  selectHairStyle(fallback)
+  persistHairStyle(fallback)
   return fallback
 }
 

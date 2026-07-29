@@ -6,7 +6,7 @@ import { prototypeBody } from './prototype/PrototypeBody'
 import { prototypeScript } from './prototype/PrototypeScript'
 import { prototypeStyle } from './prototype/PrototypeStyle'
 import './prototype/finalPages.css'
-import { renderBuddy, handleBuddyAction, selectHairStyle } from './prototype/controllers/buddyController'
+import { renderBuddy, handleBuddyAction, selectHairStyle, syncAssistantFabAvatar } from './prototype/controllers/buddyController'
 import { showPage } from './prototype/controllers/navigation'
 import { escapeHtml, publicAssetUrl, setHtml, showToast } from './prototype/controllers/ui'
 import { buildTrendBars, renderHistory, renderJourney, groupReportsByDay } from './prototype/controllers/journeyController'
@@ -900,6 +900,8 @@ function attachChatAssistant(root: HTMLElement) {
   `
   // Mount on body so app shell overflow never clips the fixed panel.
   document.body.appendChild(widget)
+  // AIFA-110: seed FAB with Buddy「使用中」发型（localStorage），跨页/硬刷一致。
+  syncAssistantFabAvatar()
   const bubble = widget.querySelector<HTMLButtonElement>('.ai-chat-bubble')!
   const form = widget.querySelector<HTMLFormElement>('[data-chat-form]')!
   const input = widget.querySelector<HTMLInputElement>('[data-chat-input]')!
