@@ -150,7 +150,7 @@ export function hairVisualSrc(hairId: string): string {
   return (HAIR_VISUAL[hairId] || HAIR_VISUAL.none).img
 }
 
-/** Sync cross-page AI 助手 FAB avatar to current Buddy hairstyle (AIFA-110). */
+/** Sync AI 助手 FAB + 面板标题头像 to Buddy「使用中」发型（AIFA-110 / AIFA-115 同源）。 */
 export function syncAssistantFabAvatar(hairId?: string) {
   const list = useUserStore.getState().unlockedHairStyles
   const id =
@@ -161,9 +161,11 @@ export function syncAssistantFabAvatar(hairId?: string) {
       return list[list.length - 1] || HAIRSTYLE_CATALOG[0]?.id || 'none'
     })()
   const src = hairVisualSrc(id)
-  document.querySelectorAll<HTMLImageElement>('.ai-chat-bubble img').forEach((img) => {
-    if (img.getAttribute('src') !== src) img.src = src
-  })
+  document
+    .querySelectorAll<HTMLImageElement>('.ai-chat-bubble img, .ai-chat-header-avatar')
+    .forEach((img) => {
+      if (img.getAttribute('src') !== src) img.src = src
+    })
 }
 
 function applySelectedHairToHero(root: HTMLElement, hairId: string) {
