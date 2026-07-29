@@ -10,7 +10,7 @@ export const buddySection = `<section class="page" data-page="buddy">
                 <div class="buddy-stat"><i>⚡</i><b>能量值</b><strong>68 / 100</strong><div class="buddy-meter"><span style="width:68%;background:#f6a900"></span></div></div>
                 <div class="buddy-stat"><i>☺</i><b>心情值</b><strong>Happy</strong><div class="buddy-meter"><span style="width:60%;background:#8b62e8"></span></div></div>
               </section>
-              <section class="buddy-glass buddy-report"><h3>✦ 今日头发报告</h3><strong class="number">12 <small>根</small></strong><p>大多是健康的毛发，状态很棒！</p><div class="buddy-line-chart"></div><div class="buddy-tip"><b>小提示</b><br><small>记得多喝水和好睡眠，对头发的成长很重要哦！</small><img src="./assets/buddy/buddy-hero.png" alt=""></div></section>
+              <section class="buddy-glass buddy-report"><h3>✦ 今日头发报告</h3><strong class="number">少量</strong><p>大多是健康的毛发，状态很棒！</p><div class="buddy-line-chart"></div><div class="buddy-tip"><b>小提示</b><br><small>记得多喝水和好睡眠，对头发的成长很重要哦！</small><img src="./assets/buddy/buddy-hero.png" alt=""></div></section>
             </section>
             <section class="buddy-lower">
               <div class="buddy-glass hair-card"><h2 class="section-title">✦　解锁发型 <span class="badge">3 / 12 已解锁</span></h2><div class="hair-rail" id="skins">
