@@ -144,6 +144,17 @@ body.journey-page-active .page[data-page="journey"]{min-height:1280px;color:#172
 @media(max-width:1450px){.journey-layout{grid-template-columns:minmax(740px,1fr) 400px}.timeline-row-new{grid-template-columns:105px 65px minmax(200px,1fr) 110px}}
 @media(max-width:1100px){.journey-layout{grid-template-columns:1fr}.journey-side{grid-template-columns:repeat(2,1fr)}.journey-head-actions{display:none}}
 @media(max-width:720px){.journey-shell{padding:20px 12px}.journey-head h1{font-size:30px}.milestone-hero-new{overflow-x:auto}.milestone-nodes-new{width:950px;right:auto}.milestone-curve-svg{width:950px}.journey-timeline{height:auto}.timeline-list-new:before{left:72px}.timeline-row-new{height:auto;min-height:112px;grid-template-columns:80px 56px 1fr}.timeline-row-new:before{left:66px}.timeline-reward{grid-column:3;justify-self:start}.journey-side{grid-template-columns:1fr}}
+/* AIFA-112: design-reference/19 polish */
+.milestone-node small{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:rgba(232,220,255,.88);color:#6b4bc4;font-size:12px;font-weight:700}
+.milestone-node.active small{background:linear-gradient(135deg,#c9a6ff,#8b5cf6);color:#fff}
+.journey-bell{position:relative;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.48);font-size:20px}
+.journey-bell i{position:absolute;top:8px;right:10px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#ff5a7a;color:#fff;font:800 10px/16px sans-serif;font-style:normal;text-align:center}
+.mood-chart-wrap{position:relative;display:grid;grid-template-columns:28px 1fr;gap:6px;align-items:stretch}
+.mood-chart-emojis{display:flex;flex-direction:column;justify-content:space-between;padding:4px 0 22px;font-size:14px;line-height:1}
+.mood-chart-wrap .mood-chart-svg{width:100%;height:150px}
+.mood-chart-dates{grid-column:2;display:flex;justify-content:space-between;padding:0 4px;color:#68729a;font-size:11px;font-weight:700}
+.mood-tooltip{position:absolute;left:58%;top:42px;transform:translateX(-50%);padding:6px 10px;border-radius:12px;background:rgba(255,255,255,.92);box-shadow:0 8px 20px rgba(93,67,145,.16);color:#5b3f9a;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none}
+.highlight-row>div{display:grid;gap:2px}.highlight-row small{margin:0;color:#8054e8;font-size:12px;font-weight:800}.highlight-row b{font-size:14px}.highlight-row span{color:#68729a;font-size:12px}
 
 
 /* === diary-page.css === */
