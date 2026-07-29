@@ -93,8 +93,10 @@ export function renderBuddy(root: HTMLElement, options: BuddyControllerOptions) 
     const number = report.querySelector('.number')
     const p = report.querySelector('p')
     if (number) {
-      const count = latestReport?.count || (s.dropScore != null ? String(Math.max(8, Math.round(120 - (s.dropScore || 0)))) : '12')
-      number.innerHTML = `${escapeHtml(String(count))} <small>根</small>`
+      // AIFA-117: show level word only（少量/中等/偏多）, never append「根」
+      const raw = latestReport?.count
+      const count = raw === '少量' || raw === '中等' || raw === '偏多' ? raw : '少量'
+      number.textContent = count
     }
     if (p) {
       p.textContent = latestReport?.summary || '大多是健康的毛发，状态很棒！'
