@@ -764,36 +764,46 @@ function postsForCommunityTab(tab: CommunityTab): CommunityPost[] {
   return [...posts].sort((a, b) => b.createdAt - a.createdAt)
 }
 
+function readJourneyOverviewStats(): { dayCount: number; points: number; streak: number } {
+  // Prefer numbers currently shown on Journey (demo 32 / 1,620 / 12, or live overrides).
+  const metrics = document.querySelectorAll<HTMLElement>('.journey-metrics strong')
+  const parseMetric = (el: HTMLElement | undefined, fallback: number) => {
+    if (!el) return fallback
+    const n = Number(String(el.textContent || '').replace(/,/g, '').trim())
+    return Number.isFinite(n) ? n : fallback
+  }
+  if (metrics.length >= 3) {
+    return {
+      dayCount: parseMetric(metrics[0], 32),
+      points: parseMetric(metrics[1], 1620),
+      streak: parseMetric(metrics[2], 12),
+    }
+  }
+  return { dayCount: 32, points: 1620, streak: 12 }
+}
+
 function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean; message: string } {
   const s = useUserStore.getState()
   const report = options?.reportId
     ? s.reportHistory.find((item) => item.id === options.reportId)
     : s.reportHistory[0]
-  const dayCount = Object.keys(
-    s.reportHistory.reduce<Record<string, true>>((days, item) => {
-      days[item.date] = true
-      return days
-    }, {}),
-  ).length
-  const streak = s.checkinDays.length
+  const { dayCount, points, streak } = readJourneyOverviewStats()
 
   const existing = loadUserCommunityPosts()
   if (report && existing.some((post) => post.reportId === report.id)) {
-    return { ok: true, message: '已分享到' }
+    return { ok: true, message: '已分享到Community' }
   }
 
   const body = report
     ? (options?.reportId
       ? `我的今日旅程：${report.title}（${report.score} 分）。${report.summary}`
-      : `分享我的护发旅程：已记录 ${dayCount} 天，连续 ${streak} 天，累计 ${s.points} XP。最近一次是「${report.title}」${report.score} 分，${report.summary}`)
-    : (dayCount > 0 || streak > 0 || s.points > 0
-      ? `分享我的护发旅程：已记录 ${dayCount} 天，连续 ${streak} 天，累计 ${s.points} XP，继续轻松坚持～`
-      : '我开始记录护发旅程啦，一起轻松坚持～')
+      : `分享我的护发旅程：已记录 ${dayCount} 天，连续 ${streak} 天，累计 ${points} XP。最近一次是「${report.title}」${report.score} 分，${report.summary}`)
+    : `分享我的护发旅程：已记录 ${dayCount} 天，连续 ${streak} 天，累计 ${points} XP，继续轻松坚持～`
 
   const post: CommunityPost = {
     id: `journey-${Date.now().toString(36)}`,
     name: '我',
-    level: userLevelLabel(s.points),
+    level: userLevelLabel(points),
     body,
     media: '✨',
     avatar: COMMUNITY_ROLE_AVATARS.me,
@@ -807,7 +817,7 @@ function shareJourneyToCommunity(options?: { reportId?: string }): { ok: boolean
     reportId: report?.id,
   }
   saveUserCommunityPosts([post, ...existing])
-  return { ok: true, message: '已分享到' }
+  return { ok: true, message: '已分享到Community' }
 }
 
 function renderCommunity(root: HTMLElement, activeTab: CommunityTab = '最新') {
