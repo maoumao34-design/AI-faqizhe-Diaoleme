@@ -1745,15 +1745,25 @@ if (leadersRoot) {
 
   .scan-percent {
     position: absolute;
-    bottom: 34px;
+    z-index: 5;
     left: 50%;
+    bottom: -16px;
     transform: translateX(-50%);
-    color: white;
-    background: linear-gradient(135deg, #c99aff, #7c5be5);
-    border-radius: 999px;
-    padding: 8px 24px;
-    font-size: 25px;
-    font-weight: 950;
+    min-width: 100px;
+    height: 48px;
+    padding: 0 20px;
+    border-radius: 24px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    line-height: 1;
+    box-sizing: border-box;
+    color: #fff;
+    background: linear-gradient(135deg, #c7a0fa, #8054e8);
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    font-size: 27px;
+    font-weight: 800;
+    box-shadow: 0 10px 24px rgba(106, 63, 204, 0.24);
   }
 
   .feature-stack {
@@ -5624,7 +5634,12 @@ ${zb}`;let i=()=>{};return a.current&&(a.current.innerHTML=_0,new Function(C0)()
   [data-page="scan"] .has-analysis-result .scan-percent {
     bottom: 18px;
     font-size: 18px;
-    padding: 6px 18px;
+    height: 36px;
+    padding: 0 18px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    line-height: 1;
   }
   [data-page="scan"] .has-analysis-result > h3 {
     margin-top: 12px;
