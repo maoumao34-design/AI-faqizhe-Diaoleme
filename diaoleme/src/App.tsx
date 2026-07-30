@@ -4537,10 +4537,10 @@ const integrationStyle = `
     bottom: 18px;
     font-size: 18px;
     height: 36px;
-    padding: 0 18px;
-    display: grid;
-    place-items: center;
-    align-content: center;
+    padding: 0 18px 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
   }
   [data-page="scan"] .has-analysis-result > h3 {

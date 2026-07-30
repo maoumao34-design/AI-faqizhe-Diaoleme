@@ -762,6 +762,7 @@ export const prototypeStyle = `
     }
   }
 
+  /* AIFA-123: pill on ring; flex-center copy + CJK optical nudge */
   .scan-percent {
     position: absolute;
     z-index: 5;
@@ -770,11 +771,11 @@ export const prototypeStyle = `
     transform: translateX(-50%);
     min-width: 100px;
     height: 48px;
-    padding: 0 20px;
+    padding: 0 20px 3px;
     border-radius: 24px;
-    display: grid;
-    place-items: center;
-    align-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
     box-sizing: border-box;
     color: #fff;
