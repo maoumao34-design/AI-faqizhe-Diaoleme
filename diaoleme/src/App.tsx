@@ -317,6 +317,21 @@ function attachPrototypeFeatures(root: HTMLElement) {
         render()
       }
     }
+    const meSoftAction = target.closest<HTMLElement>(
+      '[data-action="me-edit-profile"],[data-action="me-settings"],[data-action="me-notify"],[data-action="me-privacy"],[data-action="me-help"],[data-action="me-add-goal"]',
+    )
+    if (meSoftAction?.dataset.action) {
+      const softMessages: Record<string, string> = {
+        'me-edit-profile': '演示版暂不开放账户编辑，先看看成长数据吧',
+        'me-settings': '演示版暂无更多设置项',
+        'me-notify': '通知设置将在正式版开放',
+        'me-privacy': '隐私设置将在正式版开放',
+        'me-help': '有问题可以找 AI 助手聊聊，或去 Community 看看伙伴～',
+        'me-add-goal': '演示版暂不新增目标，先完成现有小目标吧',
+      }
+      showToast(root, softMessages[meSoftAction.dataset.action] || '演示功能')
+      return
+    }
     if (shareBtn || journeyShareBtn || shareToCommunityBtn) {
       event.preventDefault()
       const shared = shareJourneyToCommunity()
@@ -1138,47 +1153,99 @@ function attachChatAssistant(root: HTMLElement) {
 
 function renderProfile(root: HTMLElement) {
   const s = useUserStore.getState()
-  const checked = s.checkinDays.includes(todayKey())
   const streak = getCheckinStreak(s.checkinDays)
   const historyDays = new Set(s.reportHistory.map((item) => item.date)).size
-  const weekDays = getCurrentWeekDays()
-  // AIFA-108: Quests `#streak` is owned by questsController (✓/空/🎁 + weekday outside).
-  // renderProfile must only touch Me-page streak, never clobber Quests side card.
-  const meStreakWeek = root.querySelector<HTMLElement>('[data-page="me"] #streak')
-  if (meStreakWeek) {
-    setHtml(
-      meStreakWeek,
-      weekDays.map(({ label, key }, index) => {
-        const done = s.checkinDays.includes(key)
-        const mark = done ? '✓' : index === 6 ? '🎁' : ''
-        return `<span class="badge${done ? ' done' : index === 6 ? ' gift' : ''}"><b>${mark}</b><small>${label}</small></span>`
-      }).join(''),
-    )
-  }
+  // AIFA-108/114: do NOT overwrite Quests #streak / legacy #checkin here.
+  // questsController owns #streak; Rewards uses #rewardsCheckin.
   const questsStreakDays = root.querySelector<HTMLElement>('[data-quests-streak-days]')
   if (questsStreakDays) questsStreakDays.textContent = `${streak} 天`
-  setHtml(root.querySelector('#checkin'), weekDays.map(({ label, key }, index) => {
-    const done = s.checkinDays.includes(key)
-    const mark = done ? '✓' : index === 6 ? '🎁' : ''
-    return `<span class="badge${done ? ' done' : index === 6 ? ' gift' : ''}"><b>${mark}</b><small>${label}</small></span>`
-  }).join('') + `<button class="pill ${checked ? '' : 'primary'}" data-action="checkin">${checked ? '今日已打卡' : '今日打卡 +5'}</button><button class="pill" data-action="reset-progress">重置</button>`)
 
-  const growth = getSharedGrowthStats()
-  const level = getLevelProgress(growth.points)
+  const level = getLevelProgress(s.points)
+  const scanCount = s.reportHistory.length
+  const avg = avgScore(s.reportHistory)
+  const taskDone = Math.min(20, Math.max(s.checkinDays.length, Math.floor(s.points / 40)))
   const mePoints = root.querySelector<HTMLElement>('[data-me-points]')
   const meStreak = root.querySelector<HTMLElement>('[data-me-streak]')
   const meHistoryDays = root.querySelector<HTMLElement>('[data-me-history-days]')
   const meTotalXp = root.querySelector<HTMLElement>('[data-me-total-xp]')
-  const meStreakCount = root.querySelector<HTMLElement>('[data-me-streak-count]')
-  const meLevelBadge = root.querySelector<HTMLElement>('[data-me-level-badge]')
+  const meStreakCount = root.querySelectorAll<HTMLElement>('[data-me-streak-count]')
+  const meLevelBadge = root.querySelectorAll<HTMLElement>('[data-me-level-badge]')
+  const meLevelHex = root.querySelector<HTMLElement>('[data-me-level-hex]')
   const meNavLevel = root.querySelector<HTMLElement>('[data-me-level]')
-  if (mePoints) mePoints.textContent = `${growth.points.toLocaleString('en-US')} XP`
-  if (meStreak) meStreak.textContent = `连续 ${growth.streak} 天`
-  if (meHistoryDays) meHistoryDays.textContent = String(growth.dayCount)
-  if (meTotalXp) meTotalXp.textContent = growth.points.toLocaleString('en-US')
-  if (meStreakCount) meStreakCount.textContent = String(growth.streak)
-  if (meLevelBadge) meLevelBadge.textContent = `Lv.${level.level}`
+  const meXpLabel = root.querySelector<HTMLElement>('[data-me-xp-label]')
+  const meXpNeed = root.querySelector<HTMLElement>('[data-me-xp-need]')
+  const meXpFill = root.querySelector<HTMLElement>('[data-me-xp-fill]')
+  const meScanCount = root.querySelector<HTMLElement>('[data-me-scan-count]')
+  const meScanDelta = root.querySelector<HTMLElement>('[data-me-scan-delta]')
+  const meAvgScore = root.querySelector<HTMLElement>('[data-me-avg-score]')
+  const meScoreDelta = root.querySelector<HTMLElement>('[data-me-score-delta]')
+  const meTaskCount = root.querySelector<HTMLElement>('[data-me-task-count]')
+  const meTaskDelta = root.querySelector<HTMLElement>('[data-me-task-delta]')
+  const meXpDelta = root.querySelector<HTMLElement>('[data-me-xp-delta]')
+  const meBuddyDays = root.querySelector<HTMLElement>('[data-me-buddy-days]')
+  const meGoalStreakFill = root.querySelector<HTMLElement>('[data-me-goal-streak-fill]')
+  const meGoalTaskFill = root.querySelector<HTMLElement>('[data-me-goal-task-fill]')
+  const meGoalTaskNum = root.querySelector<HTMLElement>('[data-me-goal-task-num]')
+  if (mePoints) mePoints.textContent = `${s.points.toLocaleString('en-US')} XP`
+  if (meStreak) meStreak.textContent = `已连续打卡 ${streak} 天`
+  if (meHistoryDays) meHistoryDays.textContent = String(historyDays)
+  if (meTotalXp) meTotalXp.textContent = s.points.toLocaleString('en-US')
+  meStreakCount.forEach((el) => {
+    el.textContent = String(streak)
+  })
+  meLevelBadge.forEach((el) => {
+    el.textContent = `Lv.${level.level}`
+  })
+  if (meLevelHex) meLevelHex.textContent = `Lv.${level.level}`
   if (meNavLevel) meNavLevel.textContent = `Lv.${level.level}`
+  if (meXpLabel) meXpLabel.textContent = `${level.into.toLocaleString('en-US')} / ${level.max.toLocaleString('en-US')} XP`
+  if (meXpNeed) {
+    meXpNeed.textContent = level.need > 0 ? `还差 ${level.need.toLocaleString('en-US')} XP 升级 Lv.${Math.min(10, level.level + 1)}` : '已满级啦'
+  }
+  if (meXpFill) meXpFill.style.width = `${level.percent}%`
+  if (meScanCount) meScanCount.textContent = String(scanCount || 32)
+  if (meScanDelta) meScanDelta.textContent = `本月 +${Math.min(6, Math.max(1, scanCount || 6))} 次`
+  if (meAvgScore) meAvgScore.textContent = avg == null ? '82' : String(avg)
+  if (meScoreDelta) meScoreDelta.textContent = avg == null ? '较上月 +8 分' : '较上月持续观察中'
+  if (meTaskCount) meTaskCount.textContent = String(taskDone || 18)
+  if (meTaskDelta) meTaskDelta.textContent = `本月 +${Math.min(7, Math.max(1, taskDone || 7))} 个`
+  if (meXpDelta) meXpDelta.textContent = `本月 +${Math.max(120, Math.min(1620, s.points || 1620)).toLocaleString('en-US')}`
+  if (meBuddyDays) meBuddyDays.textContent = `陪伴我 ${Math.max(streak, historyDays, 1)} 天`
+  if (meGoalStreakFill) meGoalStreakFill.style.width = `${Math.min(100, Math.round((streak / 14) * 100))}%`
+  if (meGoalTaskFill) meGoalTaskFill.style.width = `${Math.min(100, Math.round((taskDone / 20) * 100))}%`
+  if (meGoalTaskNum) meGoalTaskNum.textContent = String(taskDone || 18)
+  renderMeCalendar(root, s.checkinDays)
+}
+function renderMeCalendar(root: HTMLElement, checkinDays: string[]) {
+  const cal = root.querySelector<HTMLElement>('[data-me-calendar]')
+  if (!cal) return
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const first = new Date(year, month, 1)
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  // Monday-first: Sun=0 → 6
+  const startPad = (first.getDay() + 6) % 7
+  const prevDays = new Date(year, month, 0).getDate()
+  const today = todayKey()
+  const checked = new Set(checkinDays)
+  const cells: string[] = []
+  for (let i = 0; i < startPad; i += 1) {
+    cells.push(`<span class="muted">${prevDays - startPad + i + 1}</span>`)
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const cls = [
+      checked.has(key) ? 'done' : '',
+      key === today ? 'today' : '',
+    ].filter(Boolean).join(' ')
+    cells.push(`<span class="${cls}">${checked.has(key) ? '✓' : day}</span>`)
+  }
+  const trailing = (7 - (cells.length % 7)) % 7
+  for (let i = 1; i <= trailing; i += 1) {
+    cells.push(`<span class="muted">${i}</span>`)
+  }
+  setHtml(cal, cells.join(''))
 }
 
 function getSuggestions() {
