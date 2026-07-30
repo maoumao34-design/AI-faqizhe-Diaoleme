@@ -1,0 +1,57 @@
+{
+  "bundle": "https://maoumao34-design.github.io/AI-faqizhe-Diaoleme/assets/index-CfrOsKRw.js",
+  "hasKeepStable": false,
+  "hasWrongLatestLabel": false,
+  "hasWrongAvgLabel": false,
+  "spans": [
+    "扫描次数",
+    "状态平均分",
+    "最新来源及结果"
+  ],
+  "strongs": [
+    {
+      "text": "1次",
+      "className": "",
+      "fontSize": "42px",
+      "whiteSpace": "normal",
+      "overflow": "visible",
+      "textOverflow": "clip",
+      "maxWidth": "none",
+      "top": 434,
+      "width": 48,
+      "scrollWidth": 48,
+      "clientWidth": 48,
+      "truncated": false
+    },
+    {
+      "text": "92",
+      "className": "",
+      "fontSize": "42px",
+      "whiteSpace": "normal",
+      "overflow": "visible",
+      "textOverflow": "clip",
+      "maxWidth": "none",
+      "top": 434,
+      "width": 50,
+      "scrollWidth": 50,
+      "clientWidth": 50,
+      "truncated": false
+    },
+    {
+      "text": "真实 AI",
+      "className": "scan-source-value",
+      "fontSize": "36px",
+      "whiteSpace": "normal",
+      "overflow": "visible",
+      "textOverflow": "clip",
+      "maxWidth": "100%",
+      "top": 436,
+      "width": 119,
+      "scrollWidth": 119,
+      "clientWidth": 119,
+      "truncated": false
+    }
+  ],
+  "smallVisible": [],
+  "cardText": "本周扫描数据\n最近记录\n1次\n扫描次数\n92\n状态平均分\n真实 AI\n最新来源及结果"
+}
